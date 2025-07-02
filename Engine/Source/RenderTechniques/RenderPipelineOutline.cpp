@@ -16,6 +16,7 @@ RenderPipelineOutlineStage::RenderPipelineOutlineStage(RenderTechnique* techniqu
     : RenderPipelineStage(technique, "outline")
     , m_readbackObjectID(nullptr)
     , m_renderTarget(nullptr)
+    , m_pipeline(nullptr)
 {
 }
 
@@ -23,9 +24,9 @@ RenderPipelineOutlineStage::~RenderPipelineOutlineStage()
 {
 }
 
-void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& state)
+void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, state);
+    createRenderTarget(device, scene);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
         "offscreen.hlsl", "offscreen_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
@@ -43,80 +44,92 @@ void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& state)
    m_pipeline->setDepthTest(false);
    m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
-    m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-    m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-
     m_readbackObjectID = new renderer::UnorderedAccessBuffer(device, renderer::BufferUsage::Buffer_GPURead, sizeof(u64) * 2, "objectID");
     m_mappedData._ptr = m_readbackObjectID->map<u32>();
-    state.m_globalResources.bind("readback_objectIDData", &m_mappedData);
+    scene.m_globalResources.bind("readback_objectIDData", &m_mappedData);
 }
 
-void RenderPipelineOutlineStage::destroy(Device* device, scene::SceneData& state)
+void RenderPipelineOutlineStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    destroyRenderTarget(device, scene);
+
     m_readbackObjectID->unmap();
     delete m_readbackObjectID;
     m_readbackObjectID = nullptr;
+
+    delete m_pipeline;
+    m_pipeline = nullptr;
 }
 
-void RenderPipelineOutlineStage::prepare(Device* device, scene::SceneData& state)
+void RenderPipelineOutlineStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_renderTarget)
     {
-        createRenderTarget(device, state);
+        createRenderTarget(device, scene);
     }
-    else if (m_renderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    else if (m_renderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
     {
-        destroyRenderTarget(device, state);
-        createRenderTarget(device, state);
+        destroyRenderTarget(device, scene);
+        createRenderTarget(device, scene);
     }
 }
 
-void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& state)
+void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Outline", color::colorrgbaf::GREEN);
+    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    scene::ViewportState& viewportState = scene.m_viewportState;
 
-    state.m_renderState.m_cmdList->beginRenderTarget(*m_renderTarget);
-    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-    state.m_renderState.m_cmdList->setPipelineState(*m_pipeline);
+    DEBUG_MARKER_SCOPE(cmdList, "Outline", color::colorrgbaf::GREEN);
 
-    state.m_renderState.m_cmdList->bindDescriptorSet(0,
+    cmdList->beginRenderTarget(*m_renderTarget);
+    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setPipelineState(*m_pipeline);
+
+    cmdList->bindDescriptorSet(0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
         });
 
-    ObjectHandle composite = state.m_globalResources.get("render_target");
+    ObjectHandle composite = scene.m_globalResources.get("render_target");
     ASSERT(composite.isValid(), "must be valid");
     renderer::Texture2D* compositeTexture = objectFromHandle<renderer::Texture2D>(composite);
 
-    ObjectHandle gbuffer_material = state.m_globalResources.get("gbuffer_material");
+    ObjectHandle gbuffer_material = scene.m_globalResources.get("gbuffer_material");
     ASSERT(gbuffer_material.isValid(), "must be valid");
     renderer::Texture2D* gbuffer_materialTexture = objectFromHandle<renderer::Texture2D>(gbuffer_material);
+
+    ObjectHandle selected_objects = scene.m_globalResources.get("selected_objects");
+    ASSERT(selected_objects.isValid(), "must be valid");
+    renderer::Texture2D* selected_objectsTexture = objectFromHandle<renderer::Texture2D>(selected_objects);
+
+    ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_clamp");
+    ASSERT(sampler_state_h.isValid(), "must be valid");
+    renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 
     struct OutlineBuffer
     {
         math::float4 lineColor;
         f32          lineThickness;
-        u32          selectedID;
     };
     OutlineBuffer constantBuffer;
     constantBuffer.lineColor = { 1.f, 1.f, 0.f, 1.f };
     constantBuffer.lineThickness = 2.f;
-    constantBuffer.selectedID = state.m_editorState.selectedObjectID;
 
-    state.m_renderState.m_cmdList->bindDescriptorSet(1,
+    cmdList->bindDescriptorSet(1,
         {
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-            renderer::Descriptor(m_sampler, 2),
+            renderer::Descriptor(sampler_state, 2),
             renderer::Descriptor(renderer::TextureView(compositeTexture, 0, 0), 3),
             renderer::Descriptor(renderer::TextureView(gbuffer_materialTexture, 0, 0), 4),
-            renderer::Descriptor(m_readbackObjectID, 5),
+            renderer::Descriptor(renderer::TextureView(selected_objectsTexture, 0, 0), 5),
+            renderer::Descriptor(m_readbackObjectID, 6),
         });
 
-    state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-    state.m_renderState.m_cmdList->endRenderTarget();
+    cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+    cmdList->endRenderTarget();
 
-    state.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
+    scene.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
 void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::SceneData& data)
@@ -125,7 +138,7 @@ void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::Scene
     m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1, 0, "outline_pass");
 
     renderer::Texture2D* outline = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "outline");
+        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "outline");
 
     m_renderTarget->setColorTexture(0, outline,
         {

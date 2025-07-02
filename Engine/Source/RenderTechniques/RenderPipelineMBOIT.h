@@ -10,6 +10,8 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class RenderPipelineMBOITStage : public RenderPipelineStage
     {
     public:
@@ -17,18 +19,16 @@ namespace renderer
         explicit  RenderPipelineMBOITStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineMBOITStage();
 
-        void create(Device* device, scene::SceneData& state) override;
-        void destroy(Device* device, scene::SceneData& state) override;
+        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& state) override;
-        void execute(Device* device, scene::SceneData& state) override;
+        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
     private:
 
         void createRenderTarget(Device* device, scene::SceneData& data);
         void destroyRenderTarget(Device* device, scene::SceneData& data);
-
-        renderer::SamplerState* m_sampler;
 
         enum Pass
         {
@@ -42,6 +42,8 @@ namespace renderer
         std::array<v3d::renderer::RenderTargetState*, Pass::Count> m_rt = {};
         std::array<v3d::renderer::GraphicsPipelineState*, Pass::Count> m_pipeline = {};
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer
 } //namespace v3d

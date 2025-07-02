@@ -63,5 +63,30 @@ namespace scene
      return model;
  }
 
+ void ModelHandler::visibilityTest(scene::SceneData& scene)
+ {
+     for (u32 i = 0; i < toEnumType(MaterialType::Count); ++i)
+     {
+         scene.m_lists[toEnumType(MaterialType(i))].clear();
+     }
+
+     //group by type
+     for (auto item : scene.m_generalList)
+     {
+         scene.m_lists[toEnumType(item->_material._type)].push_back(item);
+     }
+
+     //fructum test
+
+ }
+
+ void ModelHandler::drawStaticGeometry()
+ {
+ }
+
+ void ModelHandler::drawAnimatedGeometry()
+ {
+ }
+
 } //namespace scene
 } //namespace v3d

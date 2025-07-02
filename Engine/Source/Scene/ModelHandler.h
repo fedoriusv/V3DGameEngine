@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Scene/Component.h"
+#include "Scene/Scene.h"
 #include "Resource/Resource.h"
 
 namespace v3d
@@ -62,6 +63,17 @@ namespace scene
 
         ModelHandler() = default;
         ~ModelHandler() = default;
+
+        static ModelHandler* createModelHandler();
+
+        void visibilityTest(scene::SceneData& scene);
+
+        void drawStaticGeometry();
+        void drawAnimatedGeometry();
+
+    private:
+
+        renderer::Device* m_device;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

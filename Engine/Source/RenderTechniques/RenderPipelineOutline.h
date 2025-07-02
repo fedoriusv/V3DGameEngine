@@ -9,6 +9,8 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class RenderPipelineOutlineStage : public RenderPipelineStage
     {
     public:
@@ -21,11 +23,11 @@ namespace renderer
         explicit RenderPipelineOutlineStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineOutlineStage();
 
-        void create(Device* device, scene::SceneData& state) override;
-        void destroy(Device* device, scene::SceneData& state) override;
+        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& state) override;
-        void execute(Device* device, scene::SceneData& state) override;
+        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
     private:
 
@@ -33,15 +35,17 @@ namespace renderer
         void destroyRenderTarget(Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_renderTarget;
-        renderer::SamplerState* m_sampler;
         renderer::GraphicsPipelineState* m_pipeline;
 
         renderer::UnorderedAccessBuffer* m_readbackObjectID;
         MappedData m_mappedData;
-
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace renderer
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<>
     struct TypeOf<renderer::RenderPipelineOutlineStage::MappedData>
@@ -52,5 +56,7 @@ namespace renderer
             return (TypePtr)&ptr;
         }
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace v3d

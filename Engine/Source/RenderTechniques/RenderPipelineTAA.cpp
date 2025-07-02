@@ -13,13 +13,10 @@ namespace renderer
 {
 
 RenderPipelineTAAStage::RenderPipelineTAAStage(RenderTechnique* technique) noexcept
-    : RenderPipelineStage(technique, "taa")
+    : RenderPipelineStage(technique, "TAA")
 
     , m_renderTarget(nullptr)
     , m_pipeline(nullptr)
-
-    , m_samplerLinear(nullptr)
-    , m_samplerPoint(nullptr)
 
     , m_resolved(nullptr)
     , m_history(nullptr)
@@ -30,9 +27,9 @@ RenderPipelineTAAStage::~RenderPipelineTAAStage()
 {
 }
 
-void RenderPipelineTAAStage::create(Device* device, scene::SceneData& state)
+void RenderPipelineTAAStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, state);
+    createRenderTarget(device, scene);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
         "offscreen.hlsl", "offscreen_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
@@ -52,78 +49,77 @@ void RenderPipelineTAAStage::create(Device* device, scene::SceneData& state)
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-
-    m_samplerLinear = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-    m_samplerLinear->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-
-    m_samplerPoint = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-    m_samplerPoint->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
 }
 
-void RenderPipelineTAAStage::destroy(Device* device, scene::SceneData& state)
+void RenderPipelineTAAStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, state);
-
-    delete m_samplerLinear;
-    m_samplerLinear = nullptr;
-
-    delete m_samplerPoint;
-    m_samplerPoint = nullptr;
+    destroyRenderTarget(device, scene);
 
     delete m_pipeline;
     m_pipeline = nullptr;
 }
 
-void RenderPipelineTAAStage::prepare(Device* device, scene::SceneData& state)
+void RenderPipelineTAAStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_renderTarget)
     {
-        createRenderTarget(device, state);
+        createRenderTarget(device, scene);
     }
-    else if (m_renderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    else if (m_renderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
     {
-        destroyRenderTarget(device, state);
-        createRenderTarget(device, state);
+        destroyRenderTarget(device, scene);
+        createRenderTarget(device, scene);
     }
 }
 
-void RenderPipelineTAAStage::execute(Device* device, scene::SceneData& state)
+void RenderPipelineTAAStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "TAA", color::colorrgbaf::GREEN);
+    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    scene::ViewportState& viewportState = scene.m_viewportState;
 
-    state.m_renderState.m_cmdList->beginRenderTarget(*m_renderTarget);
-    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-    state.m_renderState.m_cmdList->setPipelineState(*m_pipeline);
+    DEBUG_MARKER_SCOPE(cmdList, "TAA", color::colorrgbaf::GREEN);
 
-    ObjectHandle render_target = state.m_globalResources.get("render_target");
+    cmdList->beginRenderTarget(*m_renderTarget);
+    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setPipelineState(*m_pipeline);
+
+    ObjectHandle render_target = scene.m_globalResources.get("render_target");
     ASSERT(render_target.isValid(), "must be valid");
     renderer::Texture2D* render_targetTexture = objectFromHandle<renderer::Texture2D>(render_target);
 
-    ObjectHandle velocity_target = state.m_globalResources.get("gbuffer_velocity");
+    ObjectHandle velocity_target = scene.m_globalResources.get("gbuffer_velocity");
     ASSERT(render_target.isValid(), "must be valid");
     renderer::Texture2D* velocity_targetTexture = objectFromHandle<renderer::Texture2D>(velocity_target);
 
-    state.m_renderState.m_cmdList->bindDescriptorSet(0,
+    ObjectHandle sampler_state_linear_h = scene.m_globalResources.get("linear_sampler_clamp");
+    ASSERT(sampler_state_linear_h.isValid(), "must be valid");
+    renderer::SamplerState* sampler_state_linear = objectFromHandle<renderer::SamplerState>(sampler_state_linear_h);
+
+    ObjectHandle linear_sampler_clamp_h = scene.m_globalResources.get("linear_sampler_clamp");
+    ASSERT(linear_sampler_clamp_h.isValid(), "must be valid");
+    renderer::SamplerState* sampler_state_point = objectFromHandle<renderer::SamplerState>(linear_sampler_clamp_h);
+
+    cmdList->bindDescriptorSet(0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
         });
 
-    state.m_renderState.m_cmdList->bindDescriptorSet(1,
+    cmdList->bindDescriptorSet(1,
         {
-            renderer::Descriptor(m_samplerLinear, 1),
-            renderer::Descriptor(m_samplerPoint, 2),
+            renderer::Descriptor(sampler_state_linear, 1),
+            renderer::Descriptor(sampler_state_point, 2),
             renderer::Descriptor(renderer::TextureView(render_targetTexture, 0, 0), 3),
             renderer::Descriptor(renderer::TextureView(m_history, 0, 0), 4),
             renderer::Descriptor(renderer::TextureView(velocity_targetTexture, 0, 0), 5)
         });
 
-    state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-    state.m_renderState.m_cmdList->endRenderTarget();
+    cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+    cmdList->endRenderTarget();
 
-    state.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
+    cmdList->copy(m_resolved, m_history, m_resolved->getDimension());
 
-    state.m_renderState.m_cmdList->copy(m_resolved, m_history, m_resolved->getDimension());
+    scene.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
 void RenderPipelineTAAStage::createRenderTarget(Device* device, scene::SceneData& data)

@@ -12,7 +12,9 @@ namespace renderer
 {
 
 RenderPipelineGBufferStage::RenderPipelineGBufferStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
-    : RenderPipelineStage(technique, "gbuffer")
+    : RenderPipelineStage(technique, "GBuffer")
+    , m_modelHandler(modelHandler)
+
     , m_GBufferRenderTarget(nullptr)
 {
 }
@@ -22,9 +24,9 @@ RenderPipelineGBufferStage::~RenderPipelineGBufferStage()
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
 }
 
-void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& state)
+void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, state);
+    createRenderTarget(device, scene);
 
     //TODO json material
     //resource::Resource* material = resource::ResourceManager::getInstance()->load<resource::Resource, resource::AssetSourceFileLoader>("materials/gbuffer_standard.material.json");
@@ -85,9 +87,9 @@ void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& state)
     }
 }
 
-void RenderPipelineGBufferStage::destroy(Device* device, scene::SceneData& state)
+void RenderPipelineGBufferStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, state);
+    destroyRenderTarget(device, scene);
 
     for (auto& pipeline : m_pipeline)
     {
@@ -99,120 +101,118 @@ void RenderPipelineGBufferStage::destroy(Device* device, scene::SceneData& state
     }
 }
 
-void RenderPipelineGBufferStage::prepare(Device* device, scene::SceneData& state)
+void RenderPipelineGBufferStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_GBufferRenderTarget)
     {
-        createRenderTarget(device, state);
+        createRenderTarget(device, scene);
     }
-    else if (m_GBufferRenderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    else if (m_GBufferRenderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
     {
-        destroyRenderTarget(device, state);
-        createRenderTarget(device, state);
+        destroyRenderTarget(device, scene);
+        createRenderTarget(device, scene);
     }
 }
 
-void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& state)
+void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    static auto renderTask = [this, &state](Device* device, CmdListRender* cmdList) -> void
-        {
-            DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "GBuffer", color::colorrgbaf::GREEN);
+    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    scene::ViewportState& viewportState = scene.m_viewportState;
 
-            state.m_renderState.m_cmdList->beginRenderTarget(*m_GBufferRenderTarget);
-            state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-            state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-            state.m_renderState.m_cmdList->setStencilRef(0);
+    DEBUG_MARKER_SCOPE(cmdList, "GBuffer", color::colorrgbaf::GREEN);
 
-            for (auto& draw : state.m_data)
+    cmdList->beginRenderTarget(*m_GBufferRenderTarget);
+    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+
+    for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
+    {
+        cmdList->setStencilRef(0);
+        cmdList->setPipelineState(*m_pipeline[list->_pipelineID]);
+
+        cmdList->bindDescriptorSet(0,
             {
-                if (draw.m_stageID == "gbuffer")
-                {
-                    state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[draw.m_pipelineID]);
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+            });
 
-                    state.m_renderState.m_cmdList->bindDescriptorSet(0,
-                        {
-                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
-                        });
-
-                    struct ModelBuffer
-                    {
-                        math::Matrix4D modelMatrix;
-                        math::Matrix4D prevModelMatrix;
-                        math::Matrix4D normalMatrix;
-                        math::float4   tint;
-                        u64            objectID;
-                        u64           _pad = 0;
-                    };
-                    ModelBuffer constantBuffer;
-                    constantBuffer.modelMatrix = draw.m_transform.getTransform();
-                    constantBuffer.prevModelMatrix = draw.m_prevTransform.getTransform();
-                    constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-                    constantBuffer.tint = draw.m_tint;
-                    constantBuffer.objectID = draw.m_objectID;
-
-                    state.m_renderState.m_cmdList->bindDescriptorSet(1,
-                        {
-                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                            renderer::Descriptor(draw.m_sampler, 2),
-                            renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
-                            renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
-                            renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
-                        });
-
-                    DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", draw.m_objectID, m_pipeline[draw.m_pipelineID]->getName()), color::colorrgbaf::LTGREY);
-                    renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-                    state.m_renderState.m_cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
-                }
-                else if (draw.m_stageID == "masked")
-                {
-                    state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[draw.m_pipelineID]);
-
-                    ObjectHandle noise = state.m_globalResources.get("tiling_noise");
-                    ASSERT(noise.isValid(), "must be valid");
-                    renderer::Texture2D* noiseTexture = objectFromHandle<renderer::Texture2D>(noise);
-
-                    state.m_renderState.m_cmdList->bindDescriptorSet(0,
-                        {
-                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
-                        });
-
-
-                    struct ModelBuffer
-                    {
-                        math::Matrix4D modelMatrix;
-                        math::Matrix4D prevModelMatrix;
-                        math::Matrix4D normalMatrix;
-                        math::float4   tint;
-                        u64            objectID;
-                        u64           _pad = 0;
-                    };
-                    ModelBuffer constantBuffer;
-                    constantBuffer.modelMatrix = draw.m_transform.getTransform();
-                    constantBuffer.prevModelMatrix = draw.m_prevTransform.getTransform();
-                    constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-                    constantBuffer.tint = draw.m_tint;
-                    constantBuffer.objectID = draw.m_objectID;
-
-                    state.m_renderState.m_cmdList->bindDescriptorSet(1,
-                        {
-                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                            renderer::Descriptor(draw.m_sampler, 2),
-                            renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
-                            renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
-                            renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
-                            renderer::Descriptor(renderer::TextureView(noiseTexture), 6),
-                        });
-
-                    DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", draw.m_objectID, m_pipeline[draw.m_pipelineID]->getName()), color::colorrgbaf::LTGREY);
-                    renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-                    state.m_renderState.m_cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
-                }
-            }
-            state.m_renderState.m_cmdList->endRenderTarget();
+        struct ModelBuffer
+        {
+            math::Matrix4D modelMatrix;
+            math::Matrix4D prevModelMatrix;
+            math::Matrix4D normalMatrix;
+            math::float4   tint;
+            u64            objectID;
+            u64           _pad = 0;
         };
 
-    //TODO move to another thread
-    renderTask(device, state.m_renderState.m_cmdList);
+        ModelBuffer constantBuffer;
+        constantBuffer.modelMatrix = list->_transform.getTransform();
+        constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+        constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+        constantBuffer.tint = list->_material._tint;
+        constantBuffer.objectID = list->_objectID;
+
+        cmdList->bindDescriptorSet(1,
+            {
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                renderer::Descriptor(list->_material._sampler, 2),
+                renderer::Descriptor(renderer::TextureView(list->_material._albedo), 3),
+                renderer::Descriptor(renderer::TextureView(list->_material._normals), 4),
+                renderer::Descriptor(renderer::TextureView(list->_material._material), 5),
+            });
+
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipeline[list->_pipelineID]->getName()), color::colorrgbaf::LTGREY);
+        renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
+        cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
+    }
+
+    for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::MaskedOpaque)])
+    {
+        cmdList->setStencilRef(0);
+        cmdList->setPipelineState(*m_pipeline[list->_pipelineID]);
+
+        ObjectHandle noise = scene.m_globalResources.get("tiling_noise");
+        ASSERT(noise.isValid(), "must be valid");
+        renderer::Texture2D* noiseTexture = objectFromHandle<renderer::Texture2D>(noise);
+
+        cmdList->bindDescriptorSet(0,
+            {
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+            });
+
+        struct ModelBuffer
+        {
+            math::Matrix4D modelMatrix;
+            math::Matrix4D prevModelMatrix;
+            math::Matrix4D normalMatrix;
+            math::float4   tint;
+            u64            objectID;
+            u64           _pad = 0;
+        };
+
+        ModelBuffer constantBuffer;
+        constantBuffer.modelMatrix = list->_transform.getTransform();
+        constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+        constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+        constantBuffer.tint = list->_material._tint;
+        constantBuffer.objectID = list->_objectID;
+
+        cmdList->bindDescriptorSet(1,
+            {
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                renderer::Descriptor(list->_material._sampler, 2),
+                renderer::Descriptor(renderer::TextureView(list->_material._albedo), 3),
+                renderer::Descriptor(renderer::TextureView(list->_material._normals), 4),
+                renderer::Descriptor(renderer::TextureView(list->_material._material), 5),
+                renderer::Descriptor(renderer::TextureView(noiseTexture, 0, 0), 6),
+            });
+
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipeline[list->_pipelineID]->getName()), color::colorrgbaf::LTGREY);
+        renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
+        cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
+    }
+
+    cmdList->endRenderTarget();
 }
 
 void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::SceneData& state)

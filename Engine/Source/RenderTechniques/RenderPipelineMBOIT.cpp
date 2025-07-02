@@ -20,9 +20,9 @@ RenderPipelineMBOITStage::~RenderPipelineMBOITStage()
 {
 }
 
-void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& state)
+void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, state);
+    createRenderTarget(device, scene);
 
     //pass 1
     {
@@ -117,171 +117,163 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& state)
 
         m_pipeline[Pass::CompositionPass] = pipeline;
     }
-
-    m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-    m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 }
 
-void RenderPipelineMBOITStage::destroy(Device* device, scene::SceneData& state)
+void RenderPipelineMBOITStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
 }
 
-void RenderPipelineMBOITStage::prepare(Device* device, scene::SceneData& state)
+void RenderPipelineMBOITStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_rt[Pass::MBOIT_Pass1])
     {
-        createRenderTarget(device, state);
+        createRenderTarget(device, scene);
     }
-    else if (m_rt[Pass::MBOIT_Pass1]->getRenderArea() != state.m_viewportState._viewpotSize)
+    else if (m_rt[Pass::MBOIT_Pass1]->getRenderArea() != scene.m_viewportState._viewpotSize)
     {
-        destroyRenderTarget(device, state);
-        createRenderTarget(device, state);
+        destroyRenderTarget(device, scene);
+        createRenderTarget(device, scene);
     }
 }
 
-void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& state)
+void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Transparency", color::colorrgbaf::GREEN);
+    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    scene::ViewportState& viewportState = scene.m_viewportState;
+
+    DEBUG_MARKER_SCOPE(cmdList, "Transparency", color::colorrgbaf::GREEN);
 
     //pass 1
     {
-        state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::MBOIT_Pass1]);
-        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-        state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass1]);
+        cmdList->beginRenderTarget(*m_rt[Pass::MBOIT_Pass1]);
+        cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setStencilRef(0);
+        cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass1]);
 
-        state.m_renderState.m_cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(0,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        for (auto& draw : state.m_data)
+        for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
         {
-            if (draw.m_stageID == "transparency")
+            struct ModelBuffer
             {
-                struct ModelBuffer
+                math::Matrix4D modelMatrix;
+                math::Matrix4D prevModelMatrix;
+                math::Matrix4D normalMatrix;
+                math::float4   tint;
+                u64            objectID;
+                u64           _pad = 0;
+            };
+
+            ModelBuffer constantBuffer;
+            constantBuffer.modelMatrix = list->_transform.getTransform();
+            constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+            constantBuffer.tint = list->_material._tint;
+            constantBuffer.objectID = list->_objectID;
+
+            scene.m_renderState.m_cmdList->bindDescriptorSet(1,
                 {
-                    math::Matrix4D modelMatrix;
-                    math::Matrix4D prevModelMatrix;
-                    math::Matrix4D normalMatrix;
-                    math::float4   tint;
-                    u64            objectID;
-                    u64           _pad = 0;
-                };
-                ModelBuffer constantBuffer;
-                constantBuffer.modelMatrix = draw.m_transform.getTransform();
-                constantBuffer.prevModelMatrix = draw.m_prevTransform.getTransform();
-                constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-                constantBuffer.tint = draw.m_tint;
-                constantBuffer.objectID = draw.m_objectID;
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                    renderer::Descriptor(list->_material._sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(list->_material._albedo), 3),
+                    renderer::Descriptor(renderer::TextureView(list->_material._normals), 4),
+                    renderer::Descriptor(renderer::TextureView(list->_material._material), 5),
+                });
 
-                state.m_renderState.m_cmdList->bindDescriptorSet(1,
-                    {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                        renderer::Descriptor(draw.m_sampler, 2),
-                        renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
-                        renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
-                        renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
-                    });
-
-                renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-                state.m_renderState.m_cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
-            }
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipeline[list->_pipelineID]->getName()), color::colorrgbaf::LTGREY);
+            renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
         }
-        state.m_renderState.m_cmdList->endRenderTarget();
+        cmdList->endRenderTarget();
     }
 
     //pass 2
     {
-        state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::MBOIT_Pass2]);
-        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-        state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass2]);
+        cmdList->beginRenderTarget(*m_rt[Pass::MBOIT_Pass2]);
+        cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setStencilRef(0);
+        cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass2]);
 
-        state.m_renderState.m_cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(0,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        for (auto& draw : state.m_data)
+        for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
         {
-            if (draw.m_stageID == "transparency")
+            struct ModelBuffer
             {
-                struct ModelBuffer
+                math::Matrix4D modelMatrix;
+                math::Matrix4D prevModelMatrix;
+                math::Matrix4D normalMatrix;
+                math::float4   tint;
+                u64            objectID;
+                u64            _pad = 0;
+            };
+
+            ModelBuffer constantBuffer;
+            constantBuffer.modelMatrix = list->_transform.getTransform();
+            constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+            constantBuffer.tint = list->_material._tint;
+            constantBuffer.objectID = list->_objectID;
+
+            cmdList->bindDescriptorSet(1,
                 {
-                    math::Matrix4D modelMatrix;
-                    math::Matrix4D prevModelMatrix;
-                    math::Matrix4D normalMatrix;
-                    math::float4   tint;
-                    u64            objectID;
-                    u64           _pad = 0;
-                };
-                ModelBuffer constantBuffer;
-                constantBuffer.modelMatrix = draw.m_transform.getTransform();
-                constantBuffer.prevModelMatrix = draw.m_prevTransform.getTransform();
-                constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-                constantBuffer.tint = draw.m_tint;
-                constantBuffer.objectID = draw.m_objectID;
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                    renderer::Descriptor(list->_material._sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(list->_material._albedo), 3),
+                    renderer::Descriptor(renderer::TextureView(list->_material._normals), 4),
+                    renderer::Descriptor(renderer::TextureView(list->_material._material), 5),
+                    renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 6),
+                    renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(1), 0, 0), 7),
+                });
 
-                state.m_renderState.m_cmdList->bindDescriptorSet(1,
-                    {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                        renderer::Descriptor(draw.m_sampler, 2),
-                        renderer::Descriptor(renderer::TextureView(draw.m_albedo), 3),
-                        renderer::Descriptor(renderer::TextureView(draw.m_normals), 4),
-                        renderer::Descriptor(renderer::TextureView(draw.m_material), 5),
-                        renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 6),
-                        renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(1), 0, 0), 7),
-                    });
-
-                renderer::GeometryBufferDesc desc(draw.m_IdxBuffer, 0, draw.m_VtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-                state.m_renderState.m_cmdList->drawIndexed(desc, 0, draw.m_IdxBuffer->getIndicesCount(), 0, 0, 1);
-            }
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipeline[list->_pipelineID]->getName()), color::colorrgbaf::LTGREY);
+            renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
         }
-        state.m_renderState.m_cmdList->endRenderTarget();
+        cmdList->endRenderTarget();
     }
 
     //2 resolve
     {
-        //ObjectHandle baseColor = state.m_globalResources.get("render_target");
-        //ASSERT(baseColor.isValid(), "must be valid");
-        //renderer::Texture2D* baseColorTexture = objectFromHandle<renderer::Texture2D>(baseColor);
-        //m_rt[Pass::ResolvePass]->setColorTexture(0, baseColorTexture,
-        //    {
-        //        renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
-        //    },
-        //    {
-        //        renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
-        //    });
-
-        ObjectHandle compositionColor = state.m_globalResources.get("composition_target");
+        ObjectHandle compositionColor = scene.m_globalResources.get("composition_target");
         ASSERT(compositionColor.isValid(), "must be valid");
         renderer::Texture2D* composition_Texture = objectFromHandle<renderer::Texture2D>(compositionColor);
 
+        ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_mirror");
+        ASSERT(sampler_state_h.isValid(), "must be valid");
+        renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 
-        state.m_renderState.m_cmdList->beginRenderTarget(*m_rt[Pass::CompositionPass]);
-        state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-        state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-        state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[Pass::CompositionPass]);
+        cmdList->beginRenderTarget(*m_rt[Pass::CompositionPass]);
+        cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setPipelineState(*m_pipeline[Pass::CompositionPass]);
 
-        state.m_renderState.m_cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(0,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        state.m_renderState.m_cmdList->bindDescriptorSet(1,
+        cmdList->bindDescriptorSet(1,
             {
-                renderer::Descriptor(m_sampler, 2),
+                renderer::Descriptor(sampler_state, 2),
                 renderer::Descriptor(renderer::TextureView(composition_Texture), 3),
                 renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass2]->getColorTexture<renderer::Texture2D>(0), 0, 0), 4),
                 renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 5),
             });
 
-        state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-        state.m_renderState.m_cmdList->endRenderTarget();
+        cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+        cmdList->endRenderTarget();
     }
 
-    state.m_globalResources.bind("render_target", m_rt[Pass::CompositionPass]->getColorTexture<renderer::Texture2D>(0));
+    scene.m_globalResources.bind("render_target", m_rt[Pass::CompositionPass]->getColorTexture<renderer::Texture2D>(0));
 }
 
 void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneData& data)

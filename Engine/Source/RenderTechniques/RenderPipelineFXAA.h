@@ -9,6 +9,8 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class RenderPipelineFXAAStage : public RenderPipelineStage
     {
     public:
@@ -16,11 +18,11 @@ namespace renderer
         explicit RenderPipelineFXAAStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineFXAAStage();
 
-        void create(Device* device, scene::SceneData& data) override;
-        void destroy(Device* device, scene::SceneData& data) override;
+        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& data) override;
-        void execute(Device* device, scene::SceneData& data) override;
+        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
     private:
 
@@ -28,9 +30,10 @@ namespace renderer
         void destroyRenderTarget(Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_renderTarget;
-        renderer::SamplerState* m_sampler;
-        std::vector<renderer::GraphicsPipelineState*> m_pipeline;
+        renderer::GraphicsPipelineState* m_pipeline;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer
 } //namespace v3d

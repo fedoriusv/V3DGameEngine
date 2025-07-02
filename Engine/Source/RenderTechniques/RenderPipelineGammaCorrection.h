@@ -9,6 +9,8 @@ namespace v3d
 {
 namespace renderer
 {
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     class RenderPipelineGammaCorrectionStage : public RenderPipelineStage
     {
     public:
@@ -16,11 +18,11 @@ namespace renderer
         explicit RenderPipelineGammaCorrectionStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineGammaCorrectionStage();
 
-        void create(Device* device, scene::SceneData& state) override;
-        void destroy(Device* device, scene::SceneData& state) override;
+        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& state) override;
-        void execute(Device* device, scene::SceneData& state) override;
+        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
     private:
 
@@ -28,9 +30,10 @@ namespace renderer
         void destroyRenderTarget(Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_gammaRenderTarget;
-        renderer::SamplerState* m_sampler;
         std::vector<renderer::GraphicsPipelineState*> m_pipeline;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace renderer
 } //namespace v3d

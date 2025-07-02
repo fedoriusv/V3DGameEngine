@@ -15,6 +15,21 @@ namespace v3d
 {
 namespace scene
 {
+    enum class MaterialType
+    {
+        Opaque,
+        SkinnedOpaque,
+        MaskedOpaque,
+        
+        Transparency,
+        SkinnedTransparency,
+
+        Selected,
+        Custom,
+
+        Count
+    };
+
     struct ViewportState
     {
         alignas(16) struct ViewportBuffer
@@ -38,29 +53,33 @@ namespace scene
         scene::CameraHandler*   _camera;
     };
 
-    struct DrawInstanceData
+    struct GeomtryState
     {
-        renderer::IndexBuffer* m_IdxBuffer;
-        renderer::VertexBuffer* m_VtxBuffer;
-
-        scene::Transform m_transform;
-        scene::Transform m_prevTransform;
-
-        renderer::SamplerState* m_sampler;
-        renderer::Texture2D* m_albedo;
-        renderer::Texture2D* m_normals;
-        renderer::Texture2D* m_material;
-        math::float4 m_tint;
-
-
-        utils::StringID m_stageID;
-        u64 m_pipelineID;
-        u64 m_objectID;
+        utils::StringID         _ID;
+        renderer::IndexBuffer*  _idxBuffer;
+        renderer::VertexBuffer* _vtxBuffer;
     };
 
-    struct EditorState
+    struct MaterialState
     {
-        u32 selectedObjectID;
+        MaterialType            _type;
+        renderer::SamplerState* _sampler;
+        renderer::Texture2D*    _albedo;
+        renderer::Texture2D*    _normals;
+        renderer::Texture2D*    _material;
+        math::float4            _tint;
+    };
+
+    struct DrawInstanceDataState
+    {
+        GeomtryState     _geometry;
+        MaterialState    _material;
+
+        scene::Transform _transform;
+        scene::Transform _prevTransform;
+
+        u64              _pipelineID;
+        u64              _objectID;
     };
 
     struct RenderState
@@ -70,17 +89,26 @@ namespace scene
 
     struct SceneData
     {
+        renderer::RenderObjectTracker             m_globalResources;
+
+        std::vector<scene::DrawInstanceDataState*> m_generalList;
+        std::vector<scene::DrawInstanceDataState*> m_lists[toEnumType(MaterialType::Count)];
+
+        struct SceneState
+        {
+        };
+        std::vector<SceneState>                   m_sceneState;
+        ViewportState                             m_viewportState;
+        RenderState                               m_renderState;
+    };
+
+    struct FrameData
+    {
         struct Allocator
         {
         };
         Allocator* _dynamicAllocator;
         Allocator* _staticAllocator;
-        std::vector<DrawInstanceData> m_data;
-        renderer::RenderObjectTracker m_globalResources;
-
-        ViewportState m_viewportState;
-        EditorState m_editorState;
-        RenderState m_renderState;
     };
 
 } //namespace scene

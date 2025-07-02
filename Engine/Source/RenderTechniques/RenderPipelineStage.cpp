@@ -30,44 +30,42 @@ RenderTechnique::~RenderTechnique()
     m_stages.clear();
 }
 
-void RenderTechnique::create(Device* device, scene::SceneData& data)
+void RenderTechnique::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
-        stage->create(device, data);
+        stage->create(device, scene, frame);
     }
 }
 
-void RenderTechnique::destroy(Device* device, scene::SceneData& data)
+void RenderTechnique::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
-        stage->destroy(device, data);
+        stage->destroy(device, scene, frame);
     }
 }
 
-void RenderTechnique::prepare(Device* device, scene::SceneData& data)
+void RenderTechnique::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
-        stage->prepare(device, data);
+        stage->prepare(device, scene, frame);
     }
 }
 
-void RenderTechnique::execute(Device* device, scene::SceneData& data)
+void RenderTechnique::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
-        stage->execute(device, data);
+        stage->execute(device, scene, frame);
     }
 }
 
-void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* data)
+void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage)
 {
-    m_stages.emplace_back(id, data);
+    m_stages.emplace_back(id, stage);
 }
-
-
 
 } //namespace renderer
 } //namespace v3d

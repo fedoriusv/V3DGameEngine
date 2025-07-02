@@ -12,9 +12,8 @@ namespace renderer
 {
 
 RenderPipelineGammaCorrectionStage::RenderPipelineGammaCorrectionStage(RenderTechnique* technique) noexcept
-    : RenderPipelineStage(technique, "gamma")
+    : RenderPipelineStage(technique, "Gamma")
     , m_gammaRenderTarget(nullptr)
-    , m_sampler(nullptr)
 {
 }
 
@@ -22,9 +21,9 @@ RenderPipelineGammaCorrectionStage::~RenderPipelineGammaCorrectionStage()
 {
 }
 
-void RenderPipelineGammaCorrectionStage::create(Device* device, scene::SceneData& state)
+void RenderPipelineGammaCorrectionStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, state);
+    createRenderTarget(device, scene);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
         "offscreen.hlsl", "offscreen_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
@@ -43,17 +42,11 @@ void RenderPipelineGammaCorrectionStage::create(Device* device, scene::SceneData
     pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
     m_pipeline.push_back(pipeline);
-
-    m_sampler = new renderer::SamplerState(device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-    m_sampler->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 }
 
-void RenderPipelineGammaCorrectionStage::destroy(Device* device, scene::SceneData& state)
+void RenderPipelineGammaCorrectionStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, state);
-
-    delete m_sampler;
-    m_sampler = nullptr;
+    destroyRenderTarget(device, scene);
 
     for (auto pipeline : m_pipeline)
     {
@@ -62,45 +55,52 @@ void RenderPipelineGammaCorrectionStage::destroy(Device* device, scene::SceneDat
     m_pipeline.clear();
 }
 
-void RenderPipelineGammaCorrectionStage::prepare(Device* device, scene::SceneData& state)
+void RenderPipelineGammaCorrectionStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_gammaRenderTarget)
     {
-        createRenderTarget(device, state);
+        createRenderTarget(device, scene);
     }
-    else if (m_gammaRenderTarget->getRenderArea() != state.m_viewportState._viewpotSize)
+    else if (m_gammaRenderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
     {
-        destroyRenderTarget(device, state);
-        createRenderTarget(device, state);
+        destroyRenderTarget(device, scene);
+        createRenderTarget(device, scene);
     }
 }
 
-void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::SceneData& state)
+void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    DEBUG_MARKER_SCOPE(state.m_renderState.m_cmdList, "Gamma", color::colorrgbaf::GREEN);
+    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    scene::ViewportState& viewportState = scene.m_viewportState;
 
-    state.m_renderState.m_cmdList->beginRenderTarget(*m_gammaRenderTarget);
-    state.m_renderState.m_cmdList->setViewport({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-    state.m_renderState.m_cmdList->setScissor({ 0.f, 0.f, (f32)state.m_viewportState._viewpotSize._width, (f32)state.m_viewportState._viewpotSize._height });
-    state.m_renderState.m_cmdList->setPipelineState(*m_pipeline[0]);
+    DEBUG_MARKER_SCOPE(cmdList, "Gamma", color::colorrgbaf::GREEN);
 
-    state.m_renderState.m_cmdList->bindDescriptorSet(0,
+    cmdList->beginRenderTarget(*m_gammaRenderTarget);
+    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setPipelineState(*m_pipeline[0]);
+
+    cmdList->bindDescriptorSet(0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &state.m_viewportState._viewportBuffer, 0, sizeof(state.m_viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
         });
 
-    ObjectHandle composite_attachment = state.m_globalResources.get("render_target");
+    ObjectHandle composite_attachment = scene.m_globalResources.get("render_target");
     ASSERT(composite_attachment.isValid(), "must be valid");
     renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(composite_attachment);
 
-    state.m_renderState.m_cmdList->bindDescriptorSet(1,
+    ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_mirror");
+    ASSERT(sampler_state_h.isValid(), "must be valid");
+    renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
+
+    cmdList->bindDescriptorSet(1,
         {
-            renderer::Descriptor(m_sampler, 0),
+            renderer::Descriptor(sampler_state, 0),
             renderer::Descriptor(renderer::TextureView(texture, 0, 0), 1),
         });
 
-    state.m_renderState.m_cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-    state.m_renderState.m_cmdList->endRenderTarget();
+    cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+    cmdList->endRenderTarget();
 }
 
 void RenderPipelineGammaCorrectionStage::createRenderTarget(Device* device, scene::SceneData& data)

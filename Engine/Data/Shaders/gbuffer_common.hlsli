@@ -93,8 +93,8 @@ float2 calc_velocity(float4 position, float4 prevPosition)
 
 PS_GBUFFER_STRUCT _gbuffer_standard_ps(
     in PS_GBUFFER_STANDARD_INPUT Input, 
-    in uniform ConstantBuffer< Viewport> Viewport,
-    in uniform ConstantBuffer< ModelBuffer> Model,
+    in uniform ConstantBuffer<Viewport> Viewport,
+    in uniform ConstantBuffer<ModelBuffer> Model,
     in Texture2D textureAlbedo,
     in Texture2D textureNormal,
     in Texture2D textureMaterial,
@@ -126,8 +126,8 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
 
 PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     in PS_GBUFFER_STANDARD_INPUT Input,
-    in uniform ConstantBuffer< Viewport> Viewport,
-    in uniform ConstantBuffer< ModelBuffer> Model,
+    in uniform ConstantBuffer<Viewport> Viewport,
+    in uniform ConstantBuffer<ModelBuffer> Model,
     in Texture2D textureAlbedo,
     in Texture2D textureNormal,
     in Texture2D textureMaterial,
