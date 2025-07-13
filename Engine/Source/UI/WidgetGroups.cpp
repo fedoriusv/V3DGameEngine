@@ -57,6 +57,12 @@ bool WidgetRadioButtonGroup::update(WidgetHandler* handler, Widget* parent, Widg
     return false;
 }
 
+math::float2 WidgetRadioButtonGroup::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+{
+    m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_RadioButtonGroupSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
+    return m_data->_itemRect.getSize();
+}
+
 Widget* WidgetRadioButtonGroup::copy() const
 {
     return V3D_NEW(WidgetRadioButtonGroup, memory::MemoryLabel::MemoryUI)(*this);
@@ -103,6 +109,12 @@ bool WidgetComboBox::update(WidgetHandler* handler, Widget* parent, Widget* layo
     return false;
 }
 
+math::float2 WidgetComboBox::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+{
+    m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_ComboBoxSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
+    return m_data->_itemRect.getSize();
+}
+
 Widget* WidgetComboBox::copy() const
 {
     return V3D_NEW(WidgetComboBox, memory::MemoryLabel::MemoryUI)(*this);
@@ -147,6 +159,12 @@ bool WidgetListBox::update(WidgetHandler* handler, Widget* parent, Widget* layou
     }
 
     return false;
+}
+
+math::float2 WidgetListBox::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+{
+    m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_ListBoxSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
+    return m_data->_itemRect.getSize();
 }
 
 Widget* WidgetListBox::copy() const

@@ -56,16 +56,21 @@ namespace ui
         {
             enum StateMask
             {
-                Active = 0x01,
-                Visible = 0x02,
-                FirstUpdate = 0x04,
-                ForceUpdate = 0x8,
-                HorizontalLine = 0x10,
-                ChildLayout = 0x20,
+                Active = 0x1,
+                Visible = 0x2,
+                MainLayout = 0x4,
+                HorizontalLine = 0x8,
+                DefindedSize = 0x10,
+                Color = 0x20,
+                HoveredColor = 0x40,
+                ClickedColor = 0x80,
+                BorderColor = 0x100,
+                BackgroundColor = 0x200,
 
-                Color = 0x100,
-                HoveredColor = 0x200,
-                ClickedColor = 0x400
+                FirstUpdateState = 0x400,
+                ForceUpdateState = 0x800,
+                ChildLayoutState = 0x1000,
+                CollapsedState = 0x2000
             };
 
             State() noexcept = default;
@@ -339,5 +344,80 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+    * @brief WidgetTEST class. Test wiget. Do here what you whant
+    */
+    class WidgetTEST final : public WidgetBase<WidgetTEST>
+    {
+    public:
+
+        explicit WidgetTEST() noexcept;
+        WidgetTEST(const WidgetTEST&) noexcept;
+        WidgetTEST(WidgetTEST&&) noexcept;
+        ~WidgetTEST();
+
+        WidgetTEST& setParam(const std::string& value);
+        WidgetTEST& setParam(const color::ColorRGBAF& value);
+        WidgetTEST& setParam(f32 value);
+
+        TypePtr getType() const final;
+
+        struct StateTEST : StateBase
+        {
+            std::string         _stringParam;
+            color::ColorRGBAF   _colorParam;
+            f32                 _valueParam;
+        };
+
+    private:
+
+        using WidgetType = WidgetTEST;
+        using StateType = StateTEST;
+
+        bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        Widget* copy() const final;
+    };
+
+    inline WidgetTEST& WidgetTEST::setParam(const std::string& value)
+    {
+        Widget::cast_data<StateType>(m_data)._stringParam = value;
+        return *this;
+    }
+
+    inline WidgetTEST& WidgetTEST::setParam(const color::ColorRGBAF& value)
+    {
+        Widget::cast_data<StateType>(m_data)._colorParam = value;
+        Widget::cast_data<StateType>(m_data)._stateMask |= Widget::State::StateMask::Color;
+        return *this;
+    }
+
+    inline WidgetTEST& WidgetTEST::setParam(f32 value)
+    {
+        Widget::cast_data<StateType>(m_data)._valueParam = value;
+        return *this;
+    }
+
+    inline TypePtr WidgetTEST::getType() const
+    {
+        return typeOf<WidgetType>();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace ui
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<ui::WidgetTEST>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace v3d

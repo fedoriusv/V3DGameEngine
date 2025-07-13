@@ -80,7 +80,7 @@ namespace ui
     {
     public:
 
-        explicit WidgetButton(const std::string& text, const math::Dimension2D& size = {0, 0}) noexcept;
+        explicit WidgetButton(const std::string& text) noexcept;
         WidgetButton(const WidgetButton&) noexcept;
         WidgetButton(WidgetButton&&) noexcept;
         ~WidgetButton();
@@ -163,6 +163,7 @@ namespace ui
     inline WidgetButton& WidgetButton::setSize(const math::Dimension2D& size)
     {
         Widget::cast_data<StateType>(m_data)._size = size;
+        Widget::cast_data<StateType>(m_data)._stateMask |= Widget::State::StateMask::DefindedSize;
         return *this;
     }
 
@@ -239,6 +240,7 @@ namespace ui
     inline WidgetImage& WidgetImage::setSize(const math::Dimension2D& size)
     {
         Widget::cast_data<StateType>(m_data)._size = size;
+        Widget::cast_data<StateType>(m_data)._stateMask |= Widget::State::StateMask::DefindedSize;
         return *this;
     }
 
@@ -296,6 +298,7 @@ namespace ui
         using StateType = StateCheckBox;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 
@@ -334,31 +337,34 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //TODO
-    class WidgetInputSlider final : public WidgetBase<WidgetInputSlider>
+    /**
+    * @brief WidgetSeparator class
+    */
+    class WidgetSeparator final : public WidgetBase<WidgetSeparator>
     {
     public:
 
-        explicit WidgetInputSlider() noexcept;
-        WidgetInputSlider(const WidgetInputSlider&) noexcept;
-        ~WidgetInputSlider();
+        explicit WidgetSeparator() noexcept;
+        WidgetSeparator(const WidgetSeparator&) noexcept;
+        ~WidgetSeparator();
 
         TypePtr getType() const final;
 
-        struct StateInputSlider : StateBase
+        struct StateSeparator : StateBase
         {
         };
 
     private:
 
-        using WidgetType = WidgetInputSlider;
-        using StateType = StateInputSlider;
+        using WidgetType = WidgetSeparator;
+        using StateType = StateSeparator;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 
-    inline TypePtr WidgetInputSlider::getType() const
+    inline TypePtr WidgetSeparator::getType() const
     {
         return typeOf<WidgetType>();
     }
@@ -410,7 +416,7 @@ namespace ui
     };
     
     template<>
-    struct TypeOf<ui::WidgetInputSlider>
+    struct TypeOf<ui::WidgetSeparator>
     {
         static TypePtr get()
         {

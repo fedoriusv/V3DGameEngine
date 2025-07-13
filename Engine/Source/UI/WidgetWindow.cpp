@@ -13,7 +13,7 @@ WidgetWindow::WidgetWindow(const std::string& title, WindowFlags flags) noexcept
     setTitle(title);
 
     Widget::cast_data<StateType>(m_data)._createFlags = flags;
-    Widget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Widget::State::StateMask::FirstUpdate;
+    Widget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Widget::State::StateMask::MainLayout | Widget::State::StateMask::FirstUpdateState;
 }
 
 WidgetWindow::WidgetWindow(const std::string& title, const math::Dimension2D& size, const math::Point2D& pos, WindowFlags flags) noexcept
@@ -24,7 +24,7 @@ WidgetWindow::WidgetWindow(const std::string& title, const math::Dimension2D& si
     setPosition(pos);
 
     Widget::cast_data<StateType>(m_data)._createFlags = flags;
-    Widget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Widget::State::StateMask::FirstUpdate;
+    Widget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Widget::State::StateMask::MainLayout | Widget::State::StateMask::FirstUpdateState;
 }
 
 WidgetWindow::WidgetWindow(const WidgetWindow& other) noexcept

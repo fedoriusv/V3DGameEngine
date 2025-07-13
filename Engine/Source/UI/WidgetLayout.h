@@ -14,7 +14,7 @@ namespace ui
     class WidgetWindow;
     class WidgetMenuBar;
     class WidgetMenu;
-    class WidgetTabBar;
+    class WidgetTreeNode;
 
     class WidgetLayout;
     class WidgetHorizontalLayout;
@@ -35,6 +35,7 @@ namespace ui
         {
             Border = 1 << 0,
             Fill = 1 << 1,
+            Test = 1 << 2,
         };
         typedef u32 LayoutFlags;
 
@@ -94,7 +95,6 @@ namespace ui
 
             math::Rect   _cachedLayoutRect;
             math::float2 _cachedLayoutOffest;
-            math::float2 _cachedContentSize;
         };
 
     protected:
@@ -147,6 +147,7 @@ namespace ui
     inline TWidgetLayout& WidgetLayoutBase<TWidgetLayout>::setSize(const math::Dimension2D& size)
     {
         Widget::cast_data<StateType>(WidgetBase<TWidgetLayout>::m_data)._size = size;
+        Widget::cast_data<StateType>(WidgetBase<TWidgetLayout>::m_data)._stateMask |= Widget::State::StateMask::DefindedSize;
         return *static_cast<TWidgetLayout*>(this);
     }
 
@@ -269,9 +270,10 @@ namespace ui
         friend WidgetWindow;
         friend WidgetMenuBar;
         friend WidgetMenu;
-        friend WidgetTabBar;
+        friend WidgetTreeNode;
 
         Widget* copy() const override;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -60,11 +60,10 @@ Widget* WidgetText::copy() const
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WidgetButton::WidgetButton(const std::string& text, const math::Dimension2D& size) noexcept
+WidgetButton::WidgetButton(const std::string& text) noexcept
     : WidgetBase<WidgetButton>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     setText(text);
-    setSize(size);
 }
 
 WidgetButton::WidgetButton(const WidgetButton& other) noexcept
@@ -210,6 +209,12 @@ bool WidgetCheckBox::update(WidgetHandler* handler, Widget* parent, Widget* layo
     return false;
 }
 
+math::float2 WidgetCheckBox::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+{
+    m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_CheckBoxSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
+    return m_data->_itemRect.getSize();
+}
+
 Widget* WidgetCheckBox::copy() const
 {
     return V3D_NEW(WidgetCheckBox, memory::MemoryLabel::MemoryUI)(*this);
@@ -217,20 +222,20 @@ Widget* WidgetCheckBox::copy() const
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WidgetInputSlider::WidgetInputSlider() noexcept
-    : WidgetBase<WidgetInputSlider>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
+WidgetSeparator::WidgetSeparator() noexcept
+    : WidgetBase<WidgetSeparator>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
 }
 
-WidgetInputSlider::WidgetInputSlider(const WidgetInputSlider& other) noexcept
-    : WidgetBase<WidgetInputSlider>(other)
+WidgetSeparator::WidgetSeparator(const WidgetSeparator& other) noexcept
+    : WidgetBase<WidgetSeparator>(other)
 {
     StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)();
     *state = *static_cast<StateType*>(other.m_data);
     m_data = state;
 }
 
-WidgetInputSlider::~WidgetInputSlider()
+WidgetSeparator::~WidgetSeparator()
 {
     if (m_data)
     {
@@ -239,19 +244,24 @@ WidgetInputSlider::~WidgetInputSlider()
     }
 }
 
-bool WidgetInputSlider::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
+bool WidgetSeparator::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
 {
     if (Widget::update(handler, parent, layout, dt))
     {
-        return handler->getWidgetDrawer()->draw_InputSlider(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data);
+        return handler->getWidgetDrawer()->draw_Separator(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data);
     }
 
     return false;
 }
 
-Widget* WidgetInputSlider::copy() const
+math::float2 WidgetSeparator::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
 {
-    return V3D_NEW(WidgetInputSlider, memory::MemoryLabel::MemoryUI)(*this);
+    return math::float2();
+}
+
+Widget* WidgetSeparator::copy() const
+{
+    return V3D_NEW(WidgetSeparator, memory::MemoryLabel::MemoryUI)(*this);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

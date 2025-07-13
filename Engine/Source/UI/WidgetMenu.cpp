@@ -13,6 +13,7 @@ WidgetMenuBar::WidgetMenuBar(MenuFlags flags) noexcept
     : WidgetBase<WidgetMenuBar>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     Widget::cast_data<StateType>(m_data)._flags = flags;
+    Widget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Widget::State::StateMask::MainLayout;
 }
 
 WidgetMenuBar::WidgetMenuBar(const WidgetMenuBar& other) noexcept
@@ -58,6 +59,7 @@ Widget* WidgetMenuBar::copy() const
 WidgetMenu::WidgetMenu(const std::string& text) noexcept
     : WidgetBase<WidgetMenu>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
+    Widget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Widget::State::StateMask::MainLayout;
     setText(text);
 }
 

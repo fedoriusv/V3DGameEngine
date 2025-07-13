@@ -7,6 +7,8 @@ namespace v3d
 namespace ui
 {
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 WidgetInputText::WidgetInputText(const std::string& text) noexcept
     : WidgetInputFieldBase(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
@@ -97,8 +99,8 @@ bool WidgetInputInt::update(WidgetHandler* handler, Widget* parent, Widget* layo
 {
     if (Widget::update(handler, parent, layout, dt))
     {
-        u32 size = Widget::cast_data<StateType>(m_data)._value.size();
-        return handler->getWidgetDrawer()->draw_InputInt(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, size);
+        ASSERT(Widget::cast_data<StateType>(m_data)._value.size() == 1, "must be 1");
+        return handler->getWidgetDrawer()->draw_InputValue(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, false, 1);
     }
 
     return true;
@@ -146,7 +148,7 @@ bool WidgetInputFloat::update(WidgetHandler* handler, Widget* parent, Widget* la
     if (Widget::update(handler, parent, layout, dt))
     {
         u32 size = Widget::cast_data<StateType>(m_data)._value.size();
-        return handler->getWidgetDrawer()->draw_InputFloat(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, size);
+        return handler->getWidgetDrawer()->draw_InputValue(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, false, size);
     }
 
     return true;
@@ -193,8 +195,8 @@ bool WidgetInputFloat3::update(WidgetHandler* handler, Widget* parent, Widget* l
 {
     if (Widget::update(handler, parent, layout, dt))
     {
-        auto value = Widget::cast_data<StateType>(m_data)._value;
-        return handler->getWidgetDrawer()->draw_InputFloat(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, value.size());
+        u32 size = Widget::cast_data<StateType>(m_data)._value.size();
+        return handler->getWidgetDrawer()->draw_InputValue(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, true, size);
     }
 
     return true;

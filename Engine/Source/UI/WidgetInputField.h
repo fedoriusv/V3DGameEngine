@@ -24,12 +24,19 @@ namespace ui
 
     public:
 
+        TWidget& setTextColor(const color::ColorRGBAF& color);
+        TWidget& setBorderColor(const color::ColorRGBAF& color);
+        TWidget& setBackgroundColor(const color::ColorRGBAF& color);
+
         template<typename... Args> requires (sizeof...(Args) == SIZE) && (std::convertible_to<Args, FieldType> && ...)
-        void setValue(Args&&... args);
+        TWidget& setValue(Args&&... args);
 
         struct StateInputFieldBase : WidgetBase<TWidget>::StateBase
         {
             std::array<FieldType, SIZE> _value = {};
+            color::ColorRGBAF           _textColor;
+            color::ColorRGBAF           _borderColor;
+            color::ColorRGBAF           _backgroundColor;
         };
 
     private:
@@ -57,10 +64,35 @@ namespace ui
     }
 
     template<class TWidget, typename FieldType, u32 SIZE>
+    inline TWidget& WidgetInputFieldBase<TWidget, FieldType, SIZE>::setTextColor(const color::ColorRGBAF& color)
+    {
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._textColor = color;
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._stateMask |= Widget::State::StateMask::Color;
+        return *static_cast<TWidget*>(this);
+    }
+
+    template<class TWidget, typename FieldType, u32 SIZE>
+    inline TWidget& WidgetInputFieldBase<TWidget, FieldType, SIZE>::setBorderColor(const color::ColorRGBAF& color)
+    {
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._borderColor = color;
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._stateMask |= Widget::State::StateMask::BorderColor;
+        return *static_cast<TWidget*>(this);
+    }
+
+    template<class TWidget, typename FieldType, u32 SIZE>
+    inline TWidget& WidgetInputFieldBase<TWidget, FieldType, SIZE>::setBackgroundColor(const color::ColorRGBAF& color)
+    {
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._backgroundColor = color;
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._stateMask |= Widget::State::StateMask::BackgroundColor;
+        return *static_cast<TWidget*>(this);
+    }
+
+    template<class TWidget, typename FieldType, u32 SIZE>
     template<typename ...Args> requires (sizeof...(Args) == SIZE) && (std::convertible_to<Args, FieldType> && ...)
-    inline void WidgetInputFieldBase<TWidget, FieldType, SIZE>::setValue(Args&& ...args)
+    inline TWidget& WidgetInputFieldBase<TWidget, FieldType, SIZE>::setValue(Args&& ...args)
     {
         Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._value = { std::forward<Args>(args)... };
+        return *static_cast<TWidget*>(this);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

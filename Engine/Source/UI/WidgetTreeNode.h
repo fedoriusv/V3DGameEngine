@@ -17,7 +17,14 @@ namespace ui
     {
     public:
 
-        explicit WidgetTreeNode(const std::string& text) noexcept;
+        enum TreeNodeFlag
+        {
+            Framed = 1 << 0,
+            Open = 1 << 1,
+        };
+        typedef u64 TreeNodeFlags;
+
+        explicit WidgetTreeNode(const std::string& text, TreeNodeFlags flags = 0) noexcept;
         WidgetTreeNode(const WidgetTreeNode&) noexcept;
         WidgetTreeNode(WidgetTreeNode&&) noexcept;
         ~WidgetTreeNode();
@@ -39,7 +46,7 @@ namespace ui
         {
             std::string         _text;
             WidgetLayout        _layout;
-            bool                _collapsingHeader = true;
+            TreeNodeFlags       _createFlags = 0;
         };
 
     private:

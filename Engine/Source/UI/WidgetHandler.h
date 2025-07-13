@@ -69,7 +69,7 @@ namespace ui
         TWidget& createWidget(TArgs&&... args)
         {
             TWidget* obj = V3D_NEW(TWidget, memory::MemoryLabel::MemoryUI)(std::forward<TArgs>(args)...);
-            m_Widgets.push_back(obj);
+            m_widgets.push_back(obj);
             return *obj;
         }
 
@@ -93,7 +93,7 @@ namespace ui
 
         renderer::Device* const  m_device;
         WidgetDrawer*            m_uiDrawer;
-        std::vector<Widget*>     m_Widgets;
+        std::vector<Widget*>     m_widgets;
     };
 
     inline WidgetDrawer* WidgetHandler::getWidgetDrawer() const
@@ -112,53 +112,58 @@ namespace ui
 
         //Menu
         virtual bool draw_MenuBar(Widget* widget, Widget::State* state, f32 dt) = 0;
-        virtual bool draw_Menu(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, f32 dt) = 0;
-        virtual bool draw_MenuItem(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
+        virtual bool draw_Menu(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, f32 dt) = 0;
+        virtual bool draw_MenuItem(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
 
         //TabBar
-        virtual bool draw_TabBar(Widget* widget, Widget::State* state, f32 dt) = 0;
-        virtual bool draw_TabItem(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
+        virtual bool draw_TabBar(Widget* widget, Widget::State* baseWidget, f32 dt) = 0;
+        virtual bool draw_TabItem(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
 
         //Windows
         virtual bool draw_Window(Widget* widget, Widget::State* state, f32 dt) = 0;
 
         //TreeNode
-        virtual bool draw_TreeNode(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, f32 dt) = 0;
+        virtual bool draw_TreeNode(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, f32 dt) = 0;
 
         //Widgets
-        virtual bool draw_Text(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_Button(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_Image(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_CheckBox(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_RadioButtonGroup(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_ComboBox(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_ListBox(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_InputText(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_InputInt(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, u32 array) = 0;
-        virtual bool draw_InputFloat(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, u32 array) = 0;
+        virtual bool draw_Text(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_Button(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_Image(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_CheckBox(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_RadioButtonGroup(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_ComboBox(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_ListBox(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_InputText(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_InputValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber, u32 array) = 0;
+        virtual bool draw_InputSliderValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) = 0;
+        virtual bool draw_InputDragValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) = 0;
 
-        virtual bool draw_InputSlider(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual bool draw_Table(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
+        virtual bool draw_Table(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual bool draw_TEST(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
 
         //Layout
-        virtual void draw_BeginLayoutState(Widget* layout, Widget* base, Widget::State* state) = 0;
-        virtual void draw_EndLayoutState(Widget* layout, Widget* base, Widget::State* state) = 0;
+        virtual void draw_BeginLayoutState(Widget* layout, Widget* baseWidget, Widget::State* baseLayoutState, Widget::State* state, const math::float2& size) = 0;
+        virtual void draw_EndLayoutState(Widget* layout, Widget* baseWidget, Widget::State* baseLayoutState, Widget::State* state, const math::float2& size) = 0;
+        virtual bool draw_Separator(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
 
-        virtual void draw_Gizmo(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
-        virtual void draw_ViewManipulator(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) = 0;
+        virtual void draw_Gizmo(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual void draw_ViewManipulator(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
 
+        virtual math::float2 get_WindowPadding() const = 0;
         virtual math::float2 get_LayoutPadding() const = 0;
         virtual math::float2 get_ItemSpacing() const = 0;
 
-        virtual math::float2 calculate_TextSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_ButtonSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_ImageSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_CheckBoxSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_RadioButtonGroupSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_ComboBoxSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_ListBoxSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_TreeNodeSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
-        virtual math::float2 calculate_TableSize(Widget* widget, Widget::State* layout, Widget::State* state) = 0;
+        virtual math::float2 calculate_TextSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_ButtonSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_ImageSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_CheckBoxSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_RadioButtonGroupSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_ComboBoxSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_ListBoxSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_InputDragValueSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) = 0;
+
+        virtual math::float2 calculate_TreeNodeSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
+        virtual math::float2 calculate_TableSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
     };
 
 } // namespace ui

@@ -59,29 +59,37 @@ TypePtr WidgetLayout::getType() const
 
 bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
 {
-    WidgetDrawer* drawer = handler->getWidgetDrawer();
+    ///
+    if (cast_data<StateType>(m_data)._flags & WidgetLayout::LayoutFlag::Test)
+    {
+        int a = 0;
+    }
+    ///
 
     math::float2 layoutSize = { 0.0f , 0.0f };
     u32 countWidgets = 0;
     f32 horizontLineHeight = 0;
-    for (auto wiget = m_wigets.begin(); wiget != m_wigets.end(); ++wiget)
+    for (auto wigetIter = m_wigets.begin(); wigetIter != m_wigets.end(); ++wigetIter)
     {
-        if ((*wiget)->isVisible())
+        Widget* widget = *wigetIter;
+        if (widget->isVisible())
         {
+            math::float2 size = widget->calculateSize(handler, parent, this);
             if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
             {
-                math::float2 size = (*wiget)->calculateSize(handler, parent, this);
                 layoutSize._x += size._x;
                 layoutSize._y = std::max<f32>(size._y, layoutSize._y);
             }
             else
             {
-                layoutSize._y += (*wiget)->calculateSize(handler, parent, this)._y;
+                //layoutSize._x = std::max(layoutSize._x, size._x);
+                layoutSize._y += size._y;
             }
             ++countWidgets;
         }
     }
 
+    WidgetDrawer* drawer = handler->getWidgetDrawer();
     if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
     {
         layoutSize._x = 0;
@@ -89,13 +97,12 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
     }
     else
     {
+        layoutSize._y += drawer->get_WindowPadding()._y * 2.0f;
         layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
         layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWidgets - 1, 0, countWidgets);
     }
 
-    cast_data<StateType>(m_data)._cachedContentSize = layoutSize;
-
-    drawer->draw_BeginLayoutState(this, parent, m_data);
+    drawer->draw_BeginLayoutState(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, layoutSize);
 
     switch (getVAlignment())
     {
@@ -126,7 +133,7 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
     }
     }
 
-    drawer->draw_EndLayoutState(this, parent, m_data);
+    drawer->draw_EndLayoutState(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, layoutSize);
 
     return true;
 }
@@ -134,6 +141,45 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
 Widget* WidgetLayout::copy() const
 {
     return V3D_NEW(WidgetLayout, memory::MemoryLabel::MemoryUI)(*this);
+}
+
+math::float2 WidgetLayout::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+{
+    math::float2 layoutSize = { 0.0f , 0.0f };
+    u32 countWidgets = 0;
+    for (auto wigetIter = m_wigets.begin(); wigetIter != m_wigets.end(); ++wigetIter)
+    {
+        Widget* widget = *wigetIter;
+        if (widget->isVisible())
+        {
+            math::float2 size = widget->calculateSize(handler, parent, this);
+            if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
+            {
+                layoutSize._x += size._x;
+                layoutSize._y = std::max<f32>(size._y, layoutSize._y);
+            }
+            else
+            {
+                //layoutSize._x = std::max(layoutSize._x, size._x);
+                layoutSize._y += size._y;
+            }
+            ++countWidgets;
+        }
+    }
+
+    WidgetDrawer* drawer = handler->getWidgetDrawer();
+    if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
+    {
+        layoutSize._x = 0;
+        layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
+    }
+    else
+    {
+        layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
+        layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWidgets, 0, countWidgets);
+    }
+
+    return layoutSize;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////

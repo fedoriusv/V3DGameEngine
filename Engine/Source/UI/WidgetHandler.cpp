@@ -20,11 +20,11 @@ WidgetHandler::~WidgetHandler()
 
 void WidgetHandler::update(const platform::Window* window, const v3d::event::InputEventHandler* handler, f32 dt)
 {
-    for (Widget* Widget : m_Widgets)
+    for (Widget* widget : m_widgets)
     {
-        if (Widget->isVisible())
+        if (widget->isVisible())
         {
-            Widget->update(this, nullptr, nullptr, dt);
+            widget->update(this, nullptr, nullptr, dt);
         }
     }
 }

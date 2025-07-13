@@ -5,6 +5,9 @@
 #include "WidgetGroups.h"
 #include "WidgetTable.h"
 #include "WidgetInputField.h"
+#include "WidgetInputSlider.h"
+#include "WidgetInputDrag.h"
+#include "WidgetColorPalette.h"
 
 #include "WidgetLayout.h"
 

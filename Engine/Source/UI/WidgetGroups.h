@@ -124,6 +124,7 @@ namespace ui
         using StateType = StateRadioButtonGroup;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 
@@ -158,6 +159,7 @@ namespace ui
         using StateType = StateComboBox;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 
@@ -192,6 +194,7 @@ namespace ui
         using StateType = StateListBox;
 
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
     };
 

@@ -6,10 +6,12 @@ namespace v3d
 namespace ui
 {
 
-WidgetTreeNode::WidgetTreeNode(const std::string& text) noexcept
+WidgetTreeNode::WidgetTreeNode(const std::string& text, TreeNodeFlags flags) noexcept
     : WidgetBase<WidgetTreeNode>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     setText(text);
+    Widget::cast_data<StateType>(m_data)._createFlags = flags;
+    Widget::cast_data<StateType>(m_data)._layout.m_data->_stateMask |= Widget::State::StateMask::MainLayout;
 }
 
 WidgetTreeNode::WidgetTreeNode(const WidgetTreeNode& other) noexcept
@@ -47,7 +49,25 @@ bool WidgetTreeNode::update(WidgetHandler* handler, Widget* parent, Widget* layo
 
 math::float2 WidgetTreeNode::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
 {
-    m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_TreeNodeSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
+    math::float2 layoutSize = { 0.0f , 0.0f };
+    WidgetLayout& treeNodeLayout = Widget::cast_data<StateType>(m_data)._layout;
+
+    WidgetDrawer* drawer = handler->getWidgetDrawer();
+    if (!(Widget::cast_data<StateTreeNode>(m_data)._stateMask & Widget::State::StateMask::CollapsedState))
+    {
+        layoutSize += treeNodeLayout.calculateSize(handler, parent, this);
+        if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
+        {
+            layoutSize._x += drawer->get_WindowPadding()._x * 2.0f;
+        }
+        else
+        {
+            layoutSize._y += drawer->get_WindowPadding()._y * 2.0f;
+        }
+    }
+    layoutSize += drawer->calculate_TreeNodeSize(this, static_cast<WidgetType*>(layout)->m_data, m_data);
+
+    m_data->_itemRect = { {0, 0}, layoutSize };
     return m_data->_itemRect.getSize();
 }
 
@@ -56,5 +76,5 @@ Widget* WidgetTreeNode::copy() const
     return V3D_NEW(WidgetTreeNode, memory::MemoryLabel::MemoryUI)(*this);
 }
 
-} //namespace ui
-} //namespace v3d
+} // namespace ui
+} // namespace v3d
