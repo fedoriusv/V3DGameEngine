@@ -35,7 +35,7 @@ namespace ui
         {
             Border = 1 << 0,
             Fill = 1 << 1,
-            Test = 1 << 2,
+            Fit = 1 << 2,
         };
         typedef u32 LayoutFlags;
 
@@ -285,7 +285,7 @@ namespace ui
     {
     public:
 
-        WidgetHorizontalLayout() noexcept;
+        explicit WidgetHorizontalLayout(LayoutFlags flags = 0) noexcept;
         WidgetHorizontalLayout(const WidgetHorizontalLayout&) noexcept;
         WidgetHorizontalLayout(WidgetHorizontalLayout&&) noexcept;
         ~WidgetHorizontalLayout();

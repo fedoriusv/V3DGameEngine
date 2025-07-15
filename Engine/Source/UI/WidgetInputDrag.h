@@ -29,6 +29,8 @@ namespace ui
         TWidget& setBorderColor(const color::ColorRGBAF& color);
         TWidget& setBackgroundColor(const color::ColorRGBAF& color);
 
+        TWidget& setSize(const math::Dimension2D& size);
+
         template<typename... Args> requires (sizeof...(Args) == SIZE) && (std::convertible_to<Args, FieldType> && ...)
         TWidget& setValue(Args&&... args);
 
@@ -38,6 +40,7 @@ namespace ui
             color::ColorRGBAF           _textColor;
             color::ColorRGBAF           _borderColor;
             color::ColorRGBAF           _backgroundColor;
+            math::Dimension2D           _size;
         };
 
     private:
@@ -85,6 +88,14 @@ namespace ui
     {
         Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._backgroundColor = color;
         Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._stateMask |= Widget::State::StateMask::BackgroundColor;
+        return *static_cast<TWidget*>(this);
+    }
+
+    template<class TWidget, typename FieldType, u32 SIZE>
+    inline TWidget& WidgetInputDragBase<TWidget, FieldType, SIZE>::setSize(const math::Dimension2D& size)
+    {
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._size = size;
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._stateMask |= Widget::State::StateMask::DefindedSize;
         return *static_cast<TWidget*>(this);
     }
 

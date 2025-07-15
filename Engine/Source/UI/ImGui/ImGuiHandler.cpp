@@ -436,10 +436,16 @@ void ImGuiWidgetHandler::handleMouseCallback(const event::InputEventHandler* han
     ASSERT(m_ImGuiContext, "must be valid");
     ASSERT(handler, "must be valid");
 
-    ImGuiIO& imguiIO = ImGui::GetIO();
+    //ImGuiIO& imguiIO = ImGui::GetIO();
     //imguiIO.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
-    //imguiIO.AddMouseButtonEvent(0, handler->isLeftMousePressed());
-    //imguiIO.AddMouseButtonEvent(1, handler->isRightMousePressed());
+    //if (event->_event == event::MouseInputEvent::MousePressDown || event->_event == event::MouseInputEvent::MouseDoubleClick)
+    //{
+    //    imguiIO.AddMouseButtonEvent(0, true);
+    //}
+    //else if (event->_event == event::MouseInputEvent::MousePressUp)
+    //{
+    //    imguiIO.AddMouseButtonEvent(0, false);
+    //}
     //imguiIO.AddMouseWheelEvent(0.0f, handler->getMouseWheel());
 }
 

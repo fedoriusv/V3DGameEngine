@@ -192,6 +192,10 @@ bool ImGuiWidgetDrawer::draw_Text(Widget* wiget, Widget* baseWidget, Widget::Sta
     //setupVerticalAligment(layoutCtx, txtCtx->_itemRect.getHeight());
 
     ImGui::PushID(txtCtx->_uid);
+    if (layoutCtx->_stateMask & Widget::State::StateMask::DefindedSize)
+    {
+        ImGui::SetNextItemWidth(txtCtx->_itemRect.getWidth());
+    }
     ImGui::Text(txtCtx->_text.c_str());
     ImGui::PopID();
 
@@ -844,12 +848,25 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
 
         f32 value = idCtx->_value[0];
         ImGui::PushID(idCtx->_uid);
+        if (idCtx->_stateMask & Widget::State::StateMask::DefindedSize)
+        {
+            ImGui::SetNextItemWidth(static_cast<f32>(idCtx->_size._width));
+        }
         active = ImGui::DragFloat("", &value, 1.f, 0.f, 0.f, "%.2f");
         ImGui::PopID();
 
         if (pushCount > 0)
         {
             ImGui::PopStyleColor(pushCount);
+        }
+
+        if (active && ImGui::IsItemEdited())
+        {
+            if (idCtx->_onChangedValueEvent)
+            {
+                std::invoke(idCtx->_onChangedValueEvent, widget, value);
+            }
+            idCtx->_value[0] = value;
         }
     }
     else
@@ -887,6 +904,15 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
         {
             ImGui::PopStyleColor(pushCount);
         }
+
+        if (active && ImGui::IsItemEdited())
+        {
+            if (idCtx->_onChangedValueEvent)
+            {
+                std::invoke(idCtx->_onChangedValueEvent, widget, value);
+            }
+            idCtx->_value[0] = value;
+        }
     }
 
     return active;
@@ -902,23 +928,37 @@ math::float2 ImGuiWidgetDrawer::calculate_InputDragValueSize(Widget* widget, Wid
         WidgetInputDragFloat::StateInputDragFloat* idCtx = static_cast<WidgetInputDragFloat::StateInputDragFloat*>(state);
         WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layoutBaseState);
 
-        ASSERT(layoutCtx->_fontSize < m_widgetHandler->m_fonts.size(), "range out");
-        ImGui::PushFont(m_widgetHandler->m_fonts[layoutCtx->_fontSize]);
-        alignmentSize = ImGui::CalcTextSize(std::format("{:.2f}", idCtx->_value[0]).c_str());
-        ImGui::PopFont();
+        if (idCtx->_stateMask & Widget::State::StateMask::DefindedSize)
+        {
+            alignmentSize = { static_cast<f32>(idCtx->_size._width), static_cast<f32>(idCtx->_size._height) };
+        }
+        else
+        {
+            ASSERT(layoutCtx->_fontSize < m_widgetHandler->m_fonts.size(), "range out");
+            ImGui::PushFont(m_widgetHandler->m_fonts[layoutCtx->_fontSize]);
+            alignmentSize = ImGui::CalcTextSize(std::format("{:.2f}", idCtx->_value[0]).c_str());
+            ImGui::PopFont();
+        }
     }
     else
     {
         WidgetInputDragInt::StateInputDragInt* idCtx = static_cast<WidgetInputDragInt::StateInputDragInt*>(state);
         WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layoutBaseState);
 
-        ASSERT(layoutCtx->_fontSize < m_widgetHandler->m_fonts.size(), "range out");
-        ImGui::PushFont(m_widgetHandler->m_fonts[layoutCtx->_fontSize]);
-        alignmentSize = ImGui::CalcTextSize(std::to_string(idCtx->_value[0]).c_str());
-        ImGui::PopFont();
+        if (idCtx->_stateMask & Widget::State::StateMask::DefindedSize)
+        {
+            alignmentSize = { static_cast<f32>(idCtx->_size._width), static_cast<f32>(idCtx->_size._height) };
+        }
+        else
+        {
+            ASSERT(layoutCtx->_fontSize < m_widgetHandler->m_fonts.size(), "range out");
+            ImGui::PushFont(m_widgetHandler->m_fonts[layoutCtx->_fontSize]);
+            alignmentSize = ImGui::CalcTextSize(std::to_string(idCtx->_value[0]).c_str());
+            ImGui::PopFont();
+        }
     }
 
-    return{ alignmentSize.x, alignmentSize.y };
+    return { alignmentSize.x, alignmentSize.y };
 }
 
 bool ImGuiWidgetDrawer::draw_TreeNode(Widget* widget, Widget* base, Widget::State* layoutBaseState, Widget::State* state, f32 dt)
@@ -1034,46 +1074,6 @@ void RenderFolderTree()
     RenderFolderTreeRecursive(folder);
 }
 
-//bool ImGuiWidgetDrawer::draw_TreeNodeTEST(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, f32 dt)
-//{
-//    static float leftPanelWidth = 200.0f;
-//    static float splitterThickness = 4.0f;
-//
-//    ImVec2 contentSize = ImGui::GetContentRegionAvail();
-//
-//    // Left panel
-//    ImGui::BeginChild("LeftPanel", ImVec2(leftPanelWidth, 0), true);
-//    RenderFolderTree();
-//    ImGui::EndChild();
-//
-//    ImGui::SameLine();
-//
-//    //// Splitter
-//    //ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
-//    //ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
-//    //ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
-//    //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-//    //ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-//
-//    //ImGui::InvisibleButton("Splitter", ImVec2(splitterThickness, std::max(1.f, contentSize.y)), ImGuiButtonFlags_MouseButtonLeft);
-//    //if (ImGui::IsItemActive()) {
-//    //    leftPanelWidth += ImGui::GetIO().MouseDelta.x;
-//    //    leftPanelWidth = ImClamp(leftPanelWidth, 100.0f, contentSize.x - 100.0f); // Optional clamping
-//    //}
-//
-//    //ImGui::PopStyleVar(2);
-//    //ImGui::PopStyleColor(3);
-//
-//    ImGui::SameLine();
-//
-//    // Right panel
-//    ImGui::BeginChild("RightPanel", ImVec2(0, 0), true);
-//    RenderAssetList();
-//    ImGui::EndChild();
-//
-//    return false;
-//}
-
 math::float2 ImGuiWidgetDrawer::calculate_TreeNodeSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
@@ -1100,64 +1100,42 @@ bool ImGuiWidgetDrawer::draw_TEST(Widget* widget, Widget* baseWidget, Widget::St
     WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layoutBaseState);
     setupHorizontalAligment(layoutCtx, 0.f, ctx->_itemRect.getWidth());
 
-    f32 v0 = ImGui::GetTextLineHeight();
-    f32 v1 = ImGui::GetTextLineHeightWithSpacing();
-    f32 v2 = ImGui::GetFrameHeight();
-    f32 v3 = ImGui::GetFrameHeightWithSpacing();
-    
-
-    //{
-    //    ImGui::BeginChild("loc", ImVec2(0, 0), ImGuiChildFlags_Borders);
-    //    ImGui::Text("Location");
-    //    //ImGui::SameLine();
-    //    f32 value[3] = {};
-    //    ImGui::DragFloat("0", &value[0], 1.f, 0.f, 0.f, "%.2f");
-    //    //ImGui::SameLine();
-    //    ImGui::DragFloat("1", &value[1], 1.f, 0.f, 0.f, "%.2f");
-    //    //ImGui::SameLine();
-    //    ImGui::DragFloat("2", &value[2], 1.f, 0.f, 0.f, "%.2f");
-    //    //ImGui::SameLine();
-    //    ImGui::EndChild();
-    //}
-    //ImGui::NewLine();
-    //{
-    //    ImGui::BeginChild("rot", ImVec2(0, 0), ImGuiChildFlags_Borders);
-    //    ImGui::Text("Rotation");
-    //    //ImGui::SameLine();
-    //    f32 value[3] = {};
-    //    ImGui::DragFloat("3", &value[0], 1.f, 0.f, 0.f, "%.2f");
-    //    //ImGui::SameLine();
-    //    ImGui::DragFloat("4", &value[1], 1.f, 0.f, 0.f, "%.2f");
-    //    //ImGui::SameLine();
-    //    ImGui::DragFloat("5", &value[2], 1.f, 0.f, 0.f, "%.2f");
-    //    //ImGui::SameLine();
-    //    ImGui::EndChild();
-    //}
-
-    // Pass 1: Measure
-    ImVec2 start = ImGui::GetCursorScreenPos();
-    ImGui::BeginChild("loc_temp", ImVec2(0, 0), ImGuiChildFlags_Borders);
-    ImGui::Text("Location"); //ImGui::SameLine();
-    f32 value[3] = {};
-    ImGui::DragFloat("0", &value[0], 1.f, 0.f, 0.f, "%.2f");//ImGui::SameLine();
-    ImGui::DragFloat("1", &value[1], 1.f, 0.f, 0.f, "%.2f"); //ImGui::SameLine();
-    ImGui::DragFloat("2", &value[2], 1.f, 0.f, 0.f, "%.2f");
-    ImGui::EndChild();
-    ImVec2 end = ImGui::GetCursorScreenPos();
-
-    // Now we know height
-    float height = end.y - start.y;
-
-    // Pass 2: Final render
-    ImGui::SetCursorScreenPos(end);
-    ImGui::BeginChild("loc", ImVec2(0, height), ImGuiChildFlags_Borders);
-    ImGui::Text("Location"); //ImGui::SameLine();
-    ImGui::DragFloat("0", &value[0], 1.f, 0.f, 0.f, "%.2f"); //ImGui::SameLine();
-    ImGui::DragFloat("1", &value[1], 1.f, 0.f, 0.f, "%.2f"); //ImGui::SameLine();
-    ImGui::DragFloat("2", &value[2], 1.f, 0.f, 0.f, "%.2f");
-    ImGui::EndChild();
-
-    return false;
+        static float leftPanelWidth = 200.0f;
+       static float splitterThickness = 4.0f;
+   
+       ImVec2 contentSize = ImGui::GetContentRegionAvail();
+   
+       // Left panel
+       ImGui::BeginChild("LeftPanel", ImVec2(leftPanelWidth, 0), true);
+       RenderFolderTree();
+       ImGui::EndChild();
+   
+       ImGui::SameLine();
+   
+       //// Splitter
+       //ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
+       //ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+       //ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+       //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+       //ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+   
+       //ImGui::InvisibleButton("Splitter", ImVec2(splitterThickness, std::max(1.f, contentSize.y)), ImGuiButtonFlags_MouseButtonLeft);
+       //if (ImGui::IsItemActive()) {
+       //    leftPanelWidth += ImGui::GetIO().MouseDelta.x;
+       //    leftPanelWidth = ImClamp(leftPanelWidth, 100.0f, contentSize.x - 100.0f); // Optional clamping
+       //}
+   
+       //ImGui::PopStyleVar(2);
+       //ImGui::PopStyleColor(3);
+   
+       ImGui::SameLine();
+   
+       // Right panel
+       ImGui::BeginChild("RightPanel", ImVec2(0, 0), true);
+       RenderAssetList();
+       ImGui::EndChild();
+   
+       return false;
 }
 
 bool ImGuiWidgetDrawer::draw_MenuBar(Widget* menubar, Widget::State* state, f32 dt)

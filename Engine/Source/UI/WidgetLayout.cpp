@@ -59,13 +59,6 @@ TypePtr WidgetLayout::getType() const
 
 bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt)
 {
-    ///
-    if (cast_data<StateType>(m_data)._flags & WidgetLayout::LayoutFlag::Test)
-    {
-        int a = 0;
-    }
-    ///
-
     math::float2 layoutSize = { 0.0f , 0.0f };
     u32 countWidgets = 0;
     f32 horizontLineHeight = 0;
@@ -184,8 +177,8 @@ math::float2 WidgetLayout::calculateSize(WidgetHandler* handler, Widget* parent,
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WidgetHorizontalLayout::WidgetHorizontalLayout() noexcept
-    : WidgetLayout()
+WidgetHorizontalLayout::WidgetHorizontalLayout(LayoutFlags flags) noexcept
+    : WidgetLayout(flags)
 {
     Widget::cast_data<StateType>(m_data)._stateMask |= State::StateMask::HorizontalLine;
 }
