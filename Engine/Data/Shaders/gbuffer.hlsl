@@ -43,9 +43,6 @@ PS_GBUFFER_STRUCT gbuffer_masked_ps(PS_GBUFFER_STANDARD_INPUT Input)
     float2 pos = Input.Position.xy + CB_Viewport.cameraJitter * 10000;
     uint value = ((uint) (pos.x) + 2u * (uint) (pos.y)) % 5u;
     float2 screenSpaceUV = Input.Position.xy * (1.0 / CB_Viewport.viewportSize.xy);
-    //float2 screenSpaceUV64 = CB_Viewport.viewportSize.xy / 64;
-    
-    //float noise = textureMask.Load((int)screenSpaceUV64).r;
     float noise = textureMask.SampleLevel(samplerState, screenSpaceUV, 0).r;
     
     float mask = (((float) value + noise * 0.0) * 0.16665) + opacity - 0.5;

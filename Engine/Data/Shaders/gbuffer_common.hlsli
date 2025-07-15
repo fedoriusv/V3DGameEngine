@@ -20,9 +20,9 @@ struct VS_GBUFFER_STANDARD_INPUT
 struct VS_GBUFFER_STANDARD_OUTPUT
 {
     float4                     Position    : SV_POSITION;
-    [[vk::location(0)]] float4 ClipPos     : POSITION;
+    [[vk::location(0)]] float4 ClipPos     : CLIPPOS;
     [[vk::location(1)]] float4 PrevClipPos : PREVPOSITION;
-    [[vk::location(2)]] float3 WorldPos    : POSITION;
+    [[vk::location(2)]] float3 WorldPos    : WORLDPOS;
     [[vk::location(3)]] float3 Normal      : NORMAL;
     [[vk::location(4)]] float3 Tangent     : TANGENT;
     [[vk::location(5)]] float3 Bitangent   : BITANGENT;
