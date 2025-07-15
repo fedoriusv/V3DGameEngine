@@ -274,16 +274,14 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
                 }
             }
 
-            stream::FileStream* file = stream::FileLoader::load(fileStr);
-            ASSERT(file, "nullptr");
-
-            LPCVOID data = file->map();
+            static const c8 nullStr[] = " ";
+            const UINT code = DXC_CP_ACP;
             IDxcBlobEncoding* source = nullptr;
-            UINT code = CP_UTF8;
-            HRESULT result = m_DXUtils->CreateBlobFromPinned(data, file->size(), code, &source);
-
-            file->unmap();
-            stream::FileLoader::close(file);
+            HRESULT result = m_DXUtils->CreateBlobFromPinned(nullStr, ARRAYSIZE(nullStr), code, &source);
+            if (SUCCEEDED(result))
+            {
+                result = m_DXUtils->LoadFile(platform::Platform::utf8ToWide(fileStr.c_str()).c_str(), nullptr, &source);
+            }
 
             if (FAILED(result))
             {
