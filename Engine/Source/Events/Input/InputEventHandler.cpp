@@ -124,6 +124,7 @@ bool InputEventHandler::onEvent(Event* ev)
 
         switch (mouseEvent->_event)
         {
+        case MouseInputEvent::MouseDoubleClick:
         case MouseInputEvent::MousePressDown:
         {
             applyModifiers(mouseEvent);
@@ -138,7 +139,6 @@ bool InputEventHandler::onEvent(Event* ev)
             break;
         }
 
-        case MouseInputEvent::MouseDoubleClick:
         case MouseInputEvent::MouseWheel:
         case MouseInputEvent::MouseMoved:
         {
