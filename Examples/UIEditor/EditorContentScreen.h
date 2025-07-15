@@ -5,7 +5,7 @@
 #include "Events/Input/InputEventHandler.h"
 
 #include "EditorScene.h"
-#include "UI/WidgetGroups.h"
+#include "UI/Widgets.h"
 
 using namespace v3d;
 
@@ -16,6 +16,7 @@ public:
     EditorContentScreen() noexcept;
     ~EditorContentScreen();
 
+    void init(ui::WidgetWindow* widget);
     void build();
     void update(f32 dt);
 
@@ -26,5 +27,9 @@ private:
     bool handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event);
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
+    ui::WidgetWindow* m_window = nullptr;
+
     ui::WidgetListBox* m_list;
+
+    bool m_loaded;
 };

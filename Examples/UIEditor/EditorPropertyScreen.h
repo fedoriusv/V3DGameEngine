@@ -29,9 +29,9 @@ private:
 
     ui::WidgetWindow* m_window = nullptr;
 
-    ui::WidgetInputFloat3* m_propertyPosition = nullptr;
-    ui::WidgetInputFloat3* m_propertyRotation = nullptr;
-    ui::WidgetInputFloat3* m_propertyScale = nullptr;
+    std::array<ui::WidgetInputDragFloat*, 3> m_propertyPosition;
+    std::array<ui::WidgetInputDragFloat*, 3> m_propertyRotation;
+    std::array<ui::WidgetInputDragFloat*, 3> m_propertyScale;
 
     scene::DrawInstanceDataState* m_selectedObject = nullptr;
 };

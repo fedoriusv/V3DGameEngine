@@ -48,7 +48,7 @@ void EditorGizmo::setEnable(bool enable)
     if (m_gizmo)
     {
         m_currentOp = -1;
-        m_gizmo->setActive(enable);
+        m_gizmo->setActive(enable && m_selectedObject != nullptr);
     }
 }
 
@@ -86,7 +86,6 @@ void EditorGizmo::handleNotify(const utils::Reporter<EditorReport>* reporter, co
     {
         m_gizmo->setActive(false);
     }
-
     m_selectedObject = data.instanceObject;
 }
 

@@ -23,6 +23,7 @@
 #include "EditorScene.h"
 #include "EditorContentScreen.h"
 #include "EditorPropertyScreen.h"
+#include "EditorAssetBrowser.h"
 
 using namespace v3d;
 using namespace v3d::platform;
@@ -44,6 +45,7 @@ public:
         , m_EditorGizmo(new EditorGizmo())
         , m_EditorContentScreen(new EditorContentScreen())
         , m_EditorPropertyScreen(new EditorPropertyScreen())
+        , m_EditorAssetBrowser(new EditorAssetBrowser())
     {
         m_Window = Window::createWindow(k_editorResolution, { 200, 200 }, false, true, new InputEventReceiver(), "MainWindow");
         ASSERT(m_Window, "windows is nullptr");
@@ -163,7 +165,7 @@ private:
 
         //UI
         m_UI = ui::WidgetHandler::createWidgetHander<ui::ImGuiWidgetHandler>(m_Device, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWidgetHandler::ImGui_ViewportMode | ui::ImGuiWidgetHandler::ImGui_Gizmo);
-        //m_UI->showDemoUI();
+        m_UI->showDemoUI();
 
         InputEventHandler::bind([this](const MouseInputEvent* event)
             {
@@ -186,27 +188,7 @@ private:
         editor::UI::constructMainMenu(m_UI);
 
         //Scene Editor
-        ui::WidgetWindow& sceneEditor = m_UI->createWidget<ui::WidgetWindow>("Scene Editor", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
-            .addWidget(ui::WidgetText("Mode: "))
-            .addWidget(ui::WidgetRadioButtonGroup()
-                .addElement("select")
-                .addElement("move")
-                .addElement("rotate")
-                .addElement("scale")
-                .setActiveIndex(0)
-                .setOnChangedIndexEvent([this](ui::Widget* w, s32 index) -> void
-                    {
-                        if (index > 0)
-                        {
-                            m_EditorGizmo->setEnable(true);
-                            m_EditorGizmo->setOperation(index - 1);
-                        }
-                        else
-                        {
-                            m_EditorGizmo->setEnable(false);
-                        }
-                    })
-                );
+        ui::WidgetWindow& sceneEditor = m_UI->createWidget<ui::WidgetWindow>("Scene Editor", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
 
         ui::WidgetWindow& viewportWin = m_UI->createWidget<ui::WidgetWindow>("Viewport", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
             .setActive(true)
@@ -232,11 +214,32 @@ private:
                         m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
                     }
                 })
-            .addWidget(ui::WidgetButton("View")
-                .setOnClickedEvent([](const ui::Widget* w) -> void
-                    {
-                        LOG_DEBUG("TODO: Show context menu");
-                    })
+            .addWidget(ui::WidgetHorizontalLayout()
+                .addWidget(ui::WidgetButton("View")
+                    .setOnClickedEvent([](const ui::Widget* w) -> void
+                        {
+                            LOG_DEBUG("TODO: Show context menu");
+                        })
+                )
+                .addWidget(ui::WidgetRadioButtonGroup()
+                    .addElement("select")
+                    .addElement("move")
+                    .addElement("rotate")
+                    .addElement("scale")
+                    .setActiveIndex(0)
+                    .setOnChangedIndexEvent([this](ui::Widget* w, s32 index) -> void
+                        {
+                            if (index > 0)
+                            {
+                                m_EditorGizmo->setEnable(true);
+                                m_EditorGizmo->setOperation(index - 1);
+                            }
+                            else
+                            {
+                                m_EditorGizmo->setEnable(false);
+                            }
+                        })
+                )
             )
             .addWidget(ui::WidgetLayout(ui::WidgetLayout::Border)
                 .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentFill)
@@ -275,24 +278,14 @@ private:
                 )
             );
 
-        ui::WidgetWindow& win1 = m_UI->createWidget<ui::WidgetWindow>("Content", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
-            .addWidget(ui::WidgetText("text"))
-            .addWidget(ui::WidgetListBox()
-                .setOnCreated([this](ui::Widget* w) -> void
-                    {
-                        m_EditorScene->test_initContent(static_cast<ui::WidgetListBox*>(w));
-                    })
-                .setOnChangedIndexEvent([this](ui::Widget* w, u32 i) -> void
-                    {
-                        m_EditorScene->selectObject(i);
-                    })
-            );
+        ui::WidgetWindow& win1 = m_UI->createWidget<ui::WidgetWindow>("Content", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
+        m_EditorContentScreen->init(&win1);
+
         ui::WidgetWindow& win2 = m_UI->createWidget<ui::WidgetWindow>("Properties", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
         m_EditorPropertyScreen->init(&win2);
 
-        ui::WidgetWindow& win3 = m_UI->createWidget<ui::WidgetWindow>("Assest Browser", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
-            .addWidget(ui::WidgetText("text")
-            );
+        ui::WidgetWindow& win3 = m_UI->createWidget<ui::WidgetWindow>("Assest Browser", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
+        m_EditorAssetBrowser->init(&win3);
 
         sceneEditor.setupWindowLayout(ui::WidgetWindowLayout(&viewportWin, {
                 { ui::WidgetWindowLayout::DirLeft, 0.2f, &win1  },
@@ -300,7 +293,7 @@ private:
                 { ui::WidgetWindowLayout::DirDown, 0.2f, &win3  } 
             }));
 
-        //editor::UI::constuctTestUIWindow(m_UI, m_EditorScene);
+        editor::UI::constuctTestUIWindow(m_UI, m_EditorScene);
     }
     
     void Run()
@@ -318,6 +311,7 @@ private:
             m_EditorGizmo->update(deltaTime);
             m_EditorContentScreen->update(deltaTime);
             m_EditorPropertyScreen->update(deltaTime);
+            m_EditorAssetBrowser->update(deltaTime);
 
             m_EditorScene->preRender(deltaTime);
             m_EditorScene->postRender();
@@ -379,6 +373,7 @@ private:
     EditorGizmo*            m_EditorGizmo;
     EditorContentScreen*    m_EditorContentScreen;
     EditorPropertyScreen*   m_EditorPropertyScreen;
+    EditorAssetBrowser*     m_EditorAssetBrowser;
 
     bool m_Terminate = false;
 };
