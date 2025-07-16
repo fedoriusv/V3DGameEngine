@@ -24,7 +24,10 @@ namespace scene
         Transparency,
         SkinnedTransparency,
 
+        Lights,
+        Shadowmap,
         Selected,
+        Debug,
         Custom,
 
         Count

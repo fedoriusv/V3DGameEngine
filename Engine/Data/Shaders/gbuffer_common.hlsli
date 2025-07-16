@@ -15,8 +15,6 @@ struct VS_GBUFFER_STANDARD_INPUT
     [[vk::location(4)]] float2 UV           : IN_TEXTURE;
 };
 
-///////////////////////////////////////////////////////////////////////////////////////
-
 struct VS_GBUFFER_STANDARD_OUTPUT
 {
     float4                     Position    : SV_POSITION;
@@ -43,21 +41,10 @@ struct PS_GBUFFER_STRUCT
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-struct ModelBuffer
-{
-    float4x4 modelMatrix;
-    float4x4 prevModelMatrix;
-    float4x4 normalMatrix;
-    float4   tint;
-    uint64_t objectID;
-};
-
-///////////////////////////////////////////////////////////////////////////////////////
-
 VS_GBUFFER_STANDARD_OUTPUT _gbuffer_standard_vs(
     in VS_GBUFFER_STANDARD_INPUT Input, 
     in uniform ConstantBuffer<Viewport> Viewport,
-    in uniform ConstantBuffer< ModelBuffer> Model)
+    in uniform ConstantBuffer<ModelBuffer> Model)
 {
     VS_GBUFFER_STANDARD_OUTPUT Output;
    
@@ -83,11 +70,7 @@ VS_GBUFFER_STANDARD_OUTPUT _gbuffer_standard_vs(
 float2 calc_velocity(float4 position, float4 prevPosition)
 {
     float2 pos = (prevPosition.xy / prevPosition.w) * 0.5 + 0.5;
-    //pos.y = 1.0 - pos.y;
-    
     float2 prevPos = (prevPosition.xy / prevPosition.w) * 0.5 + 0.5;
-    //prevPos.y = 1.0 - prevPos.y;
-    
     return (pos - prevPos).xy;
 }
 

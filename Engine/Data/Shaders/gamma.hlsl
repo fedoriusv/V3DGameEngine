@@ -12,7 +12,7 @@
 {
     float gamma = 2.2f;
     float4 fragColor = colorTexture.SampleLevel(colorSampler, Input.UV, 0);
-    fragColor.rgb = pow(fragColor.rgb, float3(1.0 / gamma));
+    fragColor.rgb = pow(fragColor.rgb, 1.0 / gamma);
 
     return fragColor;
 }

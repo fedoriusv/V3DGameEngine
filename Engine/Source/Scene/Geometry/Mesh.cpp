@@ -11,6 +11,7 @@ namespace scene
 
 Mesh::Mesh() noexcept
     : m_indexBuffer(nullptr)
+    , m_topology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList)
 {
     LOG_DEBUG("Mesh::Mesh constructor %llx", this);
 }

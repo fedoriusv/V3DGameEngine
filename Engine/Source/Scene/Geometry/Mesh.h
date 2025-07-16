@@ -38,6 +38,7 @@ namespace scene
         renderer::VertexInputAttributeDesc      m_description;
         renderer::IndexBuffer*                  m_indexBuffer;
         std::vector<renderer::VertexBuffer*>    m_vertexBuffer;
+        renderer::PrimitiveTopology             m_topology;
 
         std::string                             m_name;
     };
