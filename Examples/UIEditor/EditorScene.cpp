@@ -11,6 +11,7 @@
 
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/Geometry/GeometryPrimitives.h"
 
 #include "Renderer/Render.h"
 #include "Renderer/Device.h"
@@ -29,6 +30,7 @@
 #include "RenderTechniques/RenderPipelineMBOIT.h"
 #include "RenderTechniques/RenderPipelineSelectionStage.h"
 #include "RenderTechniques/RenderPipelineLightingStage.h"
+#include "RenderTechniques/RenderPipelineDebug.h"
 
 #include "Stream/StreamManager.h"
 
@@ -48,8 +50,8 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     new renderer::RenderPipelineCompositionStage(this);
     //new renderer::RenderPipelineMBOITStage(this);
     new renderer::RenderPipelineOutlineStage(this);
-    //new renderer::RenderPipelineFXAAStage(this);
     new renderer::RenderPipelineTAAStage(this);
+    new renderer::RenderPipelineDebugStage(this, modelHandler);
     new renderer::RenderPipelineGammaCorrectionStage(this);
     new renderer::RenderPipelineUIOverlayStage(this, nullptr);
 }
@@ -404,7 +406,7 @@ void EditorScene::test_loadCubes(u32 countOpaque, u32 countTransparency)
 
     for (u32 i = 0; i < countOpaque; ++i)
     {
-        math::float3 pos = rendomVector() * 0.75f;
+        math::float3 pos = rendomVector() * 1.0f;
         math::float3 scale = rendomVector() * 10.f;
 
         scene::DrawInstanceDataState* data = new scene::DrawInstanceDataState;
@@ -428,7 +430,7 @@ void EditorScene::test_loadCubes(u32 countOpaque, u32 countTransparency)
 
     for (u32 i = 0; i < countTransparency; ++i)
     {
-        math::float3 pos = rendomVector() * 0.3f;
+        math::float3 pos = rendomVector() * 1.0f;
         math::float3 scale = rendomVector() * 10.f;
         math::float3 tint = rendomVector();
 
@@ -450,6 +452,25 @@ void EditorScene::test_loadCubes(u32 countOpaque, u32 countTransparency)
 
         m_sceneData.m_generalList.push_back(data);
     }
+
+    scene::Mesh* prim = scene::Primitives::createGrid(m_device, cmdList, 10.0f, 64, 64);
+    scene::DrawInstanceDataState* primitive = new scene::DrawInstanceDataState;
+    primitive->_geometry._ID = "EditorGrid";
+    primitive->_geometry._idxBuffer = prim->m_indexBuffer;
+    primitive->_geometry._vtxBuffer = prim->m_vertexBuffer[0];
+    primitive->_material._type = scene::MaterialType::Debug;
+    primitive->_material._sampler = sampler;
+    primitive->_material._albedo = color;
+    primitive->_material._normals = normals;
+    primitive->_material._material = roughness;
+    primitive->_material._tint = { 0.5, 0.5, 0.5, 1.0 };
+    primitive->_transform.setPosition({ 0.f, 0.f, 0.f });
+    primitive->_transform.setScale({ 1.f, 1.f, 1.f });
+    primitive->_prevTransform = primitive->_transform;
+    primitive->_objectID = g_objectIDCounter++;
+    primitive->_pipelineID = 1;
+
+    m_sceneData.m_generalList.push_back(primitive);
 
     m_device->submit(cmdList, true);
     m_device->destroyCommandList(cmdList);
