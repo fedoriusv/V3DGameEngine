@@ -847,12 +847,13 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
         }
 
         f32 value = idCtx->_value[0];
+        f32 step = idCtx->_step;
         ImGui::PushID(idCtx->_uid);
         if (idCtx->_stateMask & Widget::State::StateMask::DefindedSize)
         {
             ImGui::SetNextItemWidth(static_cast<f32>(idCtx->_size._width));
         }
-        active = ImGui::DragFloat("", &value, 1.f, 0.f, 0.f, "%.2f");
+        active = ImGui::DragFloat("", &value, step, 0.f, 0.f, "%.2f");
         ImGui::PopID();
 
         if (pushCount > 0)
@@ -896,8 +897,9 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
         }
 
         s32 value = idCtx->_value[0];
+        s32 step = idCtx->_step;
         ImGui::PushID(idCtx->_uid);
-        active = ImGui::DragInt("", &value);
+        active = ImGui::DragInt("", &value, step, 0, 0, "%d");
         ImGui::PopID();
 
         if (pushCount > 0)
