@@ -33,9 +33,9 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::SceneData& scene
     createRenderTarget(device, scene);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-        "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-        "gbuffer.hlsl", "gbuffer_depth_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        "gbuffer.hlsl", "gbuffer_depth_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
     m_depthPipeline = new renderer::GraphicsPipelineState(
         device, VertexFormatStandardDesc, m_depthRenderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "prepass_pipeline");

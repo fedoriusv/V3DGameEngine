@@ -12,7 +12,7 @@ namespace renderer
 {
 
 RenderPipelineMBOITStage::RenderPipelineMBOITStage(RenderTechnique* technique) noexcept
-    : RenderPipelineStage(technique, "transparency")
+    : RenderPipelineStage(technique, "MBOIT")
 {
 }
 

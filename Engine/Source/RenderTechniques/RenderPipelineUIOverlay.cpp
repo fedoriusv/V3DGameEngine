@@ -6,7 +6,7 @@ namespace renderer
 {
 
 RenderPipelineUIOverlayStage::RenderPipelineUIOverlayStage(RenderTechnique* technique, ui::WidgetHandler* uiHandler) noexcept
-    : RenderPipelineStage(technique, "ui")
+    : RenderPipelineStage(technique, "Overlay")
 {
 }
 

@@ -32,13 +32,13 @@ void RenderPipelineTAAStage::create(Device* device, scene::SceneData& scene, sce
     createRenderTarget(device, scene);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-        "offscreen.hlsl", "offscreen_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-        "taa.hlsl", "main_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
+        "taa.hlsl", "main_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
     RenderPassDesc desc{};
     desc._countColorAttachments = 1;
-    desc._attachmentsDesc[0]._format = Format_R32G32B32A32_SFloat;
+    desc._attachmentsDesc[0]._format = Format_R16G16B16A16_SFloat;
 
     m_pipeline = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), desc, new renderer::ShaderProgram(device, vertShader, fragShader), "taa");
 
@@ -126,11 +126,11 @@ void RenderPipelineTAAStage::createRenderTarget(Device* device, scene::SceneData
 {
     ASSERT(m_resolved == nullptr, "must be nullptr");
     m_resolved = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Read,
-        renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "resolved_taa");
+        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "resolved_taa");
 
     ASSERT(m_history == nullptr, "must be nullptr");
     m_history = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
-        renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "history_taa");
+        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "history_taa");
 
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
     m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);

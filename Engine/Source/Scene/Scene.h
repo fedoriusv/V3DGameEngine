@@ -92,17 +92,13 @@ namespace scene
 
     struct SceneData
     {
-        renderer::RenderObjectTracker             m_globalResources;
+        renderer::RenderObjectTracker              m_globalResources;
 
         std::vector<scene::DrawInstanceDataState*> m_generalList;
         std::vector<scene::DrawInstanceDataState*> m_lists[toEnumType(MaterialType::Count)];
 
-        struct SceneState
-        {
-        };
-        std::vector<SceneState>                   m_sceneState;
-        ViewportState                             m_viewportState;
-        RenderState                               m_renderState;
+        ViewportState                              m_viewportState;
+        RenderState                                m_renderState;
     };
 
     struct FrameData

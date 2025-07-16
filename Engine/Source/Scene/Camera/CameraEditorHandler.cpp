@@ -33,46 +33,6 @@ void CameraEditorHandler::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
-        /*math::Matrix4D look = math::SMatrix::lookAtMatrix(math::VectorRegister3D{ 0.0f, 0.0f, 0.0f }, math::VectorRegister3D{ 0.0f, 0.0f, 1.0f }, m_camera->getUpVector());
-        look.makeInverse();
-
-        m_rotation.setX(m_rotation.getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
-        m_rotation.setY(m_rotation.getY() + m_deltaRotation._y * m_rotationSpeed * deltaTime);
-
-        math::Matrix4D rotate;
-        rotate.setRotation(m_rotation);
-        m_deltaRotation = { 0.f, 0.f };
-
-        if (m_orbitingMode)
-        {
-            m_distance = (m_camera->getTarget() - m_camera->getPosition()).length();
-
-            m_distance += m_deltaDistance * m_moveSpeed * deltaTime;
-            m_distance = std::clamp(m_distance, m_distanceLimits._x, m_distanceLimits._y);
-            m_deltaDistance = 0.f;
-            look.setTranslation({ 0.f, 0.f, -m_distance });
-            rotate.setTranslation(m_camera->getTarget());
-
-            math::Matrix4D view = look * rotate;
-            m_camera->setTransform(view);
-
-            view.makeInverse();
-            setViewMatrix(view);
-        }
-        else if (m_freeFlyMode)
-        {
-            m_accelerationSpeed = std::clamp(m_accelerationSpeed, 0.1f, 1.f);
-            math::Vector4D forward = rotate * (m_direction * m_moveSpeed * m_accelerationSpeed * deltaTime);
-            look.setTranslation(m_camera->getPosition() + math::Vector3D{ forward.getX(), forward.getY(), forward.getZ() });
-            m_direction = { 0.f, 0.f, 0.f, 0.f };
-
-            math::Matrix4D view = rotate * look;
-            m_camera->setTransform(view);
-            m_camera->setTarget(m_camera->getPosition() + m_camera->getForwardVector() * 2.f);
-
-            view.makeInverse();
-            setViewMatrix(view);*/
-
         math::Vector3D rotation;
         rotation.setX(m_camera->getRotation().getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
         rotation.setY(m_camera->getRotation().getY() + m_deltaRotation._y * m_rotationSpeed * deltaTime);
