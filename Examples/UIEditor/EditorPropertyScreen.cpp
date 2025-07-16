@@ -38,6 +38,7 @@ void EditorPropertyScreen::build()
                         .addWidget(ui::WidgetText("Location"))
                         .addWidget(ui::WidgetInputDragFloat(0.f)
                             .setSize({ 100, 20 })
+                            .setDragStep(0.1f)
                             .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                             .setOnCreated([this](ui::Widget* w) -> void
                                 {
@@ -55,6 +56,7 @@ void EditorPropertyScreen::build()
                         )
                         .addWidget(ui::WidgetInputDragFloat(0.f)
                             .setSize({ 100, 20 })
+                            .setDragStep(0.1f)
                             .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                             .setOnCreated([this](ui::Widget* w) -> void
                                 {
@@ -72,6 +74,7 @@ void EditorPropertyScreen::build()
                         )
                         .addWidget(ui::WidgetInputDragFloat(0.f)
                             .setSize({ 100, 20 })
+                            .setDragStep(0.1f)
                             .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                             .setOnCreated([this](ui::Widget* w) -> void
                                 {
@@ -92,6 +95,7 @@ void EditorPropertyScreen::build()
                     .addWidget(ui::WidgetText("Rotation"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
+                        .setDragStep(0.1f)
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -109,6 +113,7 @@ void EditorPropertyScreen::build()
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
+                        .setDragStep(0.1f)
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -126,6 +131,7 @@ void EditorPropertyScreen::build()
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
+                        .setDragStep(0.1f)
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -146,6 +152,7 @@ void EditorPropertyScreen::build()
                     .addWidget(ui::WidgetText("Scale       "))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
+                        .setDragStep(0.1f)
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -163,6 +170,7 @@ void EditorPropertyScreen::build()
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
+                        .setDragStep(0.1f)
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -180,6 +188,7 @@ void EditorPropertyScreen::build()
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
+                        .setDragStep(0.1f)
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
