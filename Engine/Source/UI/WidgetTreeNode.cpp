@@ -66,14 +66,6 @@ math::float2 WidgetTreeNode::calculateSize(WidgetHandler* handler, Widget* paren
     if (!(Widget::cast_data<StateTreeNode>(m_data)._stateMask & Widget::State::StateMask::CollapsedState))
     {
         layoutSize += treeNodeLayout.calculateSize(handler, parent, this);
-        if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
-        {
-            layoutSize._x += drawer->get_WindowPadding()._x * 2.0f;
-        }
-        else
-        {
-            layoutSize._y += drawer->get_WindowPadding()._y * 2.0f;
-        }
     }
     layoutSize += drawer->calculate_TreeNodeSize(this, static_cast<WidgetType*>(layout)->m_data, m_data);
 

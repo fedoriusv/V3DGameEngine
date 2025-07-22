@@ -335,8 +335,8 @@ namespace ui
         WidgetWindowLayout(WidgetWindowLayout&&) noexcept;
         ~WidgetWindowLayout();
 
-        WidgetWindowLayout& operator=(const WidgetWindowLayout&);
-        WidgetWindowLayout& operator=(WidgetWindowLayout&&);
+        WidgetWindowLayout& operator=(const WidgetWindowLayout&) noexcept;
+        WidgetWindowLayout& operator=(WidgetWindowLayout&&) noexcept;
 
         WidgetWindow* getWindow() const;
         const std::vector<LayoutRule>& getRules() const;

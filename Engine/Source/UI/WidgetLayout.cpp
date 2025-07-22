@@ -1,5 +1,6 @@
 #include "WidgetLayout.h"
 #include "WidgetHandler.h"
+#include "WidgetTreeNode.h"
 #include "Utils/Logger.h"
 
 namespace v3d
@@ -90,7 +91,7 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
     }
     else
     {
-        layoutSize._y += drawer->get_WindowPadding()._y * 2.0f;
+        //layoutSize._y += drawer->get_WindowPadding()._y * 2.0f;
         layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
         layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWidgets - 1, 0, countWidgets);
     }
@@ -164,11 +165,17 @@ math::float2 WidgetLayout::calculateSize(WidgetHandler* handler, Widget* parent,
     if (cast_data<StateType>(m_data)._stateMask & Widget::State::StateMask::HorizontalLine)
     {
         layoutSize._x = 0;
-        layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
+        if (layout->getType() != typeOf<WidgetTreeNode>())
+        {
+            layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
+        }
     }
     else
     {
-        layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
+        if (layout->getType() != typeOf<WidgetTreeNode>())
+        {
+            layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
+        }
         layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWidgets, 0, countWidgets);
     }
 
@@ -245,7 +252,7 @@ WidgetWindowLayout::~WidgetWindowLayout()
     }
 }
 
-WidgetWindowLayout& WidgetWindowLayout::operator=(const WidgetWindowLayout& other)
+WidgetWindowLayout& WidgetWindowLayout::operator=(const WidgetWindowLayout& other) noexcept
 {
     StateType* state = V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)(*static_cast<const StateType*>(other.m_data));
     m_data = state;
@@ -253,7 +260,7 @@ WidgetWindowLayout& WidgetWindowLayout::operator=(const WidgetWindowLayout& othe
     return *this;
 }
 
-WidgetWindowLayout& WidgetWindowLayout::operator=(WidgetWindowLayout&& other)
+WidgetWindowLayout& WidgetWindowLayout::operator=(WidgetWindowLayout&& other) noexcept
 {
     m_data = other.m_data;
     other.m_data = nullptr;

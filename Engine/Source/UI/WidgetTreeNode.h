@@ -116,7 +116,7 @@ namespace ui
 
     inline TypePtr WidgetTreeNode::getType() const
     {
-        return typeOf<WidgetType>();
+        return typeOf<WidgetTreeNode>();
     }
 
     template<class TWidget>
