@@ -242,6 +242,14 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
         dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     }
 
+    //to depth attachment
+    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    {
+        ASSERT(!VulkanImage::isColorFormat(vulkanImage->getFormat()), "wrong layout");
+        srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    }
+
     //to preset form attachment
     if (newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
     {
