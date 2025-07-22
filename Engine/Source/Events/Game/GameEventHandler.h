@@ -12,6 +12,8 @@ namespace event
 
     class GameEventReceiver;
 
+    using GameEventCallback = std::function<void(const GameEvent*, GameEvent::GameEventType, u64)>;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -25,7 +27,7 @@ namespace event
         GameEventHandler() noexcept;
         ~GameEventHandler();
 
-        void bind(std::function<void(const GameEvent*)> callback);
+        void bind(const GameEventCallback& callback);
 
     private:
 
@@ -36,7 +38,7 @@ namespace event
 
         friend GameEventReceiver;
 
-        std::vector<std::function<void(const GameEvent*)>> m_callbacks;
+        std::vector<GameEventCallback> m_callbacks;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

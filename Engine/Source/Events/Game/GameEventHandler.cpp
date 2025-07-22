@@ -13,7 +13,7 @@ GameEventHandler::~GameEventHandler()
 {
 }
 
-void GameEventHandler::bind(std::function<void(const GameEvent*)> callback)
+void GameEventHandler::bind(const GameEventCallback& callback)
 {
     if (callback)
     {
@@ -29,7 +29,7 @@ bool GameEventHandler::onEvent(Event* ev)
     for (auto iter = m_callbacks.cbegin(); iter != m_callbacks.cend(); ++iter)
     {
         ASSERT(*iter, "must be valid");
-        std::invoke(*iter, event);
+        std::invoke(*iter, event, event->_eventType, event->_customEventID);
     }
 
     return true;

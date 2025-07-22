@@ -5,7 +5,8 @@ namespace v3d
 namespace event
 {
 
-GameEventReceiver::GameEventReceiver() noexcept
+GameEventReceiver::GameEventReceiver(const std::function<void(GameEvent* event)>& deleter) noexcept
+    : m_deleter(deleter)
 {
 }
 
@@ -50,6 +51,8 @@ void GameEventReceiver::sendEvent(GameEvent* event)
         GameEventHandler* handler = *iter;
         handler->onEvent(event);
     }
+
+    m_deleter(event);
 }
 
 void GameEventReceiver::sendDeferredEvents()

@@ -15,15 +15,17 @@ namespace event
     */
     struct V3D_API GameEvent : Event
     {
-        enum class GameEventType : u64
+        enum class GameEventType : u32
         {
             UnknownGameEvent,
             SelectObject,
+            MultiSelectObjects,
+            CustomEvent,
 
             GameEventsCount
         };
 
-        enum Priority : u64
+        enum Priority : u32
         {
             Low = 10,
             Normal = 20,
@@ -31,22 +33,24 @@ namespace event
             RealTime = 100,
         };
 
-        GameEvent() noexcept;
+        GameEvent(GameEventType type) noexcept;
         virtual ~GameEvent() = default;
 
         bool operator<(const GameEvent& event);
 
         u64                 _timeStamp;
-        GameEventType       _eventType : 32;
-        Priority            _priority  : 32;
+        GameEventType       _eventType;
+        Priority            _priority;
+        u64                 _customEventID;
     };
 
-    inline GameEvent::GameEvent() noexcept
+    inline GameEvent::GameEvent(GameEventType type) noexcept
         : _timeStamp(utils::Timer::getCurrentTime())
-        , _eventType(GameEventType::UnknownGameEvent)
+        , _eventType(type)
         , _priority(Normal)
+        , _customEventID(0)
     {
-        static_assert(sizeof(GameEvent) == 24, "wrong size");
+        static_assert(sizeof(GameEvent) == 32, "wrong size");
     }
 
     inline bool GameEvent::operator<(const GameEvent& event)

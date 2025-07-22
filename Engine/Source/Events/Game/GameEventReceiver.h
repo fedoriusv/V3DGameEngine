@@ -17,7 +17,7 @@ namespace event
     {
     public:
 
-        GameEventReceiver() noexcept;
+        GameEventReceiver(const std::function<void(GameEvent* event)>& deleter) noexcept;
         ~GameEventReceiver();
 
         void attach(GameEventHandler* handler);
@@ -35,6 +35,8 @@ namespace event
 
         std::queue<GameEvent*> m_events;
         std::vector<GameEventHandler*> m_handlers;
+
+        std::function<void(GameEvent* event)> m_deleter;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
