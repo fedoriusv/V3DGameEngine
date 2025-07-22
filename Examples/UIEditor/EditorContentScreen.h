@@ -9,27 +9,31 @@
 
 using namespace v3d;
 
-class EditorContentScreen : public event::InputEventHandler, public utils::Observer<EditorReport>
+class EditorContentScreen final
 {
 public:
 
-    EditorContentScreen() noexcept;
+    EditorContentScreen(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorContentScreen();
 
-    void init(ui::WidgetWindow* widget);
+    void registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData);
+
     void build();
     void update(f32 dt);
 
-private:
-
-    void handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data) override;
+public:
 
     bool handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event);
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
-    ui::WidgetWindow* m_window = nullptr;
+private:
 
-    ui::WidgetListBox* m_list;
+    event::GameEventReceiver* m_gameEventRecevier;
+    ui::WidgetWindow* m_window;
+
+    scene::SceneData* m_sceneData;
+    std::vector<ui::WidgetTreeNode*> m_widgetItems;
+
 
     bool m_loaded;
 };

@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/Observable.h"
 
 #include "Events/Input/InputEventHandler.h"
 #include "Events/Game/GameEventHandler.h"
+#include "Events/Game/GameEventReceiver.h"
 
 #include "Renderer/Device.h"
 #include "Renderer/RenderTargetState.h"
@@ -20,12 +20,23 @@
 
 using namespace v3d;
 
-struct EditorReport
+struct EditorSelectionEvent : event::GameEvent
 {
-    scene::DrawInstanceDataState* instanceObject;
+    EditorSelectionEvent(u32 selectedIndex) noexcept
+        : event::GameEvent(GameEvent::GameEventType::SelectObject)
+        , _selectedIndex(selectedIndex)
+    {
+    }
+
+    virtual ~EditorSelectionEvent() = default;
+
+    u32 _selectedIndex;
 };
 
-class EditorScene : public event::InputEventHandler, public utils::Reporter<EditorReport>
+constexpr u32 k_emptyIndex = -1;
+
+
+class EditorScene final
 {
 public:
 
@@ -38,7 +49,7 @@ public:
     };
 
     EditorScene() noexcept;
-    ~EditorScene() = default;
+    ~EditorScene();
 
     void create(renderer::Device* device, const math::Dimension2D& viewportSize);
     void destroy();
@@ -55,29 +66,35 @@ public:
     void modifyObject(const scene::Transform& transform);
     void selectObject(u32 i);
 
-    void test_initContent(ui::WidgetListBox* list);
-
 public:
 
     const renderer::Texture2D* getOutputTexture() const;
     const math::Rect& getViewportArea() const;
     scene::Camera* getCamera();
 
+    event::InputEventHandler* getInputHandler();
+    event::GameEventHandler* getGameHandler();
+
+    event::GameEventReceiver* getGameEventReceiver();
+
 public:
 
     void onChanged(const math::Rect& viewport);
     void onChanged(const math::Matrix4D& view);
 
-public:
+private:
 
     void loadResources();
 
-    renderer::Device*   m_device;
+    renderer::Device*           m_device;
 
-    scene::ModelHandler* m_modelHandler;
-    ui::WidgetHandler* m_UiHandler;
+    scene::ModelHandler*        m_modelHandler;
+    ui::WidgetHandler*          m_UIHandler;
+    event::InputEventHandler*   m_inputHandler;
+    event::GameEventHandler*    m_gameHandler;
 
-    RenderPipelineScene m_mainPipeline;
+    event::GameEventReceiver*   m_gameEventRecevier;
+    RenderPipelineScene         m_mainPipeline;
 
 public:
 
@@ -88,16 +105,11 @@ public:
         f32 _far = 10000.f;
     };
 
-    struct SelectedObjects
-    {
-        s32 _activeIndex = -1;
-    };
-
     scene::CameraEditorHandler*     m_camera;
     math::Rect                      m_currentViewportRect;
     ViewportParams                  m_vewportParams;
 
-    SelectedObjects                 m_selectedObjects;
+    u32                             m_activeIndex;
 
     ui::WidgetListBox* m_contentList;
     u64 m_frameCounter;
@@ -108,6 +120,8 @@ public:
 
 private:
 
-    void test_loadCubes(u32 countOpaque, u32 countTransparency);
+    void editor_loadDebug(renderer::CmdListRender* cmdList);
+
+    void test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaque, u32 countTransparency);
 
 };

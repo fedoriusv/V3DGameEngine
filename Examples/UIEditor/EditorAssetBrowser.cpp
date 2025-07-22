@@ -1,7 +1,9 @@
 #include "EditorAssetBrowser.h"
 
-EditorAssetBrowser::EditorAssetBrowser() noexcept
-    : m_loaded(false)
+EditorAssetBrowser::EditorAssetBrowser(event::GameEventReceiver* gameEventRecevier) noexcept
+    : m_window(nullptr)
+
+    , m_loaded(false)
 {
 }
 
@@ -9,9 +11,12 @@ EditorAssetBrowser::~EditorAssetBrowser()
 {
 }
 
-void EditorAssetBrowser::init(ui::WidgetWindow* widget)
+void EditorAssetBrowser::registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData)
 {
+    ASSERT(widget, "must be valid");
     m_window = widget;
+    m_sceneData = &sceneData;
+
     m_loaded = false;
 }
 
@@ -49,12 +54,14 @@ void EditorAssetBrowser::update(f32 dt)
     }
 }
 
-void EditorAssetBrowser::handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data)
-{
-}
-
 bool EditorAssetBrowser::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
+    if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
+    {
+        const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
+        m_loaded = false;
+    }
+
     return false;
 }
 

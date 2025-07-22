@@ -10,14 +10,15 @@
 
 using namespace v3d;
 
-class EditorGizmo : public event::InputEventHandler, public utils::Observer<EditorReport>
+class EditorGizmo final
 {
 public:
 
-    EditorGizmo() noexcept;
+    EditorGizmo(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorGizmo();
 
-    void init(ui::WidgetGizmo* widget);
+    void registerWiget(ui::WidgetGizmo* widget, scene::SceneData& sceneData);
+
     void modify(const scene::Transform& transform);
     void select();
 
@@ -26,15 +27,16 @@ public:
 
     void update(f32 dt);
 
-private:
-
-    void handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data) override;
+public:
 
     bool handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event);
     bool handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event);
 
-    ui::WidgetGizmo* m_gizmo;
-    s32 m_currentOp;
+private:
 
-    scene::DrawInstanceDataState* m_selectedObject = nullptr;
+    ui::WidgetGizmo* m_gizmo;
+
+    scene::SceneData* m_sceneData;
+    scene::DrawInstanceDataState* m_selectedObject;
+    s32 m_currentOp;
 };

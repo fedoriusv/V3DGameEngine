@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/Observable.h"
 #include "Events/Input/InputEventHandler.h"
 #include "UI/Widgets.h"
 
@@ -9,29 +8,33 @@
 
 using namespace v3d;
 
-class EditorPropertyScreen : public event::InputEventHandler, public utils::Observer<EditorReport>
+class EditorPropertyScreen final
 {
 public:
 
-    EditorPropertyScreen() noexcept;
+    EditorPropertyScreen(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorPropertyScreen();
 
-    void init(ui::WidgetWindow* widget);
+    void registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData);
+
     void build();
     void update(f32 dt);
 
-private:
-
-    void handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data) override;
+public:
 
     bool handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event);
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
-    ui::WidgetWindow* m_window = nullptr;
+private:
+
+    ui::WidgetWindow* m_window;
+
+    scene::SceneData* m_sceneData;
+    scene::DrawInstanceDataState* m_selectedObject;
 
     std::array<ui::WidgetInputDragFloat*, 3> m_propertyPosition;
     std::array<ui::WidgetInputDragFloat*, 3> m_propertyRotation;
     std::array<ui::WidgetInputDragFloat*, 3> m_propertyScale;
 
-    scene::DrawInstanceDataState* m_selectedObject = nullptr;
+    bool m_loaded;
 };

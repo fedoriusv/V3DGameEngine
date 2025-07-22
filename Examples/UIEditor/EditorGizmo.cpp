@@ -5,30 +5,25 @@
 
 #include "Utils/Logger.h"
 
-EditorGizmo::EditorGizmo() noexcept
+EditorGizmo::EditorGizmo(event::GameEventReceiver* gameEventRecevier) noexcept
     : m_gizmo(nullptr)
+
+    , m_sceneData(nullptr)
+    , m_selectedObject(nullptr)
+
     , m_currentOp(-1)
 {
-    InputEventHandler::bind([this](const event::MouseInputEvent* event)
-        {
-            this->handleInputEvent(this, event);
-        }
-    );
-
-    InputEventHandler::bind([this](const event::KeyboardInputEvent* event)
-        {
-            this->handleInputEvent(this, event);
-        }
-    );
 }
 
 EditorGizmo::~EditorGizmo()
 {
 }
 
-void EditorGizmo::init(ui::WidgetGizmo* widget)
+void EditorGizmo::registerWiget(ui::WidgetGizmo* widget, scene::SceneData& sceneData)
 {
+    ASSERT(widget, "must be valid");
     m_gizmo = widget;
+    m_sceneData = &sceneData;
 }
 
 void EditorGizmo::modify(const scene::Transform& transform)
@@ -75,28 +70,27 @@ void EditorGizmo::update(f32 dt)
     }
 }
 
-void EditorGizmo::handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data)
-{
-    if (data.instanceObject && m_currentOp > -1)
-    {
-        m_gizmo->setActive(true);
-        modify(data.instanceObject->_transform);
-    }
-    else
-    {
-        m_gizmo->setActive(false);
-    }
-    m_selectedObject = data.instanceObject;
-}
-
 bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
     if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
     {
-        //modify(data.transform);
+        const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
+        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? m_sceneData->m_generalList[selectionEvent->_selectedIndex] : nullptr;
+        if (m_gizmo)
+        {
+            if (m_selectedObject && m_currentOp > -1)
+            {
+                m_gizmo->setActive(true);
+                modify(m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_transform);
+            }
+            else
+            {
+                m_gizmo->setActive(false);
+            }
+        }
     }
 
-    return false;
+    return true;
 }
 
 bool EditorGizmo::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)

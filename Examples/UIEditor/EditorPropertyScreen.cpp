@@ -2,8 +2,13 @@
 #include "UI/Widgets.h"
 
 
-EditorPropertyScreen::EditorPropertyScreen() noexcept
+EditorPropertyScreen::EditorPropertyScreen(event::GameEventReceiver* gameEventRecevier) noexcept
     : m_window(nullptr)
+
+    , m_sceneData(nullptr)
+    , m_selectedObject(nullptr)
+
+    , m_loaded(false)
 {
     m_propertyPosition.fill(nullptr);
     m_propertyRotation.fill(nullptr);
@@ -14,10 +19,13 @@ EditorPropertyScreen::~EditorPropertyScreen()
 {
 }
 
-void EditorPropertyScreen::init(ui::WidgetWindow* widget)
+void EditorPropertyScreen::registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData)
 {
+    ASSERT(widget, "must be valid");
     m_window = widget;
+    m_sceneData = &sceneData;
 
+    m_loaded = false;
 }
 
 void EditorPropertyScreen::build()
@@ -26,7 +34,11 @@ void EditorPropertyScreen::build()
     ui::WidgetWindow& window = *m_window;
     window.removeWigets();
 
-    ui::WidgetTreeNode::TreeNodeFlags flags = ui::WidgetTreeNode::TreeNodeFlag::Framed | ui::WidgetTreeNode::TreeNodeFlag::Open;
+    ui::WidgetTreeNode::TreeNodeFlags flags = ui::WidgetTreeNode::TreeNodeFlag::Framed;
+    if (m_selectedObject)
+    {
+        flags |= ui::WidgetTreeNode::TreeNodeFlag::Open;
+    }
     bool showTransformProps = true;
     if (showTransformProps)
     {
@@ -223,6 +235,12 @@ void EditorPropertyScreen::build()
 
 void EditorPropertyScreen::update(f32 dt)
 {
+    if (!m_loaded)
+    {
+        build();
+        m_loaded = true;
+    }
+
     if (m_selectedObject)
     {
         const scene::Transform& transform = m_selectedObject->_transform;
@@ -253,14 +271,15 @@ void EditorPropertyScreen::update(f32 dt)
     }
 }
 
-void EditorPropertyScreen::handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data)
-{
-    build();
-    m_selectedObject = data.instanceObject;
-}
-
 bool EditorPropertyScreen::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
+    if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
+    {
+        const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
+        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? m_sceneData->m_generalList[selectionEvent->_selectedIndex] : nullptr;
+        m_loaded = false;
+    }
+
     return false;
 }
 

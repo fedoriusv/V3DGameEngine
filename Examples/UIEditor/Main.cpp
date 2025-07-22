@@ -42,22 +42,17 @@ public:
         , m_UI(nullptr)
         , m_EditorScene(new EditorScene())
 
-        , m_EditorGizmo(new EditorGizmo())
-        , m_EditorContentScreen(new EditorContentScreen())
-        , m_EditorPropertyScreen(new EditorPropertyScreen())
-        , m_EditorAssetBrowser(new EditorAssetBrowser())
+        , m_EditorGizmo(new EditorGizmo(m_EditorScene->getGameEventReceiver()))
+        , m_EditorContentScreen(new EditorContentScreen(m_EditorScene->getGameEventReceiver()))
+        , m_EditorPropertyScreen(new EditorPropertyScreen(m_EditorScene->getGameEventReceiver()))
+        , m_EditorAssetBrowser(new EditorAssetBrowser(m_EditorScene->getGameEventReceiver()))
     {
         m_Window = Window::createWindow(k_editorResolution, { 200, 200 }, false, true, new InputEventReceiver(), "MainWindow");
         ASSERT(m_Window, "windows is nullptr");
-
-        m_EditorScene->registerNotify(m_EditorGizmo);
-        m_EditorScene->registerNotify(m_EditorContentScreen);
-        m_EditorScene->registerNotify(m_EditorPropertyScreen);
     }
     
     ~EditorApplication()
     {
-        m_EditorScene->unregisterAll();
         delete m_EditorGizmo;
         delete m_EditorContentScreen;
         delete m_EditorPropertyScreen;
@@ -65,12 +60,11 @@ public:
 
         if (m_Window)
         {
-            event::InputEventReceiver* ieReceiver = m_Window->getInputEventReceiver();
-
+            InputEventReceiver* inputEventReceiver = m_Window->getInputEventReceiver();
             Window::detroyWindow(m_Window);
             m_Window = nullptr;
 
-            delete ieReceiver;
+            delete inputEventReceiver;
         }
         Logger::freeInstance();
 
@@ -89,16 +83,15 @@ public:
 
             if (m_Window->isValid())
             {
-                m_Window->getInputEventReceiver()->sendDeferredEvents();
-
+                InputEventReceiver* inputEventReceiver = m_Window->getInputEventReceiver();
+                inputEventReceiver->sendDeferredEvents();
                 if (m_Terminate)
                 {
                     break;
                 }
 
                 Run();
-
-                m_Window->getInputEventReceiver()->resetInputHandlers();
+                inputEventReceiver->resetInputHandlers();
             }
         }
 
@@ -146,9 +139,52 @@ private:
             });
         std::srand(u32(std::time(0)));
 
+        InputEventHandler* inputHandler = m_EditorScene->getInputHandler();
+        inputHandler->bind([this](const MouseInputEvent* event)
+            {
+                m_EditorGizmo->handleInputEvent(m_EditorScene->getInputHandler(), event);
+            });
+        inputHandler->bind([this](const KeyboardInputEvent* event)
+            {
+                m_EditorGizmo->handleInputEvent(m_EditorScene->getInputHandler(), event);
+            });
+
+        inputHandler->bind([this](const MouseInputEvent* event)
+            {
+                m_EditorContentScreen->handleInputEvent(m_EditorScene->getInputHandler(), event);
+            });
+        inputHandler->bind([this](const KeyboardInputEvent* event)
+            {
+                m_EditorContentScreen->handleInputEvent(m_EditorScene->getInputHandler(), event);
+            });
+
+        inputHandler->bind([this](const MouseInputEvent* event)
+            {
+                m_EditorPropertyScreen->handleInputEvent(m_EditorScene->getInputHandler(), event);
+            });
+        inputHandler->bind([this](const KeyboardInputEvent* event)
+            {
+                m_EditorPropertyScreen->handleInputEvent(m_EditorScene->getInputHandler(), event);
+            });
+
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, this);
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, this);
         m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::SystemEvent, this);
+
+
+        GameEventHandler* gameHandler = m_EditorScene->getGameHandler();
+        gameHandler->bind([this](const GameEvent* event, GameEvent::GameEventType type, u64 ID)
+            {
+                m_EditorGizmo->handleGameEvent(m_EditorScene->getGameHandler(), event);
+            });
+        gameHandler->bind([this](const GameEvent* event, GameEvent::GameEventType type, u64 ID)
+            {
+                m_EditorContentScreen->handleGameEvent(m_EditorScene->getGameHandler(), event);
+            });
+        gameHandler->bind([this](const GameEvent* event, GameEvent::GameEventType type, u64 ID)
+            {
+                m_EditorPropertyScreen->handleGameEvent(m_EditorScene->getGameHandler(), event);
+            });
 
         //Render
         m_Device = Device::createDevice(Device::RenderType::Vulkan, Device::GraphicMask);
@@ -203,15 +239,16 @@ private:
                 })
             .setOnFocusChanged([this](const ui::Widget* w, bool focused)
                 {
+                    InputEventReceiver* inputEventReceiver = m_Window->getInputEventReceiver();
                     if (focused)
                     {
-                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
-                        m_Window->getInputEventReceiver()->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
+                        inputEventReceiver->attach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene->getInputHandler());
+                        inputEventReceiver->attach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene->getInputHandler());
                     }
                     else
                     {
-                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene);
-                        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene);
+                        inputEventReceiver->dettach(InputEvent::InputEventType::MouseInputEvent, m_EditorScene->getInputHandler());
+                        inputEventReceiver->dettach(InputEvent::InputEventType::KeyboardInputEvent, m_EditorScene->getInputHandler());
                     }
                 })
             .addWidget(ui::WidgetHorizontalLayout()
@@ -262,7 +299,7 @@ private:
                     .setActive(false)
                     .setOnCreated([this](ui::Widget* w) -> void
                         {
-                            m_EditorGizmo->init(static_cast<ui::WidgetGizmo*>(w));
+                            m_EditorGizmo->registerWiget(static_cast<ui::WidgetGizmo*>(w), m_EditorScene->m_sceneData);
                         })
                     .setOnTransformChangedEvent([this](ui::Widget* w, ui::Widget* p, const scene::Transform& tr) -> void
                         {
@@ -279,13 +316,13 @@ private:
             );
 
         ui::WidgetWindow& win1 = m_UI->createWidget<ui::WidgetWindow>("Content", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
-        m_EditorContentScreen->init(&win1);
+        m_EditorContentScreen->registerWiget(&win1, m_EditorScene->m_sceneData);
 
         ui::WidgetWindow& win2 = m_UI->createWidget<ui::WidgetWindow>("Properties", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
-        m_EditorPropertyScreen->init(&win2);
+        m_EditorPropertyScreen->registerWiget(&win2, m_EditorScene->m_sceneData);
 
         ui::WidgetWindow& win3 = m_UI->createWidget<ui::WidgetWindow>("Assest Browser", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
-        m_EditorAssetBrowser->init(&win3);
+        m_EditorAssetBrowser->registerWiget(&win3, m_EditorScene->m_sceneData);
 
         sceneEditor.setupWindowLayout(ui::WidgetWindowLayout(&viewportWin, {
                 { ui::WidgetWindowLayout::DirLeft, 0.2f, &win1  },
@@ -346,9 +383,10 @@ private:
 
     void Exit()
     {
-        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::MouseInputEvent, this);
-        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::KeyboardInputEvent, this);
-        m_Window->getInputEventReceiver()->dettach(InputEvent::InputEventType::SystemEvent, this);
+        InputEventReceiver* inputEventReceiver = m_Window->getInputEventReceiver();
+        inputEventReceiver->dettach(InputEvent::InputEventType::MouseInputEvent, this);
+        inputEventReceiver->dettach(InputEvent::InputEventType::KeyboardInputEvent, this);
+        inputEventReceiver->dettach(InputEvent::InputEventType::SystemEvent, this);
 
         m_EditorScene->destroy();
 

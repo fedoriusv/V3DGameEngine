@@ -9,24 +9,27 @@
 
 using namespace v3d;
 
-class EditorAssetBrowser : public event::InputEventHandler, public utils::Observer<EditorReport>
+class EditorAssetBrowser final
 {
 public:
 
-    EditorAssetBrowser() noexcept;
+    EditorAssetBrowser(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorAssetBrowser();
 
-    void init(ui::WidgetWindow* widget);
+    void registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData);
+
     void build();
     void update(f32 dt);
 
-private:
-
-    void handleNotify(const utils::Reporter<EditorReport>* reporter, const EditorReport& data) override;
+public:
 
     bool handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event);
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
-    ui::WidgetWindow* m_window = nullptr;
+private:
+
+    ui::WidgetWindow* m_window;
+    scene::SceneData* m_sceneData;
+
     bool m_loaded;
 };
