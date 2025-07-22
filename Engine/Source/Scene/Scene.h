@@ -38,7 +38,9 @@ namespace scene
         alignas(16) struct ViewportBuffer
         {
             math::Matrix4D projectionMatrix;
+            math::Matrix4D invProjectionMatrix;
             math::Matrix4D viewMatrix;
+            math::Matrix4D invViewMatrix;
             math::Matrix4D prevProjectionMatrix;
             math::Matrix4D prevViewMatrix;
             math::float2   cameraJitter;
@@ -73,16 +75,29 @@ namespace scene
         math::float4            _tint;
     };
 
+    struct DirectionalLightState
+    {
+        scene::Transform    _transform;
+        math::float4        _color;
+        f32                 _attenuation;
+        f32                 _intensity;
+        f32                 _temperature;
+    };
+
     struct DrawInstanceDataState
     {
-        GeomtryState     _geometry;
-        MaterialState    _material;
+        DrawInstanceDataState* _parent = nullptr;
+        GeomtryState           _geometry;
+        MaterialState          _material;
 
-        scene::Transform _transform;
-        scene::Transform _prevTransform;
+        scene::Transform       _transform;
+        scene::Transform       _prevTransform;
 
-        u64              _pipelineID;
-        u64              _objectID;
+        u64                    _pipelineID;
+        u64                    _objectID;
+
+        bool                   _visible = true;
+        bool                   _selected = false;
     };
 
     struct RenderState
@@ -99,6 +114,7 @@ namespace scene
 
         ViewportState                              m_viewportState;
         RenderState                                m_renderState;
+        DirectionalLightState                      m_diectionalLightState;
     };
 
     struct FrameData

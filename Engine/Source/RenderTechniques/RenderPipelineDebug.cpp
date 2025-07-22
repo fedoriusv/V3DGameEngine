@@ -28,9 +28,9 @@ void RenderPipelineDebugStage::create(Device* device, scene::SceneData& scene, s
 
     {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "debug.hlsl", "simple_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "simple.hlsl", "simple_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "debug.hlsl", "simple_unlit_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "simple.hlsl", "simple_unlit_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         RenderPassDesc desc;
         desc._countColorAttachments = 1;
@@ -39,8 +39,7 @@ void RenderPipelineDebugStage::create(Device* device, scene::SceneData& scene, s
         desc._hasDepthStencilAttahment = true;
 
         {
-            renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-                device, VertexFormatSimpleDesc, desc, new renderer::ShaderProgram(device, vertShader, fragShader), "debug");
+            renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(device, VertexFormatSimpleDesc, desc, new renderer::ShaderProgram(device, vertShader, fragShader), "debug");
 
             pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -59,8 +58,7 @@ void RenderPipelineDebugStage::create(Device* device, scene::SceneData& scene, s
         }
 
         {
-            renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-                device, VertexFormatSimpleDesc, desc, new renderer::ShaderProgram(device, vertShader, fragShader), "debug_line");
+            renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(device, VertexFormatSimpleDesc, desc, new renderer::ShaderProgram(device, vertShader, fragShader), "debug_line");
 
             pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_LineList);
             pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);

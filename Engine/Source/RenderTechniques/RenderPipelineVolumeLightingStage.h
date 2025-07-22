@@ -16,12 +16,12 @@ namespace renderer
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class RenderPipelineLightingStage : public RenderPipelineStage
+    class RenderPipelineVolumeLightingStage : public RenderPipelineStage
     {
     public:
 
-        explicit  RenderPipelineLightingStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
-        ~RenderPipelineLightingStage();
+        explicit  RenderPipelineVolumeLightingStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
+        ~RenderPipelineVolumeLightingStage();
 
         void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
         void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
@@ -35,6 +35,8 @@ namespace renderer
         void destroyRenderTarget(Device* device, scene::SceneData& data);
 
         scene::ModelHandler* m_modelHandler;
+        renderer::RenderTargetState* m_lightRenderTarget;
+        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipelines;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

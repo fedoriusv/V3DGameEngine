@@ -22,6 +22,7 @@ namespace scene
         static Mesh* createCone(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, f32 height, u32 segments = 64);
         static Mesh* createPlane(renderer::Device* device, renderer::CmdListRender* cmdList, f32 width, f32 depth, u32 xSegments = 64, u32 zSegments = 64);
         static Mesh* createGrid(renderer::Device* device, renderer::CmdListRender* cmdList, f32 cellSize, u32 cellCountX = 64, u32 cellCountZ = 64);
+        static Mesh* createLine(renderer::Device* device, renderer::CmdListRender* cmdList, const std::vector<math::float3>& points);
     };
 
 } //namespace scene

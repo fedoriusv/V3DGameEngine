@@ -43,8 +43,8 @@ void RenderPipelineSelectionStage::create(Device* device, scene::SceneData& scen
 #else
     m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
 #endif
-    m_pipeline->setDepthWrite(true);
-    m_pipeline->setDepthTest(true);
+    m_pipeline->setDepthWrite(false);
+    m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 }
 

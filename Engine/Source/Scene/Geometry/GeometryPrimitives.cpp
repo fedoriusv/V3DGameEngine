@@ -418,5 +418,43 @@ Mesh* Primitives::createGrid(renderer::Device* device, renderer::CmdListRender* 
     return mesh;
 }
 
+Mesh* Primitives::createLine(renderer::Device* device, renderer::CmdListRender* cmdList, const std::vector<math::float3>& points)
+{
+    if (points.empty())
+    {
+        return nullptr;
+    }
+
+    StaticMesh* mesh = V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject)();
+    mesh->m_description = renderer::VertexFormatSimpleDesc;
+    mesh->m_name = "line";
+    mesh->m_topology = renderer::PrimitiveTopology::PrimitiveTopology_LineList;
+
+    std::vector<u32> indices;
+    std::vector<renderer::VertexFormatSimple> vertices;
+
+     
+    for (u32 index = 0; index < points.size(); ++index)
+    {
+        renderer::VertexFormatSimple v;
+        v.position = points[index];
+        v.normal = { 0.f, 1.f, 0.f };
+        v.UV = { 0.f, 0.f };
+
+        vertices.push_back(v);
+        indices.push_back(index);
+    }
+
+    renderer::IndexBuffer* indexBuffer = V3D_NEW(renderer::IndexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::Buffer_GPUOnly, renderer::IndexBufferType::IndexType_32, indices.size(), "IndexBuffer");
+    cmdList->uploadData(indexBuffer, 0, indices.size() * sizeof(u32), indices.data());
+    mesh->m_indexBuffer = indexBuffer;
+
+    renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimple), "VertexBuffer");
+    cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimple), vertices.data());
+    mesh->m_vertexBuffer.push_back(vertexBuffer);
+
+    return mesh;
+}
+
 } //namespace scene
 } //namespace v3d

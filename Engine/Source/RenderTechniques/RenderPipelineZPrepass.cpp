@@ -37,8 +37,8 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::SceneData& scene
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "gbuffer.hlsl", "gbuffer_depth_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_depthPipeline = new renderer::GraphicsPipelineState(
-        device, VertexFormatStandardDesc, m_depthRenderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "prepass_pipeline");
+    m_depthPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_depthRenderTarget->getRenderPassDesc(),
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "zprepass_pipeline");
 
    m_depthPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_depthPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -58,9 +58,9 @@ void RenderPipelineZPrepassStage::destroy(Device* device, scene::SceneData& scen
     destroyRenderTarget(device, scene);
 
     const renderer::ShaderProgram* program = m_depthPipeline->getShaderProgram();
-    delete program;
+    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-    delete m_depthPipeline;
+    V3D_DELETE(m_depthPipeline, memory::MemoryLabel::MemoryGame);
     m_depthPipeline = nullptr;
 }
 
@@ -116,7 +116,7 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& scen
 
         cmdList->bindDescriptorSet(1,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, 1),
             });
 
         DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_depthPipeline->getName()), color::colorrgbaf::LTGREY);
@@ -136,9 +136,9 @@ void RenderPipelineZPrepassStage::createRenderTarget(Device* device, scene::Scen
 #endif
 
     ASSERT(m_depthRenderTarget == nullptr, "must be nullptr");
-    m_depthRenderTarget = new renderer::RenderTargetState(device, scene.m_viewportState._viewpotSize, 0, 0, "zprepass");
+    m_depthRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportState._viewpotSize, 0, 0, "zprepass");
 
-    renderer::Texture2D* depthStencilAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    renderer::Texture2D* depthStencilAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_D32_SFloat, scene.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
     m_depthRenderTarget->setDepthStencilTexture(depthStencilAttachment,
         {
@@ -159,9 +159,9 @@ void RenderPipelineZPrepassStage::destroyRenderTarget(Device* device, scene::Sce
 {
     ASSERT(m_depthRenderTarget, "must be valid");
     renderer::Texture2D* depthStencilAttachment = m_depthRenderTarget->getDepthStencilTexture<renderer::Texture2D>();
-    delete depthStencilAttachment;
+    V3D_DELETE(depthStencilAttachment, memory::MemoryLabel::MemoryGame);
 
-    delete m_depthRenderTarget;
+    V3D_DELETE(m_depthRenderTarget, memory::MemoryLabel::MemoryGame);
     m_depthRenderTarget = nullptr;
 }
 
