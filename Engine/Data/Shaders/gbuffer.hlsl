@@ -1,7 +1,7 @@
 #include "global.hlsli"
 #include "viewport.hlsli"
 #include "gbuffer_common.hlsli"
-#include "lighting.hlsli"
+#include "lighting_common.hlsli"
 #include "offscreen_common.hlsli"
 
 ///////////////////////////////////////////////////////////////////////////////////////

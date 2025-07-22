@@ -6,7 +6,9 @@
 struct Viewport
 {
     float4x4 projectionMatrix;
+    float4x4 invProjectionMatrix;
     float4x4 viewMatrix;
+    float4x4 invViewMatrix;
     float4x4 prevProjectionMatrix;
     float4x4 prevViewMatrix;
     float2   cameraJitter;

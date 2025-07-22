@@ -1,5 +1,6 @@
 #include "global.hlsli"
 #include "viewport.hlsli"
+#include "lighting_common.hlsli"
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -25,6 +26,7 @@ typedef VS_SIMPLE_OUTPUT PS_SIMPLE_INPUT;
 
 [[vk::binding(0, 0)]] ConstantBuffer<Viewport> CB_Viewport : register(b0, space0);
 [[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> CB_Model : register(b1, space1);
+[[vk::binding(2, 1)]] ConstantBuffer<LightBuffer> CB_Light : register(b2, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,6 +51,18 @@ VS_SIMPLE_OUTPUT simple_vs(VS_SIMPLE_INPUT Input)
 float4 simple_unlit_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
 {
     return float4(CB_Model.tint.rgb, 1.0);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+float4 light_primitive_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
+{
+    float distance = length(CB_Light.position.xyz - Input.WorldPos);
+    float colorConstant = 1.0;
+    float colorLinear  = 0.09;
+    float colorQuadratic = 0.032;
+    float attenuation = 1.0 / (colorConstant + colorLinear * distance + colorQuadratic * (distance * distance));
+    return float4(CB_Light.color.rgb * attenuation, 1.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

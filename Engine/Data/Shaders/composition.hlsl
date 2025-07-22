@@ -8,8 +8,8 @@
 
 [[vk::binding(1, 1)]] SamplerState samplerState  : register(s0, space1);
 [[vk::binding(2, 1)]] Texture2D textureBaseColor : register(t0, space1);
-[[vk::binding(3, 1)]] Texture2D textureNormal    : register(t1, space1);
-[[vk::binding(4, 1)]] Texture2D textureMaterial  : register(t2, space1);
+//[[vk::binding(3, 1)]] Texture2D textureNormal    : register(t1, space1);
+//[[vk::binding(4, 1)]] Texture2D textureMaterial  : register(t2, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
