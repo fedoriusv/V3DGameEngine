@@ -10,6 +10,10 @@ namespace ui
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    using OnWidgetEventNode = std::function<void(Widget*, s32, bool)>;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * @brief WidgetTreeNode class
     */
@@ -21,6 +25,7 @@ namespace ui
         {
             Framed = 1 << 0,
             Open = 1 << 1,
+            NoCollapsed = 1 << 2,
         };
         typedef u64 TreeNodeFlags;
 
@@ -31,6 +36,13 @@ namespace ui
 
         const std::string& getText() const;
         WidgetTreeNode& setText(const std::string& text);
+
+        WidgetTreeNode& setIndex(u32 index);
+
+        WidgetTreeNode& setSelected(bool selected);
+        WidgetTreeNode& setOnSelectChanged(const OnWidgetEventNode& event);
+
+        WidgetTreeNode& setOnClickEvent(const OnWidgetEventIntParam& event);
 
         template<class TWidget>
         WidgetTreeNode& addWidget(const TWidget& wiget);
@@ -44,9 +56,13 @@ namespace ui
 
         struct StateTreeNode : StateBase
         {
-            std::string         _text;
-            WidgetLayout        _layout;
-            TreeNodeFlags       _createFlags = 0;
+            std::string              _text;
+            WidgetLayout             _layout;
+            TreeNodeFlags            _createFlags = 0;
+            OnWidgetEventNode        _onSelectedChanged;
+            OnWidgetEventIntParam    _onClickEvent;
+            u32                      _index = ~1;
+            bool                     _isSelected;
         };
 
     private:
@@ -67,6 +83,34 @@ namespace ui
     inline WidgetTreeNode& WidgetTreeNode::setText(const std::string& text)
     {
         Widget::cast_data<StateType>(m_data)._text = text;
+        return *this;
+    }
+
+    inline WidgetTreeNode& WidgetTreeNode::setIndex(u32 index)
+    {
+        Widget::cast_data<StateType>(m_data)._index = index;
+        return *this;
+    }
+
+    inline WidgetTreeNode& WidgetTreeNode::setSelected(bool selected)
+    {
+        if (cast_data<StateType>(m_data)._isSelected != selected)
+        {
+            cast_data<StateType>(m_data)._isSelected = selected;
+            cast_data<StateType>(m_data)._stateMask = State::StateMask::Selected;
+        }
+        return *this;
+    }
+
+    inline WidgetTreeNode& WidgetTreeNode::setOnSelectChanged(const OnWidgetEventNode& event)
+    {
+        Widget::cast_data<StateType>(m_data)._onSelectedChanged = event;
+        return *this;
+    }
+
+    inline WidgetTreeNode& WidgetTreeNode::setOnClickEvent(const OnWidgetEventIntParam& event)
+    {
+        Widget::cast_data<StateType>(m_data)._onClickEvent = event;
         return *this;
     }
 

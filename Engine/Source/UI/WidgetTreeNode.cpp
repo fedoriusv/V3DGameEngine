@@ -41,6 +41,16 @@ bool WidgetTreeNode::update(WidgetHandler* handler, Widget* parent, Widget* layo
 {
     if (Widget::update(handler, parent, layout, dt))
     {
+        StateTreeNode& state = cast_data<StateType>(m_data);
+        if (state._stateMask & State::StateMask::Selected)
+        {
+            if (state._onSelectedChanged)
+            {
+                std::invoke(state._onSelectedChanged, this, state._index, state._isSelected);
+            }
+            state._stateMask &= ~State::StateMask::Selected;
+        }
+
         return handler->getWidgetDrawer()->draw_TreeNode(this, parent, static_cast<WidgetType*>(layout)->m_data, m_data, dt);
     }
 

@@ -58,19 +58,20 @@ namespace ui
             {
                 Active = 0x1,
                 Visible = 0x2,
-                MainLayout = 0x4,
-                HorizontalLine = 0x8,
-                DefindedSize = 0x10,
-                Color = 0x20,
-                HoveredColor = 0x40,
-                ClickedColor = 0x80,
-                BorderColor = 0x100,
-                BackgroundColor = 0x200,
+                Selected = 0x4,
+                MainLayout = 0x8,
+                HorizontalLine = 0x10,
+                DefindedSize = 0x20,
+                Color = 0x40,
+                HoveredColor = 0x80,
+                ClickedColor = 0x100,
+                BorderColor = 0x200,
+                BackgroundColor = 0x400,
 
-                FirstUpdateState = 0x400,
-                ForceUpdateState = 0x800,
-                ChildLayoutState = 0x1000,
-                CollapsedState = 0x2000
+                FirstUpdateState = 0x800,
+                ForceUpdateState = 0x1000,
+                ChildLayoutState = 0x2000,
+                CollapsedState = 0x4000,
             };
 
             State() noexcept = default;

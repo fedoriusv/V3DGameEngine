@@ -979,6 +979,16 @@ bool ImGuiWidgetDrawer::draw_TreeNode(Widget* widget, Widget* base, Widget::Stat
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
     }
 
+    if (tn->_createFlags & WidgetTreeNode::TreeNodeFlag::NoCollapsed)
+    {
+        flags |= ImGuiTreeNodeFlags_Leaf;
+    }
+
+    if (tn->_isSelected)
+    {
+        flags |= ImGuiTreeNodeFlags_Selected;
+    }
+
     ImGui::PushID(tn->_uid);
     bool active = ImGui::TreeNodeEx(tn->_text.c_str(), flags);
     if (active)
@@ -996,6 +1006,15 @@ bool ImGuiWidgetDrawer::draw_TreeNode(Widget* widget, Widget* base, Widget::Stat
     if (tn->_showToolTip && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
         ImGui::SetTooltip(tn->_toolTip.c_str());
+    }
+
+    if (ImGui::IsItemClicked())
+    {
+        tn->_isSelected = true;
+        if (tn->_onClickEvent)
+        {
+            std::invoke(tn->_onClickEvent, widget, tn->_index);
+        }
     }
 
     return true;
