@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer/Device.h"
+#include "Renderer/CaptureProfile.h"
 #include "FrameProfiler.h"
 
 #ifdef VULKAN_RENDER
@@ -258,6 +259,8 @@ namespace vk
 
         std::vector<Concurrency>                m_threadedPools;
         u16                                     m_maskOfActiveThreadPool;
+
+        CaptureProfile*                         m_captureProfiler;
 
         s32 getFreeThreadSlot() const;
         u32 prepareConcurrencySlot();

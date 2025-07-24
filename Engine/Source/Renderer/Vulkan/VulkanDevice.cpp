@@ -144,6 +144,13 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
     , m_computePipelineManager(nullptr)
     , m_samplerManager(nullptr)
     , m_internalCmdBufferManager(nullptr)
+
+
+#if ENABLE_RENDERDOC_PROFILE
+    , m_captureProfiler(V3D_NEW(CaptureRenderdocProfile, memory::MemoryLabel::MemoryRenderCore))
+#else
+    , m_captureProfiler(nullptr)
+#endif
 {
     LOG_DEBUG("VulkanDevice created this %llx", this);
 
@@ -153,6 +160,11 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
 
     m_threadedPools.resize(std::numeric_limits<u16>::digits); //TODO: calculate count threads
     m_maskOfActiveThreadPool = 0b0000000000000000;
+
+    if (m_captureProfiler)
+    {
+        m_captureProfiler->create();
+    }
 }
 
 VulkanDevice::~VulkanDevice()
@@ -174,6 +186,12 @@ VulkanDevice::~VulkanDevice()
 
     ASSERT(m_deviceInfo._device == VK_NULL_HANDLE, "Device is not nullptr");
     ASSERT(m_deviceInfo._instance == VK_NULL_HANDLE, "Instance is not nullptr");
+
+    if (m_captureProfiler)
+    {
+        m_captureProfiler->destroy();
+        V3D_DELETE(m_captureProfiler, memory::MemoryLabel::MemoryRenderCore);
+    }
 }
 
 void VulkanDevice::submit(CmdList* cmd, bool wait)
