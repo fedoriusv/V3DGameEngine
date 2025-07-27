@@ -24,12 +24,10 @@
     float metallic = material.g;
     
     float depth = textureDepth.SampleLevel(samplerState, Input.UV, 0).r;
-    float4x4 invViewProject = mul(CB_Viewport.invProjectionMatrix, CB_Viewport.invViewMatrix);
-    float3 worldPos = reconstruct_worldPos(invViewProject, Input.UV, depth);
+    float3 worldPos = reconstruct_WorldPos(CB_Viewport.invProjectionMatrix, CB_Viewport.invViewMatrix, Input.UV, depth);
     
     float4 color = cook_torrance_BRDF(CB_Viewport, CB_Light, worldPos, albedo, normals, metallic, roughness, depth);
-
-    return color;
+    return float4(color.rgb, 1.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

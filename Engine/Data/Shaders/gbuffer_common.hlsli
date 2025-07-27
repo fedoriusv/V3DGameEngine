@@ -92,10 +92,10 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
     float2 velocity = calc_velocity(Input.ClipPos, Input.PrevClipPos);
     
     float3 N = normalize(Input.Normal);
-    float3 B = normalize(Input.Tangent);
-    float3 T = normalize(Input.Bitangent);
+    float3 B = normalize(Input.Bitangent);
+    float3 T = normalize(Input.Tangent);
     float3x3 TBN = float3x3(T, B, N);
-    normal = mul(TBN, normalize(normal));
+    normal = normalize(mul(normal, TBN));
 
     Output.BaseColor = float4(albedo * Model.tint.rgb, 1.0);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
@@ -125,10 +125,10 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     float2 velocity = calc_velocity(Input.ClipPos, Input.PrevClipPos);
     
     float3 N = normalize(Input.Normal);
-    float3 B = normalize(Input.Tangent);
-    float3 T = normalize(Input.Bitangent);
+    float3 B = normalize(Input.Bitangent);
+    float3 T = normalize(Input.Tangent);
     float3x3 TBN = float3x3(T, B, N);
-    normal = mul(TBN, normalize(normal));
+    normal = normalize(mul(normal, TBN));
 
     Output.BaseColor = float4(albedo * Model.tint.rgb, Model.tint.a);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);

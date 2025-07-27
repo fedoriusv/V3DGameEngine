@@ -221,6 +221,9 @@ void EditorScene::preRender(f32 dt)
     viewportState.cursorPosition = { (f32)posX, (f32)posY };
     viewportState.time = utils::Timer::getCurrentTime();
 
+    scene::DirectionalLightState& dirLightState = m_sceneData.m_diectionalLightState;
+    dirLightState._transform = dirLightState._parent->_transform;
+
     m_modelHandler->visibilityTest(m_sceneData);
     if (m_activeIndex != k_emptyIndex)
     {
@@ -508,7 +511,7 @@ void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
     }
 
     {
-        scene::Mesh* directionalLightDebug = scene::Primitives::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 1.f } });
+        scene::Mesh* directionalLightDebug = scene::Primitives::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.25f } });
         scene::DrawInstanceDataState* line = new scene::DrawInstanceDataState;
         line->_geometry._ID = "EditorDirectionalLight";
         line->_geometry._idxBuffer = directionalLightDebug->m_indexBuffer;
@@ -519,11 +522,12 @@ void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
         line->_material._normals = nullptr;
         line->_material._material = nullptr;
         line->_material._tint = { 1.0, 1.0, 0.f, 1.0 };
-        line->_transform.setPosition({ 0.f, 0.f, 0.f });
+        line->_transform.setPosition({ 0.f, 1.f, -1.f });
         line->_transform.setScale({ 1.f, 1.f, 1.f });
         line->_prevTransform = line->_transform;
         line->_objectID = g_objectIDCounter++;
         line->_pipelineID = 1;
+        m_sceneData.m_diectionalLightState._parent = line;
 
         m_sceneData.m_generalList.push_back(line);
     }

@@ -15,16 +15,18 @@ float linearize_depth(in float d, in float zNear, in float zFar)
     return zNear * zFar / (zNear + d * (zFar - zNear));
 }
 
-float3 reconstruct_worldPos(float4x4 invViewiProjection, float2 uv, float depth)
+float3 reconstruct_WorldPos(float4x4 invProjection, float4x4 invView, float2 uv, float depth)
 {
     float4 clipPos;
     clipPos.xy = uv * 2.0f - 1.0f;
     clipPos.z = depth;
     clipPos.w = 1.0f;
 
-    float4 viewPos = mul(invViewiProjection, clipPos);
-    viewPos /= viewPos.w;
-    return viewPos.xyz;
+    float4 viewSpacePos = mul(invProjection, clipPos);
+    viewSpacePos /= viewSpacePos.w;
+    
+    float4 worldSpacePos = mul(invView, viewSpacePos);
+    return worldSpacePos.xyz;
 }
 
 float3 srgb_linear(float3 srgb)

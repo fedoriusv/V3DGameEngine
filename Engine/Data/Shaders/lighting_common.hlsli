@@ -19,6 +19,22 @@ struct LightBuffer
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+float4 lambert_lighting(
+    in float3 LightDir,
+    in float3 WorldNormal,
+    in float3 LightColor,
+    in float3 PixelColor)
+{
+    float3 N = normalize(WorldNormal);
+    float3 L = normalize(-LightDir);
+    
+    float diffuseKoeff = saturate(dot(N, L));
+    return float4(diffuseKoeff * LightColor * PixelColor, 1.0);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+
 static const float PI = 3.14159265;
 
 // Normal Distribution Function (GGX)
@@ -55,7 +71,7 @@ float3 Fresnel_Schlick(float cosTheta, float3 F0)
 float4 cook_torrance_BRDF(
     in uniform ConstantBuffer<Viewport> Viewport,
     in uniform ConstantBuffer<LightBuffer> Light,
-    in float3 WordPos,
+    in float3 WorldPos,
     in float3 Albedo,
     in float3 Normals,
     in float Metallic,
@@ -64,7 +80,7 @@ float4 cook_torrance_BRDF(
 {
     // Build TBN matrix
     float3 N = normalize(Normals);
-    float3 V = normalize(Viewport.cameraPosition.xyz - WordPos);
+    float3 V = normalize(Viewport.cameraPosition.xyz - WorldPos);
     float3 L = normalize(-Light.direction.xyz);
     float3 H = normalize(L + V);
 
@@ -93,5 +109,7 @@ float4 cook_torrance_BRDF(
 
     return float4(Lo, 1.0);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
 
 #endif //_LIGTING_COMMON_HLSL_
