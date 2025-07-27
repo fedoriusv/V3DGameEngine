@@ -330,15 +330,27 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                     continue;
                 }
 
-                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorSetLayoutBinding.binding = sampledImage._binding;
-                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-                descriptorSetLayoutBinding.descriptorCount = sampledImage._array;
-                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                auto exists = std::find_if(descriptorSetLayoutBindings.begin(), descriptorSetLayoutBindings.end(), [binding = sampledImage._binding](const VkDescriptorSetLayoutBinding& layoutBinding)
+                    {
+                        return layoutBinding.binding == binding;
+                    });
 
-                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-                _description._bindingsSetsMask |= 1 << setIndex;
+                if (exists != descriptorSetLayoutBindings.cend())
+                {
+                    exists->stageFlags |= convertShaderTypeToVkStage((ShaderType)type);
+                }
+                else
+                {
+                    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    descriptorSetLayoutBinding.binding = sampledImage._binding;
+                    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                    descriptorSetLayoutBinding.descriptorCount = sampledImage._array;
+                    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                    _description._bindingsSetsMask |= 1 << setIndex;
+                }
             }
 
             for (auto& sampler : res._samplers)
@@ -349,15 +361,27 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                     continue;
                 }
 
-                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-                descriptorSetLayoutBinding.binding = sampler._binding;
-                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-                descriptorSetLayoutBinding.descriptorCount = 1;
-                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                auto exists = std::find_if(descriptorSetLayoutBindings.begin(), descriptorSetLayoutBindings.end(), [binding = sampler._binding](const VkDescriptorSetLayoutBinding& layoutBinding)
+                    {
+                        return layoutBinding.binding == binding;
+                    });
 
-                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-                _description._bindingsSetsMask |= 1 << setIndex;
+                if (exists != descriptorSetLayoutBindings.cend())
+                {
+                    exists->stageFlags |= convertShaderTypeToVkStage((ShaderType)type);
+                }
+                else
+                {
+                    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                    descriptorSetLayoutBinding.binding = sampler._binding;
+                    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                    descriptorSetLayoutBinding.descriptorCount = 1;
+                    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                    _description._bindingsSetsMask |= 1 << setIndex;
+                }
             }
 
             for (auto& image : res._images)
@@ -368,15 +392,27 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                     continue;
                 }
 
-                VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-                descriptorSetLayoutBinding.binding = image._binding;
-                descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
-                descriptorSetLayoutBinding.descriptorCount = image._array;
-                descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+                auto exists = std::find_if(descriptorSetLayoutBindings.begin(), descriptorSetLayoutBindings.end(), [binding = image._binding](const VkDescriptorSetLayoutBinding& layoutBinding)
+                    {
+                        return layoutBinding.binding == binding;
+                    });
 
-                descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
-                _description._bindingsSetsMask |= 1 << setIndex;
+                if (exists != descriptorSetLayoutBindings.cend())
+                {
+                    exists->stageFlags |= convertShaderTypeToVkStage((ShaderType)type);
+                }
+                else
+                {
+                    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
+                    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                    descriptorSetLayoutBinding.binding = image._binding;
+                    descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
+                    descriptorSetLayoutBinding.descriptorCount = image._array;
+                    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+                    descriptorSetLayoutBindings.push_back(descriptorSetLayoutBinding);
+                    _description._bindingsSetsMask |= 1 << setIndex;
+                }
             }
 
             for (auto& storageImage : res._storageImages)
