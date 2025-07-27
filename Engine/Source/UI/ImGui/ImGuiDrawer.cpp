@@ -920,6 +920,13 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
     return active;
 }
 
+bool ImGuiWidgetDrawer::draw_ColorPalette(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+
+    return false;
+}
+
 math::float2 ImGuiWidgetDrawer::calculate_InputDragValueSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");

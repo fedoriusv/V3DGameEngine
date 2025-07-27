@@ -41,6 +41,7 @@ namespace ui
         bool draw_InputValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber, u32 array) override;
         bool draw_InputSliderValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) override;
         bool draw_InputDragValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) override;
+        bool draw_ColorPalette(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) override;
 
         bool draw_Table(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state) override;
         bool draw_TEST(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) override;

@@ -19,6 +19,7 @@ namespace ui
 
         explicit WidgetColorPalette() noexcept;
         WidgetColorPalette(const WidgetColorPalette&) noexcept;
+        WidgetColorPalette(WidgetColorPalette&&) noexcept;
         ~WidgetColorPalette();
 
         TypePtr getType() const final;
