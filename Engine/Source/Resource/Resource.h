@@ -28,6 +28,7 @@ namespace resource
         Mesh,
         Model,
         Material,
+        Light,
 
         Count
     };
@@ -94,7 +95,7 @@ namespace resource
     /**
     * @brief Base Interface for Resource class
     */
-    class V3D_API Resource : public utils::Reporter<ResourceReport>, public utils::ResourceID<Resource, u64>
+    class V3D_API Resource : public utils::Reporter<ResourceReport>, public utils::ResourceID<Resource, u32>
     {
     public:
 

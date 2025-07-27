@@ -59,26 +59,46 @@ void Camera::setTarget(const math::Vector3D& target)
 
 void Camera::setPosition(const math::Vector3D& position)
 {
-    Renderable::setPosition(position);
+    m_transform.setPosition(position);
     m_matricesFlags |= CameraState::CameraState_View;
 }
 
 void Camera::setRotation(const math::Vector3D& rotation)
 {
-    Renderable::setRotation(rotation);
+    m_transform.setRotation(rotation);
     m_matricesFlags |= CameraState::CameraState_View;
 }
 
 void Camera::setScale(const math::Vector3D& scale)
 {
-    Renderable::setPosition(scale);
+    m_transform.setPosition(scale);
     m_matricesFlags |= CameraState::CameraState_View;
 }
 
 void Camera::setTransform(const math::Matrix4D& transform)
 {
-    Renderable::setTransform(transform);
+    m_transform.setTransform(transform);
     m_matricesFlags |= CameraState::CameraState_View;
+}
+
+const math::Vector3D& Camera::getPosition() const
+{
+    return m_transform.getPosition();
+}
+
+const math::Vector3D& Camera::getRotation() const
+{
+    return m_transform.getRotation();
+}
+
+const math::Vector3D& Camera::getScale() const
+{
+    return m_transform.getScale();
+}
+
+const math::Matrix4D& Camera::getTransform() const
+{
+    return m_transform.getTransform();
 }
 
 const math::Vector3D& Camera::getTarget() const

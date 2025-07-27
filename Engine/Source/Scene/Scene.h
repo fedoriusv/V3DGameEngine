@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Scene/Transform.h"
 #include "Scene/Camera/CameraHandler.h"
+#include "Scene/Light.h"
 
 #include "Renderer/Buffer.h"
 #include "Renderer/Texture.h"
@@ -15,6 +16,8 @@ namespace v3d
 {
 namespace scene
 {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     enum class MaterialType
     {
         Opaque,
@@ -24,14 +27,21 @@ namespace scene
         Transparency,
         SkinnedTransparency,
 
+        Billboard,
+        VFX,
+
         Lights,
         Shadowmap,
+
         Selected,
         Debug,
+
         Custom,
 
         Count
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct ViewportState
     {
@@ -58,64 +68,71 @@ namespace scene
         scene::CameraHandler*   _camera;
     };
 
-    struct GeomtryState
-    {
-        utils::StringID         _ID;
-        renderer::IndexBuffer*  _idxBuffer;
-        renderer::VertexBuffer* _vtxBuffer;
-    };
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    //TODO
     struct MaterialState
     {
-        MaterialType            _type;
-        renderer::SamplerState* _sampler;
-        renderer::Texture2D*    _albedo;
-        renderer::Texture2D*    _normals;
-        renderer::Texture2D*    _material;
+        renderer::SamplerState* _sampler = nullptr;
+        renderer::Texture2D*    _baseColor = nullptr;
+        renderer::Texture2D*    _normals = nullptr;
+        renderer::Texture2D*    _roughness = nullptr;
+        renderer::Texture2D*    _metalness = nullptr;
         math::float4            _tint;
     };
 
-    struct DirectionalLightState
-    {
-        scene::Transform    _transform;
-        math::float4        _color;
-        f32                 _attenuation;
-        f32                 _intensity;
-        f32                 _temperature;
-    };
-
+    //TODO
     struct DrawInstanceDataState
     {
-        DrawInstanceDataState* _parent = nullptr;
-        GeomtryState           _geometry;
-        MaterialState          _material;
-
         scene::Transform       _transform;
         scene::Transform       _prevTransform;
-
+        MaterialState          _material;
+        std::string            _title;
         u64                    _pipelineID;
         u64                    _objectID;
-
+        MaterialType           _type;
         bool                   _visible = true;
         bool                   _selected = false;
     };
 
+    //TODO
+    struct LightingState
+    {
+        DrawInstanceDataState*  _parent = nullptr;
+        DirectionalLight*       _directionalLight;
+    };
+
+    //TODO remove
     struct RenderState
     {
         renderer::CmdListRender* m_cmdList;
     };
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    struct DrawNode
+    {
+        DrawNode*              _parent = nullptr;
+        Renderable*            _object;
+
+        DrawInstanceDataState  _instance;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     struct SceneData
     {
-        renderer::RenderObjectTracker              m_globalResources;
-
-        std::vector<scene::DrawInstanceDataState*> m_generalList;
-        std::vector<scene::DrawInstanceDataState*> m_lists[toEnumType(MaterialType::Count)];
-
-        ViewportState                              m_viewportState;
-        RenderState                                m_renderState;
-        DirectionalLightState                      m_diectionalLightState;
+        renderer::RenderObjectTracker   m_globalResources;
+                                        
+        std::vector<DrawNode*>          m_generalList;
+        std::vector<DrawNode*>          m_lists[toEnumType(MaterialType::Count)];
+                                        
+        ViewportState                   m_viewportState;
+        RenderState                     m_renderState;
+        LightingState                   m_lightingState;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct FrameData
     {
@@ -125,6 +142,8 @@ namespace scene
         Allocator* _dynamicAllocator;
         Allocator* _staticAllocator;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace scene
 } //namespace v3d

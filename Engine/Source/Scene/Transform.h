@@ -12,7 +12,7 @@ namespace scene
     /**
     * @brief Transform class
     */
-    class Transform final
+    class Transform
     {
     public:
 
@@ -24,7 +24,7 @@ namespace scene
 
             TransformState_All = TransformState_Translation | TransformState_Rotation | TransformState_Scale
         };
-        typedef u16 TransformStateFlags;
+        typedef u64 TransformStateFlags;
 
 
         Transform() noexcept;
@@ -44,12 +44,12 @@ namespace scene
 
         void claculateTransform() const;
 
+        mutable TransformStateFlags m_transformFlag;
+        mutable math::Matrix4D m_modelMatrix;
+
         math::Vector3D m_position;
         math::Vector3D m_rotation;
         math::Vector3D m_scale;
-
-        mutable math::Matrix4D m_modelMatrix;
-        mutable TransformStateFlags m_transformFlag;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

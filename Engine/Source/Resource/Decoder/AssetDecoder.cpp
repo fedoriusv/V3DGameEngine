@@ -103,7 +103,7 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     default:
         ASSERT(false, "resource is not found");
     };
-    static_assert(toEnumType(ResourceType::Count) == 7, "handle all resources and increment the value if is needed");
+    static_assert(toEnumType(ResourceType::Count) == 8, "handle all resources and increment the value if is needed");
 
     ASSERT(resource, "nullptr");
     if (!resource->load(stream))

@@ -124,7 +124,7 @@ Mesh* MeshHelper::createCube(renderer::Device* device, renderer::CmdListRender* 
         };
 
         renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), "VertexBuffer");
-        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), vertices.data());
+        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLit), vertices.data());
         mesh->m_vertexBuffer.push_back(vertexBuffer);
     }
 
@@ -195,7 +195,7 @@ Mesh* MeshHelper::createSphere(renderer::Device* device, renderer::CmdListRender
         }
 
         renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), "VertexBuffer");
-        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), vertices.data());
+        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLit), vertices.data());
         mesh->m_vertexBuffer.push_back(vertexBuffer);
     }
 
@@ -307,7 +307,7 @@ Mesh* MeshHelper::createCone(renderer::Device* device, renderer::CmdListRender* 
         }
 
         renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), "VertexBuffer");
-        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), vertices.data());
+        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLit), vertices.data());
         mesh->m_vertexBuffer.push_back(vertexBuffer);
     }
 
@@ -386,7 +386,7 @@ Mesh* MeshHelper::createPlane(renderer::Device* device, renderer::CmdListRender*
         }
 
         renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), "VertexBuffer");
-        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), vertices.data());
+        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLit), vertices.data());
         mesh->m_vertexBuffer.push_back(vertexBuffer);
     }
 
@@ -463,7 +463,7 @@ Mesh* MeshHelper::createGrid(renderer::Device* device, renderer::CmdListRender* 
         }
 
         renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), "VertexBuffer");
-        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), vertices.data());
+        cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLit), vertices.data());
         mesh->m_vertexBuffer.push_back(vertexBuffer);
     }
 
@@ -502,7 +502,7 @@ Mesh* MeshHelper::createLine(renderer::Device* device, renderer::CmdListRender* 
     mesh->m_indexBuffer = indexBuffer;
 
     renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), "VertexBuffer");
-    cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), vertices.data());
+    cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLit), vertices.data());
     mesh->m_vertexBuffer.push_back(vertexBuffer);
 
     return mesh;

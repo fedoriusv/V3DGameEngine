@@ -56,6 +56,15 @@ namespace scene
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    struct InstanceDraw
+    {
+        renderer::GeometryBufferDesc _desc;
+        f32 _offset;
+        f32 _count;
+        f32 _instanceOffest;
+        f32 _instancesCount;
+    };
+
 
     class ModelHandler
     {
@@ -68,8 +77,8 @@ namespace scene
 
         void visibilityTest(scene::SceneData& scene);
 
-        void drawStaticGeometry();
-        void drawAnimatedGeometry();
+        void drawStaticGeometry(renderer::CmdListRender* cmdList, InstanceDraw* instance);
+        void drawAnimatedGeometry(renderer::CmdListRender* cmdList);
 
     private:
 

@@ -36,10 +36,17 @@ namespace scene
         const math::Vector3D getForwardVector() const;
         const math::Vector3D getUpVector() const;
 
-        void setPosition(const math::Vector3D& position) override;
-        void setRotation(const math::Vector3D& rotation) override;
-        void setScale(const math::Vector3D& scale) override;
-        void setTransform(const math::Matrix4D& transform) override;
+        void setPosition(const math::Vector3D& position);
+        void setRotation(const math::Vector3D& rotation);
+        void setScale(const math::Vector3D& scale);
+        void setTransform(const math::Matrix4D& transform);
+
+        const math::Vector3D& getPosition() const;
+        const math::Vector3D& getRotation() const;
+        const math::Vector3D& getScale() const;
+        const math::Matrix4D& getTransform() const;
+
+        TypePtr getType() const final;
 
         void setNear(f32 value);
         f32 getNear() const;
@@ -79,21 +86,22 @@ namespace scene
             CameraState_All = CameraState_View | CameraState_Projection,
         };
 
-        typedef u16 CameraStateFlags;
+        typedef u8 CameraStateFlags;
 
         void recalculateProjectionMatrix() const;
         void recalculateViewMatrix() const;
 
+        Transform                m_transform;
         mutable math::Matrix4D   m_matrices[Matrix_Count];
-        mutable f32              m_aspectRatio;
         mutable math::Vector3D   m_target;
         mutable math::Vector3D   m_up;
         math::Rect               m_area;
+        mutable f32              m_aspectRatio;
         f32                      m_zNear;
         f32                      m_zFar;
         f32                      m_fieldOfView;
-        bool                     m_orthogonal;
         mutable CameraStateFlags m_matricesFlags;
+        bool                     m_orthogonal;
 
         friend class CameraHandler;
 
@@ -128,7 +136,27 @@ namespace scene
         return m_aspectRatio;
     }
 
+    inline TypePtr Camera::getType() const
+    {
+        return typeOf<Camera>();
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace scene
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    template<>
+    struct TypeOf<scene::Camera>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace v3d

@@ -71,20 +71,31 @@ namespace scene
      }
 
      //group by type
-     for (auto item : scene.m_generalList)
+     for (auto& item : scene.m_generalList)
      {
-         scene.m_lists[toEnumType(item->_material._type)].push_back(item);
+         scene.m_lists[toEnumType(item->_instance._type)].push_back(item);
      }
 
      //fructum test
 
  }
 
- void ModelHandler::drawStaticGeometry()
+ void ModelHandler::drawStaticGeometry(renderer::CmdListRender* cmdList, InstanceDraw* instance)
  {
+     ASSERT(instance, "must be valid");
+
+     const renderer::GeometryBufferDesc& desc = instance->_desc;
+     if (desc._indexBuffer.isValid())
+     {
+         cmdList->drawIndexed(desc, instance->_offset, instance->_count, 0, instance->_instanceOffest, instance->_instancesCount);
+     }
+     else
+     {
+         cmdList->draw(desc, instance->_offset, instance->_count, instance->_instanceOffest, instance->_instancesCount);
+     }
  }
 
- void ModelHandler::drawAnimatedGeometry()
+ void ModelHandler::drawAnimatedGeometry(renderer::CmdListRender* cmdList)
  {
  }
 
