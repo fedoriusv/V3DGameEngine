@@ -44,7 +44,7 @@ public:
     {
     public:
 
-        RenderPipelineScene(scene::ModelHandler* modelHandler);
+        RenderPipelineScene(scene::ModelHandler* modelHandler, ui::WidgetHandler* uiHandler);
         ~RenderPipelineScene();
     };
 
@@ -110,9 +110,7 @@ public:
     ViewportParams                  m_vewportParams;
 
     u32                             m_activeIndex;
-
-    ui::WidgetListBox* m_contentList;
-    u64 m_frameCounter;
+    u64                             m_frameCounter;
 
     scene::SceneData m_sceneData;
     std::vector<scene::FrameData> m_frameState;

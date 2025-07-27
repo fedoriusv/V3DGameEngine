@@ -75,13 +75,13 @@ bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event:
     if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
     {
         const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
-        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? m_sceneData->m_generalList[selectionEvent->_selectedIndex] : nullptr;
+        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? &m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_instance : nullptr;
         if (m_gizmo)
         {
             if (m_selectedObject && m_currentOp > -1)
             {
                 m_gizmo->setActive(true);
-                modify(m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_transform);
+                modify(m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_instance._transform);
             }
             else
             {

@@ -201,7 +201,7 @@ private:
 
         //UI
         m_UI = ui::WidgetHandler::createWidgetHander<ui::ImGuiWidgetHandler>(m_Device, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWidgetHandler::ImGui_ViewportMode | ui::ImGuiWidgetHandler::ImGui_Gizmo);
-        m_UI->showDemoUI();
+        //m_UI->showDemoUI();
 
         InputEventHandler::bind([this](const MouseInputEvent* event)
             {
@@ -330,7 +330,7 @@ private:
                 { ui::WidgetWindowLayout::DirDown, 0.2f, &win3  } 
             }));
 
-        editor::UI::constuctTestUIWindow(m_UI, m_EditorScene);
+        //editor::UI::constuctTestUIWindow(m_UI, m_EditorScene);
     }
     
     void Run()

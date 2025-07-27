@@ -27,6 +27,10 @@ public:
 
 private:
 
+    void buildTransformProp();
+    void buildLightProp();
+    void buildMaterialProp();
+
     ui::WidgetWindow* m_window;
 
     scene::SceneData* m_sceneData;

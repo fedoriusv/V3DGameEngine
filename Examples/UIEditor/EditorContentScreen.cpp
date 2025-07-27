@@ -37,20 +37,26 @@ void EditorContentScreen::build()
             m_widgetItems.resize(m_sceneData->m_generalList.size(), nullptr);
             for (u32 index = 0; index < m_sceneData->m_generalList.size(); ++index)
             {
-                auto& item = m_sceneData->m_generalList[index];
-                sceneNode.addWidget(ui::WidgetTreeNode(std::string(item->_geometry._ID.name()), ui::WidgetTreeNode::TreeNodeFlag::NoCollapsed)
+                scene::DrawInstanceDataState& item = m_sceneData->m_generalList[index]->_instance;
+                if (m_sceneData->m_generalList[index]->_instance._type == scene::MaterialType::Debug)
+                {
+                    //skip debug object list
+                    continue;
+                }
+
+                sceneNode.addWidget(ui::WidgetTreeNode(item._title, ui::WidgetTreeNode::TreeNodeFlag::NoCollapsed)
                     .setOnCreated([this, index](ui::Widget* w)
                         {
                             m_widgetItems[index] = static_cast<ui::WidgetTreeNode*>(w);
                         })
                     .setIndex(index)
-                    .setSelected(m_sceneData->m_generalList[index]->_selected)
+                    .setSelected(m_sceneData->m_generalList[index]->_instance._selected)
                     .setOnClickEvent([this](ui::Widget* w, s32 index) -> void
                         {
-                            m_sceneData->m_generalList[index]->_selected = true;
+                            m_sceneData->m_generalList[index]->_instance._selected = true;
                             m_gameEventRecevier->sendEvent(new EditorSelectionEvent(index));
                         })
-                    );
+                );
             }
         }
 
@@ -86,7 +92,10 @@ bool EditorContentScreen::handleGameEvent(event::GameEventHandler* handler, cons
 
             for (auto& item : m_widgetItems)
             {
-                item->setSelected(false);
+                if (item)
+                {
+                    item->setSelected(false);
+                }
             }
 
             if (selectionEvent->_selectedIndex != k_emptyIndex)

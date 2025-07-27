@@ -11,7 +11,6 @@
 
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
-#include "Scene/Geometry/GeometryPrimitives.h"
 
 #include "Renderer/Render.h"
 #include "Renderer/Device.h"
@@ -28,10 +27,11 @@
 #include "RenderTechniques/RenderPipelineFXAA.h"
 #include "RenderTechniques/RenderPipelineTAA.h"
 #include "RenderTechniques/RenderPipelineMBOIT.h"
-#include "RenderTechniques/RenderPipelineSelectionStage.h"
-#include "RenderTechniques/RenderPipelineDeferredLightingStage.h"
-#include "RenderTechniques/RenderPipelineVolumeLightingStage.h"
+#include "RenderTechniques/RenderPipelineSelection.h"
+#include "RenderTechniques/RenderPipelineDeferredLighting.h"
+#include "RenderTechniques/RenderPipelineVolumeLighting.h"
 #include "RenderTechniques/RenderPipelineDebug.h"
+#include "RenderTechniques/RenderPipelineUnlit.h"
 
 #include "Stream/StreamManager.h"
 
@@ -42,7 +42,7 @@ s32 g_objectIDCounter = 1;
 
 using namespace v3d;
 
-EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* modelHandler)
+EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* modelHandler, ui::WidgetHandler* uiHandler)
 {
     new renderer::RenderPipelineZPrepassStage(this, modelHandler);
     new renderer::RenderPipelineGBufferStage(this, modelHandler);
@@ -50,11 +50,12 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     new renderer::RenderPipelineDeferredLightingStage(this);
     new renderer::RenderPipelineVolumeLightingStage(this, modelHandler);
     //new renderer::RenderPipelineMBOITStage(this);
+    //new renderer::RenderPipelineUnlitStage(this, modelHandler);
     new renderer::RenderPipelineOutlineStage(this);
     new renderer::RenderPipelineTAAStage(this);
-    new renderer::RenderPipelineDebugStage(this, modelHandler);
+    //new renderer::RenderPipelineDebugStage(this, modelHandler);
     new renderer::RenderPipelineGammaCorrectionStage(this);
-    new renderer::RenderPipelineUIOverlayStage(this, nullptr);
+    new renderer::RenderPipelineUIOverlayStage(this, uiHandler);
 }
 
 EditorScene::RenderPipelineScene::~RenderPipelineScene()
@@ -73,10 +74,9 @@ EditorScene::EditorScene() noexcept
             delete event;
         }))
 
-    , m_mainPipeline(m_modelHandler)
+    , m_mainPipeline(m_modelHandler, m_UIHandler)
 
     , m_camera(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
-    , m_contentList(nullptr)
     , m_frameCounter(0)
 
     , m_activeIndex(k_emptyIndex)
@@ -110,7 +110,7 @@ EditorScene::EditorScene() noexcept
                 {
                     if (event->_key == event::KeyCode::KeyKey_F) //focus on selected object
                     {
-                        m_camera->setTarget(m_sceneData.m_generalList[m_activeIndex]->_transform.getPosition()); //TODO
+                        m_camera->setTarget(m_sceneData.m_generalList[m_activeIndex]->_instance._transform.getPosition()); //TODO
                     }
                 }
                 m_camera->handleInputEventCallback(m_inputHandler, event);
@@ -169,10 +169,13 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
     loadResources();
 
     m_sceneData.m_viewportState._viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
-    m_sceneData.m_diectionalLightState._color = { 1.f, 1.f, 1.f, 1.f };
-    m_sceneData.m_diectionalLightState._intensity = 1.0;
-    m_sceneData.m_diectionalLightState._temperature = 100.0;
-    m_sceneData.m_diectionalLightState._attenuation = 1.0;
+
+    scene::DirectionalLight* directionalLight = new scene::DirectionalLight();
+    directionalLight->setColor({ 1.f, 1.f, 1.f });
+    directionalLight->setIntensity(1.f);
+    directionalLight->setTemperature(100.0);
+    m_sceneData.m_lightingState._directionalLight = directionalLight;
+
     m_mainPipeline.create(m_device, m_sceneData, m_frameState[m_stateIndex]);
 
     m_gameEventRecevier->sendEvent(new EditorSelectionEvent(k_emptyIndex));
@@ -181,6 +184,9 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
 void EditorScene::destroy()
 {
     m_mainPipeline.destroy(m_device, m_sceneData, m_frameState[m_stateIndex]);
+
+    delete m_sceneData.m_lightingState._directionalLight;
+    m_sceneData.m_lightingState._directionalLight = nullptr;
 }
 
 void EditorScene::beginFrame()
@@ -221,8 +227,8 @@ void EditorScene::preRender(f32 dt)
     viewportState.cursorPosition = { (f32)posX, (f32)posY };
     viewportState.time = utils::Timer::getCurrentTime();
 
-    scene::DirectionalLightState& dirLightState = m_sceneData.m_diectionalLightState;
-    dirLightState._transform = dirLightState._parent->_transform;
+    scene::LightingState& lightState = m_sceneData.m_lightingState;
+    lightState._directionalLight->setTransform(lightState._parent->_transform.getTransform());
 
     m_modelHandler->visibilityTest(m_sceneData);
     if (m_activeIndex != k_emptyIndex)
@@ -251,7 +257,7 @@ void EditorScene::modifyObject(const scene::Transform& transform)
 {
     if (m_activeIndex != k_emptyIndex)
     {
-        m_sceneData.m_generalList[m_activeIndex]->_transform = transform;
+        m_sceneData.m_generalList[m_activeIndex]->_instance._transform = transform;
     }
 }
 
@@ -342,6 +348,8 @@ void EditorScene::loadResources()
     renderer::Texture2D* default_white = loadTexture2D(cmdList, "default_white.dds");
     renderer::Texture2D* default_normal = loadTexture2D(cmdList, "default_normal.dds");
     renderer::Texture2D* default_material = loadTexture2D(cmdList, "default_material.dds");
+    renderer::Texture2D* default_roughness = loadTexture2D(cmdList, "default_black.dds");
+    renderer::Texture2D* default_metalness = loadTexture2D(cmdList, "default_black.dds");
     renderer::Texture2D* uv_grid = loadTexture2D(cmdList, "uv_grid.dds");
     renderer::Texture2D* noise_blue = loadTexture2D(cmdList, "noise_blue.dds");
     renderer::Texture2D* tiling_noise = loadTexture2D(cmdList, "good64x64tilingnoisehighfreq.dds");
@@ -350,6 +358,8 @@ void EditorScene::loadResources()
     m_sceneData.m_globalResources.bind("default_white", default_white);
     m_sceneData.m_globalResources.bind("default_normal", default_normal);
     m_sceneData.m_globalResources.bind("default_material", default_material);
+    m_sceneData.m_globalResources.bind("default_roughness", default_roughness);
+    m_sceneData.m_globalResources.bind("default_metalness", default_metalness);
     m_sceneData.m_globalResources.bind("uv_grid", uv_grid);
     m_sceneData.m_globalResources.bind("noise_blue", noise_blue);
     m_sceneData.m_globalResources.bind("tiling_noise", tiling_noise);
@@ -375,7 +385,7 @@ void EditorScene::loadResources()
     m_sceneData.m_globalResources.bind("nearest_sampler_repeat", nearest_sampler_repeat);
     m_sceneData.m_globalResources.bind("nearest_sampler_clamp", nearest_sampler_clamp);
 
-    test_loadCubes(cmdList, 20, 20);
+    test_loadCubes(cmdList, 20, 2);
     editor_loadDebug(cmdList);
 
     m_device->submit(cmdList, true);
@@ -428,106 +438,118 @@ void EditorScene::test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaq
             return model;
         };
 
-    scene::Model* cube = loadModel(cmdList, "cube.dae");
-    renderer::Texture2D* color = loadTexture2D(cmdList, "Bricks054_1K-PNG_Color.png", true);
-    renderer::Texture2D* normals = loadTexture2D(cmdList, "Bricks054_1K-PNG_NormalDX.png", true);
-    renderer::Texture2D* roughness = loadTexture2D(cmdList, "Bricks054_1K-PNG_Roughness.png", true);
+    scene::Model* cube = loadModel(cmdList, "cube1.dae");
+    scene::Model* sphere = loadModel(cmdList, "sphere1.dae");
 
     ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
     ASSERT(linear_sampler_h.isValid(), "must be valid");
     renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(linear_sampler_h);
 
+    ObjectHandle default_metalness_h = m_sceneData.m_globalResources.get("default_metalness");
+    ASSERT(default_metalness_h.isValid(), "must be valid");
+    renderer::Texture2D* default_metalness = objectFromHandle<renderer::Texture2D>(default_metalness_h);
+
+    ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+    ASSERT(uv_h.isValid(), "must be valid");
+    renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+    scene::Model* models[2] = { cube, sphere };
+    scene::MaterialState material[2];
+
+    material[0]._baseColor = loadTexture2D(cmdList, "Bricks054/Bricks054_1K-PNG_Color.png", true);
+    material[0]._normals = loadTexture2D(cmdList, "Bricks054/Bricks054_1K-PNG_Normal.png", true);
+    material[0]._roughness = loadTexture2D(cmdList, "Bricks054/Bricks054_1K-PNG_Roughness.png", true);
+    material[0]._metalness = default_metalness;
+    material[0]._sampler = sampler;
+    material[0]._tint = { 1.0, 1.0, 1.0, 1.0 };
+
+    material[1]._baseColor = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_Color.png", true);
+    material[1]._normals = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_NormalDX.png", true);
+    material[1]._roughness = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_Roughness.png", true);
+    material[1]._metalness = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_Metalness.png", true);
+    material[1]._sampler = sampler;
+    material[1]._tint = { 1.0, 1.0, 1.0, 1.0 };
+
     for (u32 i = 0; i < countOpaque; ++i)
     {
+        u32 rd = math::random<u32>(0, 10) % 2;
         math::float3 pos = rendomVector() * 1.0f;
         math::float3 scale = rendomVector() * 10.f;
 
-        scene::DrawInstanceDataState* data = new scene::DrawInstanceDataState;
-        data->_geometry._ID = "cube";
-        data->_geometry._idxBuffer = cube->m_geometry[0]._LODs[0]->m_indexBuffer;
-        data->_geometry._vtxBuffer = cube->m_geometry[0]._LODs[0]->m_vertexBuffer[0];
-        data->_material._type = scene::MaterialType::Opaque;
-        data->_material._sampler = sampler;
-        data->_material._albedo = color;
-        data->_material._normals = normals;
-        data->_material._material = roughness;
-        data->_material._tint = { 1.0, 1.0, 1.0, 1.0 };
-        data->_transform.setPosition({ pos._x, pos._y, pos._z });
-        data->_transform.setScale({ scale._x, scale._x, scale._x });
-        data->_prevTransform = data->_transform;
-        data->_objectID = g_objectIDCounter++;
-        data->_pipelineID = 0;
+        scene::DrawNode* node = new scene::DrawNode;
+        node->_object = models[rd]->m_geometry[0]._LODs[0];
+        node->_instance._type = scene::MaterialType::Opaque;
+        node->_instance._title = models[rd]->m_geometry[0]._LODs[0]->m_name;
+        node->_instance._material = material[rd];
+        node->_instance._transform.setPosition({ pos._x, pos._y, pos._z });
+        node->_instance._transform.setScale({ scale._x, scale._x, scale._x });
+        node->_instance._prevTransform = node->_instance._transform;
+        node->_instance._objectID = g_objectIDCounter++;
+        node->_instance._pipelineID = 0;
 
-        m_sceneData.m_generalList.push_back(data);
-    }
-
-    for (u32 i = 0; i < countTransparency; ++i)
-    {
-        math::float3 pos = rendomVector() * 1.0f;
-        math::float3 scale = rendomVector() * 10.f;
-        math::float3 tint = rendomVector();
-
-        scene::DrawInstanceDataState* data = new scene::DrawInstanceDataState;
-        data->_geometry._ID = "cube";
-        data->_geometry._idxBuffer = cube->m_geometry[0]._LODs[0]->m_indexBuffer;
-        data->_geometry._vtxBuffer = cube->m_geometry[0]._LODs[0]->m_vertexBuffer[0];
-        data->_material._type = scene::MaterialType::Transparency;
-        data->_material._sampler = sampler;
-        data->_material._albedo = color;
-        data->_material._normals = normals;
-        data->_material._material = roughness;
-        data->_material._tint = { tint._x, tint._y, tint._z, 0.5 };
-        data->_transform.setPosition({ pos._x, pos._y, pos._z });
-        data->_transform.setScale({ scale._x, scale._x, scale._x });
-        data->_prevTransform = data->_transform;
-        data->_objectID = g_objectIDCounter++;
-        data->_pipelineID = 0;
-
-        m_sceneData.m_generalList.push_back(data);
+        m_sceneData.m_generalList.push_back(node);
     }
 }
 
 void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
 {
+    ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
+    ASSERT(linear_sampler_h.isValid(), "must be valid");
+    renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(linear_sampler_h);
+
+    ObjectHandle default_black_h = m_sceneData.m_globalResources.get("default_black");
+    ASSERT(default_black_h.isValid(), "must be valid");
+    renderer::Texture2D* defaultBlack = objectFromHandle<renderer::Texture2D>(default_black_h);
+
+    ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+    ASSERT(uv_h.isValid(), "must be valid");
+    renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
     {
-        scene::Mesh* prim = scene::Primitives::createGrid(m_device, cmdList, 10.0f, 64, 64);
-        scene::DrawInstanceDataState* grid = new scene::DrawInstanceDataState;
-        grid->_geometry._ID = "EditorGrid";
-        grid->_geometry._idxBuffer = prim->m_indexBuffer;
-        grid->_geometry._vtxBuffer = prim->m_vertexBuffer[0];
-        grid->_material._type = scene::MaterialType::Debug;
-        grid->_material._sampler = nullptr;
-        grid->_material._albedo = nullptr;
-        grid->_material._normals = nullptr;
-        grid->_material._material = nullptr;
-        grid->_material._tint = { 0.5, 0.5, 0.5, 1.0 };
-        grid->_transform.setPosition({ 0.f, 0.f, 0.f });
-        grid->_transform.setScale({ 1.f, 1.f, 1.f });
-        grid->_prevTransform = grid->_transform;
-        grid->_objectID = g_objectIDCounter++;
-        grid->_pipelineID = 1;
+        scene::Mesh* prim = scene::MeshHelper::createGrid(m_device, cmdList, 10.0f, 64, 64);
+        scene::DrawNode* grid = new scene::DrawNode;
+        grid->_object = prim;
+        grid->_instance._type = scene::MaterialType::Debug;
+        grid->_instance._material._tint = { 0.5, 0.5, 0.5, 1.0 };
+        grid->_instance._transform.setPosition({ 0.f, 0.f, 0.f });
+        grid->_instance._transform.setScale({ 1.f, 1.f, 1.f });
+        grid->_instance._prevTransform = grid->_instance._transform;
+        grid->_instance._objectID = g_objectIDCounter++;
+        grid->_instance._pipelineID = 1;
 
         m_sceneData.m_generalList.push_back(grid);
     }
 
     {
-        scene::Mesh* directionalLightDebug = scene::Primitives::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.25f } });
-        scene::DrawInstanceDataState* line = new scene::DrawInstanceDataState;
-        line->_geometry._ID = "EditorDirectionalLight";
-        line->_geometry._idxBuffer = directionalLightDebug->m_indexBuffer;
-        line->_geometry._vtxBuffer = directionalLightDebug->m_vertexBuffer[0];
-        line->_material._type = scene::MaterialType::Debug;
-        line->_material._sampler = nullptr;
-        line->_material._albedo = nullptr;
-        line->_material._normals = nullptr;
-        line->_material._material = nullptr;
-        line->_material._tint = { 1.0, 1.0, 0.f, 1.0 };
-        line->_transform.setPosition({ 0.f, 1.f, -1.f });
-        line->_transform.setScale({ 1.f, 1.f, 1.f });
-        line->_prevTransform = line->_transform;
-        line->_objectID = g_objectIDCounter++;
-        line->_pipelineID = 1;
-        m_sceneData.m_diectionalLightState._parent = line;
+        scene::DrawNode* icon = new scene::DrawNode;
+        icon->_object = nullptr;
+        icon->_instance._type = scene::MaterialType::Billboard;
+        icon->_instance._title = "DirectionLight";
+        icon->_instance._material._sampler = sampler;
+        icon->_instance._material._baseColor = uvGrid;
+        icon->_instance._material._normals = defaultBlack;
+        icon->_instance._material._metalness = defaultBlack;
+        icon->_instance._material._roughness = defaultBlack;
+        icon->_instance._material._tint = { 1.0, 1.0, 1.f, 1.0 };
+        icon->_instance._transform.setPosition({ 0.f, 1.f, -1.f });
+        icon->_instance._transform.setScale({ 0.1f, 0.1f, 0.1f });
+        icon->_instance._prevTransform = icon->_instance._transform;
+        icon->_instance._objectID = g_objectIDCounter++;
+        icon->_instance._pipelineID = 0;
+
+        m_sceneData.m_generalList.push_back(icon);
+
+        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.25f } });
+        scene::DrawNode* line = new scene::DrawNode;
+        line->_object = directionalLightLine;
+        line->_instance._type = scene::MaterialType::Debug;
+        line->_instance._material._tint = { 1.0, 1.0, 0.f, 1.0 };
+        line->_instance._transform.setPosition({ 0.f, 1.f, -1.f });
+        line->_instance._transform.setScale({ 1.f, 1.f, 1.f });
+        line->_instance._prevTransform = line->_instance._transform;
+        line->_instance._objectID = g_objectIDCounter++;
+        line->_instance._pipelineID = 1;
+        m_sceneData.m_lightingState._parent = &line->_instance;
 
         m_sceneData.m_generalList.push_back(line);
     }
