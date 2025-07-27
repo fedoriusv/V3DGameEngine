@@ -10,21 +10,21 @@ namespace renderer
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct VertexFormatSimple
+    struct VertexFormatSimpleLit
     {
         math::float3 position;
         math::float3 normal;
         math::float2 UV;
     };
 
-    static renderer::VertexInputAttributeDesc VertexFormatSimpleDesc(
+    static renderer::VertexInputAttributeDesc VertexFormatSimpleLitDesc(
         {
-            renderer::VertexInputAttributeDesc::InputBinding(0,  renderer::InputRate::InputRate_Vertex, sizeof(VertexFormatSimple)),
+            renderer::VertexInputAttributeDesc::InputBinding(0,  renderer::InputRate::InputRate_Vertex, sizeof(VertexFormatSimpleLit)),
         },
         {
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(VertexFormatSimple, position)),
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(VertexFormatSimple, normal)),
-            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32_SFloat, offsetof(VertexFormatSimple, UV)),
+            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(VertexFormatSimpleLit, position)),
+            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32B32_SFloat, offsetof(VertexFormatSimpleLit, normal)),
+            renderer::VertexInputAttributeDesc::InputAttribute(0, 0, renderer::Format_R32G32_SFloat, offsetof(VertexFormatSimpleLit, UV)),
         }
     );
 

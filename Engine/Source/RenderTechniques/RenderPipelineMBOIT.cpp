@@ -6,6 +6,9 @@
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Scene/ModelHandler.h"
+#include "Scene/Geometry/Mesh.h"
+
 namespace v3d
 {
 namespace renderer
@@ -31,8 +34,8 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
             "transparency_mboit.hlsl", "mboit_pass1_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
-        renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-            device, VertexFormatStandardDesc, m_rt[Pass::MBOIT_Pass1]->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "mboit_pass1_ps");
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_rt[Pass::MBOIT_Pass1]->getRenderPassDesc(), 
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "mboit_pass1_ps");
 
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -69,8 +72,8 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
             "transparency_mboit.hlsl", "mboit_pass2_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
-        renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-            device, VertexFormatStandardDesc, m_rt[Pass::MBOIT_Pass2]->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "mboit_pass1_ps");
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_rt[Pass::MBOIT_Pass2]->getRenderPassDesc(), 
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "mboit_pass1_ps");
 
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -103,8 +106,8 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
             "transparency_mboit.hlsl", "mboit_resolve_ps", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
 
-        renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-            device, renderer::VertexInputAttributeDesc(), desc, new renderer::ShaderProgram(device, vertShader, fragShader), "mboit_resolve_pipeline");
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), desc, 
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "mboit_resolve_pipeline");
 
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -121,6 +124,16 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
 
 void RenderPipelineMBOITStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    destroyRenderTarget(device, scene);
+
+    for (u32 i = 0; i < Pass::Count; ++i)
+    {
+        const renderer::ShaderProgram* program = m_pipeline[i]->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+        V3D_DELETE(m_pipeline[i], memory::MemoryLabel::MemoryGame);
+        m_pipeline[i] = nullptr;
+    }
 }
 
 void RenderPipelineMBOITStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -158,6 +171,9 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
 
         for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
         {
+            scene::DrawInstanceDataState& instance = list->_instance;
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+
             struct ModelBuffer
             {
                 math::Matrix4D modelMatrix;
@@ -169,24 +185,25 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = list->_transform.getTransform();
-            constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+            constantBuffer.modelMatrix = instance._transform.getTransform();
+            constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
             constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tint = list->_material._tint;
-            constantBuffer.objectID = list->_objectID;
+            constantBuffer.tint = instance._material._tint;
+            constantBuffer.objectID = instance._objectID;
 
             scene.m_renderState.m_cmdList->bindDescriptorSet(1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(list->_material._sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(list->_material._albedo), 3),
-                    renderer::Descriptor(renderer::TextureView(list->_material._normals), 4),
-                    renderer::Descriptor(renderer::TextureView(list->_material._material), 5),
+                    renderer::Descriptor(instance._material._sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(instance._material._baseColor), 3),
+                    renderer::Descriptor(renderer::TextureView(instance._material._normals), 4),
+                    renderer::Descriptor(renderer::TextureView(instance._material._metalness), 5),
+                    renderer::Descriptor(renderer::TextureView(instance._material._roughness), 6),
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipeline[list->_pipelineID]->getName()), color::colorrgbaf::LTGREY);
-            renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-            cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+            renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
         }
         cmdList->endRenderTarget();
     }
@@ -206,6 +223,9 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
 
         for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
         {
+            scene::DrawInstanceDataState& instance = list->_instance;
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+
             struct ModelBuffer
             {
                 math::Matrix4D modelMatrix;
@@ -217,26 +237,27 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = list->_transform.getTransform();
-            constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+            constantBuffer.modelMatrix = instance._transform.getTransform();
+            constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
             constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tint = list->_material._tint;
-            constantBuffer.objectID = list->_objectID;
+            constantBuffer.tint = instance._material._tint;
+            constantBuffer.objectID = instance._objectID;
 
             cmdList->bindDescriptorSet(1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(list->_material._sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(list->_material._albedo), 3),
-                    renderer::Descriptor(renderer::TextureView(list->_material._normals), 4),
-                    renderer::Descriptor(renderer::TextureView(list->_material._material), 5),
-                    renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 6),
-                    renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(1), 0, 0), 7),
+                    renderer::Descriptor(instance._material._sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(instance._material._baseColor), 3),
+                    renderer::Descriptor(renderer::TextureView(instance._material._normals), 4),
+                    renderer::Descriptor(renderer::TextureView(instance._material._metalness), 5),
+                    renderer::Descriptor(renderer::TextureView(instance._material._roughness), 6),
+                    renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 7),
+                    renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(1), 0, 0), 8),
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipeline[list->_pipelineID]->getName()), color::colorrgbaf::LTGREY);
-            renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-            cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+            renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
         }
         cmdList->endRenderTarget();
     }
@@ -292,9 +313,9 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
 
     //pass 1
     ASSERT(m_rt[Pass::MBOIT_Pass1] == nullptr, "must be nulptr");
-    m_rt[Pass::MBOIT_Pass1] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 2);
+    m_rt[Pass::MBOIT_Pass1] = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 2);
 
-    m_rt[Pass::MBOIT_Pass1]->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    m_rt[Pass::MBOIT_Pass1]->setColorTexture(0, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_od"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
@@ -303,7 +324,7 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 
-    m_rt[Pass::MBOIT_Pass1]->setColorTexture(1, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    m_rt[Pass::MBOIT_Pass1]->setColorTexture(1, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_d1234"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
@@ -325,9 +346,9 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
 
     //pass 2
     ASSERT(m_rt[Pass::MBOIT_Pass2] == nullptr, "must be nulptr");
-    m_rt[Pass::MBOIT_Pass2] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 3);
+    m_rt[Pass::MBOIT_Pass2] = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 3);
 
-    m_rt[Pass::MBOIT_Pass2]->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    m_rt[Pass::MBOIT_Pass2]->setColorTexture(0, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R32G32B32A32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_resolve"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
@@ -364,9 +385,9 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
         });
 
     //resolve
-    m_rt[Pass::CompositionPass] = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
+    m_rt[Pass::CompositionPass] = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
 
-    m_rt[Pass::CompositionPass]->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    m_rt[Pass::CompositionPass]->setColorTexture(0, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "mboit_composition"),
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
@@ -383,11 +404,11 @@ void RenderPipelineMBOITStage::destroyRenderTarget(Device* device, scene::SceneD
         ASSERT(m_rt[Pass::MBOIT_Pass1], "must be valid");
 
         renderer::Texture2D* texture0 = m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0);
-        delete texture0;
+        V3D_DELETE(texture0, memory::MemoryLabel::MemoryGame);
         renderer::Texture2D* texture1 = m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(1);
-        delete texture1;
+        V3D_DELETE(texture1, memory::MemoryLabel::MemoryGame);
 
-        delete m_rt[Pass::MBOIT_Pass1];
+        V3D_DELETE(m_rt[Pass::MBOIT_Pass1], memory::MemoryLabel::MemoryGame);
         m_rt[Pass::MBOIT_Pass1] = nullptr;
     }
 
@@ -395,9 +416,9 @@ void RenderPipelineMBOITStage::destroyRenderTarget(Device* device, scene::SceneD
         ASSERT(m_rt[Pass::MBOIT_Pass2], "must be valid");
 
         renderer::Texture2D* texture0 = m_rt[Pass::MBOIT_Pass2]->getColorTexture<renderer::Texture2D>(0);
-        delete texture0;
+        V3D_DELETE(texture0, memory::MemoryLabel::MemoryGame);
 
-        delete m_rt[Pass::MBOIT_Pass2];
+        V3D_DELETE(m_rt[Pass::MBOIT_Pass2], memory::MemoryLabel::MemoryGame);
         m_rt[Pass::MBOIT_Pass2] = nullptr;
     }
 
@@ -405,9 +426,9 @@ void RenderPipelineMBOITStage::destroyRenderTarget(Device* device, scene::SceneD
         ASSERT(m_rt[Pass::CompositionPass], "must be valid");
 
         renderer::Texture2D* texture0 = m_rt[Pass::CompositionPass]->getColorTexture<renderer::Texture2D>(0);
-        delete texture0;
+        V3D_DELETE(texture0, memory::MemoryLabel::MemoryGame);
 
-        delete m_rt[Pass::CompositionPass];
+        V3D_DELETE(m_rt[Pass::CompositionPass], memory::MemoryLabel::MemoryGame);
         m_rt[Pass::CompositionPass] = nullptr;
     }
 }

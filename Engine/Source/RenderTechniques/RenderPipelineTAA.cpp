@@ -40,7 +40,8 @@ void RenderPipelineTAAStage::create(Device* device, scene::SceneData& scene, sce
     desc._countColorAttachments = 1;
     desc._attachmentsDesc[0]._format = Format_R16G16B16A16_SFloat;
 
-    m_pipeline = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), desc, new renderer::ShaderProgram(device, vertShader, fragShader), "taa");
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), desc, 
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "taa");
 
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -55,7 +56,10 @@ void RenderPipelineTAAStage::destroy(Device* device, scene::SceneData& scene, sc
 {
     destroyRenderTarget(device, scene);
 
-    delete m_pipeline;
+    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
+    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
     m_pipeline = nullptr;
 }
 
@@ -125,15 +129,15 @@ void RenderPipelineTAAStage::execute(Device* device, scene::SceneData& scene, sc
 void RenderPipelineTAAStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_resolved == nullptr, "must be nullptr");
-    m_resolved = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Read,
+    m_resolved = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Read,
         renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "resolved_taa");
 
     ASSERT(m_history == nullptr, "must be nullptr");
-    m_history = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
+    m_history = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
         renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "history_taa");
 
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
     m_renderTarget->setColorTexture(0, m_resolved,
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
@@ -146,15 +150,15 @@ void RenderPipelineTAAStage::createRenderTarget(Device* device, scene::SceneData
 void RenderPipelineTAAStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_resolved, "must be valid");
-    delete m_resolved;
+    V3D_DELETE(m_resolved, memory::MemoryLabel::MemoryGame);
     m_resolved = nullptr;
 
     ASSERT(m_history, "must be valid");
-    delete m_history;
+    V3D_DELETE(m_history, memory::MemoryLabel::MemoryGame);
     m_history = nullptr;
 
     ASSERT(m_renderTarget, "must be valid");
-    delete m_renderTarget;
+    V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);
     m_renderTarget = nullptr;
 }
 

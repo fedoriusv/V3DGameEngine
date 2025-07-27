@@ -1,9 +1,12 @@
-#include "RenderPipelineSelectionStage.h"
+#include "RenderPipelineSelection.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
+
+#include "Scene/ModelHandler.h"
+#include "Scene/Geometry/Mesh.h"
 
 namespace v3d
 {
@@ -32,8 +35,8 @@ void RenderPipelineSelectionStage::create(Device* device, scene::SceneData& scen
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "gbuffer.hlsl", "gbuffer_selection_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_pipeline = new renderer::GraphicsPipelineState(
-        device, VertexFormatStandardDesc, m_renderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "selection_pipeline");
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_renderTarget->getRenderPassDesc(),
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_pipeline");
 
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -53,9 +56,9 @@ void RenderPipelineSelectionStage::destroy(Device* device, scene::SceneData& sce
     destroyRenderTarget(device, scene);
 
     const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
-    delete program;
+    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-    delete m_pipeline;
+    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
     m_pipeline = nullptr;
 }
 
@@ -98,6 +101,9 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
 
     for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Selected)])
     {
+        scene::DrawInstanceDataState& instance = list->_instance;
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+
         struct ModelBuffer
         {
             math::Matrix4D modelMatrix;
@@ -107,21 +113,22 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
             u64            objectID;
             u64            _pad = 0;
         };
+
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = list->_transform.getTransform();
-        constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+        constantBuffer.modelMatrix = instance._transform.getTransform();
+        constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = list->_material._tint;
-        constantBuffer.objectID = list->_objectID;
+        constantBuffer.tint = instance._material._tint;
+        constantBuffer.objectID = instance._objectID;
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipeline->getName()), color::colorrgbaf::LTGREY);
-        renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-        cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline->getName()), color::colorrgbaf::LTGREY);
+        renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
+        cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
     }
 
     cmdList->endRenderTarget();
@@ -130,9 +137,9 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
 void RenderPipelineSelectionStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
 
-    m_renderTarget->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
+    m_renderTarget->setColorTexture(0, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
         renderer::Format::Format_R32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "selected_objects"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
@@ -149,9 +156,9 @@ void RenderPipelineSelectionStage::destroyRenderTarget(Device* device, scene::Sc
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* texture = m_renderTarget->getColorTexture<renderer::Texture2D>(0);
-    delete texture;
+    V3D_DELETE(texture, memory::MemoryLabel::MemoryGame);
 
-    delete m_renderTarget;
+    V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);
     m_renderTarget = nullptr;
 }
 

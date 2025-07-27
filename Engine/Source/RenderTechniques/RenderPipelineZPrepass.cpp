@@ -7,6 +7,7 @@
 #include "Resource/Loader/ModelFileLoader.h"
 
 #include "Scene/ModelHandler.h"
+#include "Scene/Geometry/Mesh.h"
 
 #include "Task/RenderTask/RenderTask.h"
 
@@ -98,6 +99,9 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& scen
 
     for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
     {
+        scene::DrawInstanceDataState& instance = list->_instance;
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+
         struct ModelBuffer
         {
             math::Matrix4D modelMatrix;
@@ -107,21 +111,22 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& scen
             u64            objectID;
             u64            _pad = 0;
         };
+
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = list->_transform.getTransform();
-        constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+        constantBuffer.modelMatrix = instance._transform.getTransform();
+        constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = list->_material._tint;
-        constantBuffer.objectID = list->_objectID;
+        constantBuffer.tint = instance._material._tint;
+        constantBuffer.objectID = instance._objectID;
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, 1),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_depthPipeline->getName()), color::colorrgbaf::LTGREY);
-        renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatStandard), 0);
-        cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_depthPipeline->getName()), color::colorrgbaf::LTGREY);
+        renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
+        cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
     }
 
     cmdList->endRenderTarget();

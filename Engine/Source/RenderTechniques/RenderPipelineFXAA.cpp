@@ -33,8 +33,8 @@ void RenderPipelineFXAAStage::create(Device* device, scene::SceneData& scene, sc
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "fxaa.hlsl", "fxaa_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_pipeline = new renderer::GraphicsPipelineState(
-        device, renderer::VertexInputAttributeDesc(), m_renderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "fxaa_pipeline");
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_renderTarget->getRenderPassDesc(),
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "fxaa_pipeline");
 
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -49,7 +49,10 @@ void RenderPipelineFXAAStage::destroy(Device* device, scene::SceneData& scene, s
 {
     destroyRenderTarget(device, scene);
 
-    delete m_pipeline;
+    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
+    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
     m_pipeline = nullptr;
 }
 
@@ -107,9 +110,9 @@ void RenderPipelineFXAAStage::execute(Device* device, scene::SceneData& scene, s
 void RenderPipelineFXAAStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1, 0, "fxaa_pass");
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0, "fxaa_pass");
 
-    renderer::Texture2D* texture = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    renderer::Texture2D* texture = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "fxaa");
 
     m_renderTarget->setColorTexture(0, texture,
@@ -128,9 +131,9 @@ void RenderPipelineFXAAStage::destroyRenderTarget(Device* device, scene::SceneDa
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* composition = m_renderTarget->getColorTexture<renderer::Texture2D>(0);
-    delete composition;
+    V3D_DELETE(composition, memory::MemoryLabel::MemoryGame);
 
-    delete m_renderTarget;
+    V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);
     m_renderTarget = nullptr;
 }
 

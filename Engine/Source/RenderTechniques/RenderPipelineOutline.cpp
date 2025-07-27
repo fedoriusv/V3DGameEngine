@@ -7,6 +7,9 @@
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Scene/ModelHandler.h"
+#include "Scene/Geometry/Mesh.h"
+
 namespace v3d
 {
 namespace renderer
@@ -33,8 +36,8 @@ void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& scene,
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "outline.hlsl", "main_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_pipeline = new renderer::GraphicsPipelineState(
-        device, renderer::VertexInputAttributeDesc(), m_renderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "outline_pipeline");
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_renderTarget->getRenderPassDesc(), 
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "outline_pipeline");
 
    m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -44,7 +47,7 @@ void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& scene,
    m_pipeline->setDepthTest(false);
    m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
-    m_readbackObjectID = new renderer::UnorderedAccessBuffer(device, renderer::BufferUsage::Buffer_GPURead, sizeof(u64) * 2, "objectID");
+    m_readbackObjectID = V3D_NEW(renderer::UnorderedAccessBuffer, memory::MemoryLabel::MemoryGame)(device, renderer::BufferUsage::Buffer_GPURead, sizeof(u64) * 2, "objectID");
     m_mappedData._ptr = m_readbackObjectID->map<u32>();
     scene.m_globalResources.bind("readback_objectIDData", &m_mappedData);
 }
@@ -54,10 +57,13 @@ void RenderPipelineOutlineStage::destroy(Device* device, scene::SceneData& scene
     destroyRenderTarget(device, scene);
 
     m_readbackObjectID->unmap();
-    delete m_readbackObjectID;
+    V3D_DELETE(m_readbackObjectID, memory::MemoryLabel::MemoryGame);
     m_readbackObjectID = nullptr;
 
-    delete m_pipeline;
+    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
+    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
     m_pipeline = nullptr;
 }
 
@@ -135,12 +141,10 @@ void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& scene
 void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1, 0, "outline_pass");
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0, "outline_pass");
 
-    renderer::Texture2D* outline = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "outline");
-
-    m_renderTarget->setColorTexture(0, outline,
+    m_renderTarget->setColorTexture(0, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+        renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "outline"),
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
@@ -154,9 +158,9 @@ void RenderPipelineOutlineStage::destroyRenderTarget(Device* device, scene::Scen
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* outline = m_renderTarget->getColorTexture<renderer::Texture2D>(0);
-    delete outline;
+    V3D_DELETE(outline, memory::MemoryLabel::MemoryGame);
 
-    delete m_renderTarget;
+    V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);
     m_renderTarget = nullptr;
 }
 

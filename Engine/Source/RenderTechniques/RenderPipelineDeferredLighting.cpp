@@ -1,4 +1,4 @@
-#include "RenderPipelineDeferredLightingStage.h"
+#include "RenderPipelineDeferredLighting.h"
 
 #include "Resource/ResourceManager.h"
 
@@ -31,8 +31,8 @@ void RenderPipelineDeferredLightingStage::create(Device* device, scene::SceneDat
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "light.hlsl", "deffered_lighting_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_pipeline = new renderer::GraphicsPipelineState(
-        device, renderer::VertexInputAttributeDesc(), m_deferredRenderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "deffered_light_pipeline");
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_deferredRenderTarget->getRenderPassDesc(),
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "deffered_light_pipeline");
 
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -47,7 +47,10 @@ void RenderPipelineDeferredLightingStage::destroy(Device* device, scene::SceneDa
 {
     destroyRenderTarget(device, scene);
 
-    delete m_pipeline;
+    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
+    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
     m_pipeline = nullptr;
 }
 
@@ -102,30 +105,27 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
     ASSERT(sampler_state_h.isValid(), "must be valid");
     renderer::SamplerState* samplerState = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 
+    const scene::DirectionalLight& dirLight = *scene.m_lightingState._directionalLight;
+
     struct LightBuffer
     {
-        math::float4 position;
-        math::float4 direction;
-        math::float4 color;
-        f32          type;
-        f32          attenuation;
-        f32          intensity;
-        f32          temperature;
+        math::Vector3D position;
+        math::Vector3D direction;
+        math::float4   color;
+        f32            type;
+        f32            attenuation;
+        f32            intensity;
+        f32            temperature;
     };
 
-    math::Matrix4D rotate;
-    rotate.setRotation(scene.m_diectionalLightState._transform.getRotation());
-    math::Vector4D forward(0.f, 0.f, 1.f, 1.f);
-    math::Vector4D directional = rotate * forward;
-
     LightBuffer lightBuffer;
-    lightBuffer.position = { scene.m_diectionalLightState._transform.getPosition().getX(), scene.m_diectionalLightState._transform.getPosition().getY(), scene.m_diectionalLightState._transform.getPosition().getZ() };
-    lightBuffer.direction = { directional.getX(), directional.getY(), directional.getZ() };
-    lightBuffer.color = scene.m_diectionalLightState._color;
+    lightBuffer.position = dirLight.getTransform().getPosition();
+    lightBuffer.direction = dirLight.getDirection();
+    lightBuffer.color = { dirLight.getColor()._x, dirLight.getColor()._y, dirLight.getColor()._z, 1.f };
     lightBuffer.type = 0;
     lightBuffer.attenuation = 1.f;
-    lightBuffer.intensity = scene.m_diectionalLightState._intensity;
-    lightBuffer.temperature = scene.m_diectionalLightState._temperature;
+    lightBuffer.intensity = dirLight.getIntensity();
+    lightBuffer.temperature = dirLight.getTemperature();
 
     cmdList->bindDescriptorSet(1,
         {
@@ -139,6 +139,7 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
     cmdList->endRenderTarget();
+
     cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_DepthStencilAttachment);
 
     scene.m_globalResources.bind("render_target", m_deferredRenderTarget->getColorTexture<renderer::Texture2D>(0));
@@ -147,9 +148,9 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
 void RenderPipelineDeferredLightingStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_deferredRenderTarget == nullptr, "must be nullptr");
-    m_deferredRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
+    m_deferredRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
 
-    m_deferredRenderTarget->setColorTexture(0, new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    m_deferredRenderTarget->setColorTexture(0, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "deffered_lighting"),
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
@@ -163,9 +164,9 @@ void RenderPipelineDeferredLightingStage::destroyRenderTarget(Device* device, sc
 {
     ASSERT(m_deferredRenderTarget, "must be valid");
     renderer::Texture2D* textrue = m_deferredRenderTarget->getColorTexture<renderer::Texture2D>(0);
-    delete textrue;
+    V3D_DELETE(textrue, memory::MemoryLabel::MemoryGame);
 
-    delete m_deferredRenderTarget;
+    V3D_DELETE(m_deferredRenderTarget, memory::MemoryLabel::MemoryGame);
     m_deferredRenderTarget = nullptr;
 }
 

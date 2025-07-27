@@ -30,8 +30,8 @@ void RenderPipelineGammaCorrectionStage::create(Device* device, scene::SceneData
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "gamma.hlsl", "gamma_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(
-        device, renderer::VertexInputAttributeDesc(), m_gammaRenderTarget->getRenderPassDesc(), new renderer::ShaderProgram(device, vertShader, fragShader), "gamma_pipeline");
+    renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_gammaRenderTarget->getRenderPassDesc(),
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gamma_pipeline");
 
     pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -48,9 +48,13 @@ void RenderPipelineGammaCorrectionStage::destroy(Device* device, scene::SceneDat
 {
     destroyRenderTarget(device, scene);
 
-    for (auto pipeline : m_pipeline)
+    for (auto& pipeline : m_pipeline)
     {
-        delete pipeline;
+        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
+        pipeline = nullptr;
     }
     m_pipeline.clear();
 }
@@ -106,9 +110,9 @@ void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::SceneDat
 void RenderPipelineGammaCorrectionStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_gammaRenderTarget == nullptr, "must be nullptr");
-    m_gammaRenderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1, 0, "gamma_pass");
+    m_gammaRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0, "gamma_pass");
 
-    renderer::Texture2D* gamma = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+    renderer::Texture2D* gamma = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gamma");
 
     m_gammaRenderTarget->setColorTexture(0, gamma,
@@ -127,9 +131,9 @@ void RenderPipelineGammaCorrectionStage::destroyRenderTarget(Device* device, sce
 {
     ASSERT(m_gammaRenderTarget, "must be valid");
     renderer::Texture2D* gamma = m_gammaRenderTarget->getColorTexture<renderer::Texture2D>(0);
-    delete gamma;
+    V3D_DELETE(gamma, memory::MemoryLabel::MemoryGame);
 
-    delete m_gammaRenderTarget;
+    V3D_DELETE(m_gammaRenderTarget, memory::MemoryLabel::MemoryGame);
     m_gammaRenderTarget = nullptr;
 }
 

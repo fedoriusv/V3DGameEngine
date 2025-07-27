@@ -6,6 +6,9 @@
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Scene/ModelHandler.h"
+#include "Scene/Geometry/Mesh.h"
+
 namespace v3d
 {
 namespace renderer
@@ -28,9 +31,9 @@ void RenderPipelineDebugStage::create(Device* device, scene::SceneData& scene, s
 
     {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "simple.hlsl", "simple_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "simple.hlsl", "main_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "simple.hlsl", "simple_unlit_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "simple.hlsl", "unlit_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         RenderPassDesc desc;
         desc._countColorAttachments = 1;
@@ -39,11 +42,12 @@ void RenderPipelineDebugStage::create(Device* device, scene::SceneData& scene, s
         desc._hasDepthStencilAttahment = true;
 
         {
-            renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(device, VertexFormatSimpleDesc, desc, new renderer::ShaderProgram(device, vertShader, fragShader), "debug");
+            renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
+                V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "debug");
 
             pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-            pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+            pipeline->setCullMode(renderer::CullMode::CullMode_None);
             pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
 #if ENABLE_REVERSED_Z
             pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
@@ -58,11 +62,12 @@ void RenderPipelineDebugStage::create(Device* device, scene::SceneData& scene, s
         }
 
         {
-            renderer::GraphicsPipelineState* pipeline = new renderer::GraphicsPipelineState(device, VertexFormatSimpleDesc, desc, new renderer::ShaderProgram(device, vertShader, fragShader), "debug_line");
+            renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
+                V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "debug_line");
 
             pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_LineList);
             pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-            pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+            pipeline->setCullMode(renderer::CullMode::CullMode_None);
             pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
 #if ENABLE_REVERSED_Z
             pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
@@ -85,9 +90,9 @@ void RenderPipelineDebugStage::destroy(Device* device, scene::SceneData& scene, 
     for (auto pipeline : m_pipelines)
     {
         const renderer::ShaderProgram* program = pipeline->getShaderProgram();
-        delete program;
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-        delete pipeline;
+        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
         pipeline = nullptr;
     }
     m_pipelines.clear();
@@ -148,8 +153,11 @@ void RenderPipelineDebugStage::execute(Device* device, scene::SceneData& scene, 
 
     for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Debug)])
     {
+        scene::DrawInstanceDataState& instance = list->_instance;
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+
         cmdList->setStencilRef(0);
-        cmdList->setPipelineState(*m_pipelines[list->_pipelineID]);
+        cmdList->setPipelineState(*m_pipelines[instance._pipelineID]);
 
         cmdList->bindDescriptorSet(0,
             {
@@ -167,10 +175,10 @@ void RenderPipelineDebugStage::execute(Device* device, scene::SceneData& scene, 
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = list->_transform.getTransform();
-        constantBuffer.prevModelMatrix = list->_prevTransform.getTransform();
+        constantBuffer.modelMatrix = instance._transform.getTransform();
+        constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = list->_material._tint;
+        constantBuffer.tint = instance._material._tint;
         constantBuffer.objectID = 0;
 
         cmdList->bindDescriptorSet(1,
@@ -178,9 +186,9 @@ void RenderPipelineDebugStage::execute(Device* device, scene::SceneData& scene, 
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", list->_objectID, m_pipelines[list->_pipelineID]->getName()), color::colorrgbaf::LTGREY);
-        renderer::GeometryBufferDesc desc(list->_geometry._idxBuffer, 0, list->_geometry._vtxBuffer, 0, sizeof(VertexFormatSimple), 0);
-        cmdList->drawIndexed(desc, 0, list->_geometry._idxBuffer->getIndicesCount(), 0, 0, 1);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipelines[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+        renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatSimpleLit), 0);
+        cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
     }
 
     cmdList->endRenderTarget();
@@ -189,13 +197,13 @@ void RenderPipelineDebugStage::execute(Device* device, scene::SceneData& scene, 
 void RenderPipelineDebugStage::createRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = new renderer::RenderTargetState(device, data.m_viewportState._viewpotSize, 1);
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
 }
 
 void RenderPipelineDebugStage::destroyRenderTarget(Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget, "must be valid");
-    delete m_renderTarget;
+    V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);
     m_renderTarget = nullptr;
 }
 
