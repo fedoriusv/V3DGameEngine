@@ -13,11 +13,11 @@ struct OutlineBuffer
 };
 
 [[vk::binding(1, 1)]] ConstantBuffer<OutlineBuffer> CB_Ountline : register(b0, space1);
-[[vk::binding(2, 1)]] SamplerState samplerState : register(s0, space1);
-[[vk::binding(3, 1)]] Texture2D textureColor : register(t0, space1);
-[[vk::binding(4, 1)]] Texture2D textureMaterial : register(t1, space1);
-[[vk::binding(5, 1)]] Texture2D<float> textureSelection : register(t2, space1);
-[[vk::binding(6, 1)]] RWStructuredBuffer<uint> rwBufferID : register(u0, space1);
+[[vk::binding(2, 1)]] SamplerState samplerState                 : register(s0, space1);
+[[vk::binding(3, 1)]] Texture2D textureColor                    : register(t0, space1);
+[[vk::binding(4, 1)]] Texture2D textureMaterial                 : register(t1, space1);
+[[vk::binding(5, 1)]] Texture2D<float> textureSelection         : register(t2, space1);
+[[vk::binding(6, 1)]] RWStructuredBuffer<uint> rwBufferID       : register(u0, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -61,3 +61,5 @@ struct OutlineBuffer
     
     return fragColor;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,36 @@ struct LightBuffer
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+static const float PI = 3.14159265;
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+float3 temperature_RGB(float temperature)
+{
+    // Clamp to range
+    temperature = clamp(temperature, 1000.0f, 40000.0f) / 100.0f;
+
+    float3 rgb;
+
+    // Red
+    rgb.r = (temperature <= 66) ? 1.0 :
+            clamp(1.292936186062745f * pow(temperature - 60.0f, -0.1332047592f), 0.0f, 1.0f);
+
+    // Green
+    rgb.g = (temperature <= 66) ?
+            clamp(0.3900815787690196f * log(temperature) - 0.6318414437886275f, 0.0f, 1.0f) :
+            clamp(1.129890860895294f * pow(temperature - 60.0f, -0.0755148492f), 0.0f, 1.0f);
+
+    // Blue
+    rgb.b = (temperature >= 66) ? 1.0 :
+            (temperature <= 19) ? 0.0 :
+            clamp(0.5432067891101961f * log(temperature - 10.0f) - 1.19625408914f, 0.0f, 1.0f);
+
+    return rgb;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
 float4 lambert_lighting(
     in float3 LightDir,
     in float3 WorldNormal,
@@ -34,8 +64,6 @@ float4 lambert_lighting(
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
-
-static const float PI = 3.14159265;
 
 // Normal Distribution Function (GGX)
 float D_GGX(float NdotH, float roughness)
@@ -105,7 +133,8 @@ float4 cook_torrance_BRDF(
     float3 kD = (1.0 - F) * (1.0 - Metallic);
     float3 diffuse = kD * Albedo / PI;
     
-    float3 Lo = (diffuse + specular) * Light.color.rgb * NdotL;
+    float3 lightColor = temperature_RGB(Light.temperature) * Light.color.rgb * Light.intensity;
+    float3 Lo = (diffuse + specular) * lightColor * NdotL;
 
     return float4(Lo, 1.0);
 }

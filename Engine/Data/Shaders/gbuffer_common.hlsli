@@ -78,28 +78,24 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
     in PS_GBUFFER_STANDARD_INPUT Input, 
     in uniform ConstantBuffer<Viewport> Viewport,
     in uniform ConstantBuffer<ModelBuffer> Model,
-    in Texture2D textureAlbedo,
-    in Texture2D textureNormal,
-    in Texture2D textureMaterial,
-    in SamplerState samplerState)
+    in float3 Albedo,
+    in float3 Normal,
+    in float Metalness,
+    in float Roughness)
 {
     PS_GBUFFER_STRUCT Output;
     
-    float3 albedo = textureAlbedo.Sample(samplerState, Input.UV).rgb;
-    float3 normal = textureNormal.Sample(samplerState, Input.UV).rgb * 2.0 - 1.0;
-    float metalness = textureMaterial.Sample(samplerState, Input.UV).r;
-    float roughness = textureMaterial.Sample(samplerState, Input.UV).g;
     float2 velocity = calc_velocity(Input.ClipPos, Input.PrevClipPos);
     
     float3 N = normalize(Input.Normal);
     float3 B = normalize(Input.Bitangent);
     float3 T = normalize(Input.Tangent);
     float3x3 TBN = float3x3(T, B, N);
-    normal = normalize(mul(normal, TBN));
+    float3 normal = normalize(mul(Normal, TBN));
 
-    Output.BaseColor = float4(albedo * Model.tint.rgb, 1.0);
+    Output.BaseColor = float4(Albedo * Model.tint.rgb, 1.0);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
-    Output.Material = float4(roughness, metalness, Model.objectID, 0.0);
+    Output.Material = float4(Roughness, Metalness, Model.objectID, 0.0);
     Output.Velocity = velocity;
     
     return Output;
@@ -111,28 +107,24 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     in PS_GBUFFER_STANDARD_INPUT Input,
     in uniform ConstantBuffer<Viewport> Viewport,
     in uniform ConstantBuffer<ModelBuffer> Model,
-    in Texture2D textureAlbedo,
-    in Texture2D textureNormal,
-    in Texture2D textureMaterial,
-    in SamplerState samplerState)
+    in float3 Albedo,
+    in float3 Normal,
+    in float Metalness,
+    in float Roughness)
 {
     PS_GBUFFER_STRUCT Output;
-    
-    float3 albedo = textureAlbedo.Sample(samplerState, Input.UV).rgb;
-    float3 normal = textureNormal.Sample(samplerState, Input.UV).rgb * 2.0 - 1.0;
-    float metalness = textureMaterial.Sample(samplerState, Input.UV).r;
-    float roughness = textureMaterial.Sample(samplerState, Input.UV).g;
+
     float2 velocity = calc_velocity(Input.ClipPos, Input.PrevClipPos);
     
     float3 N = normalize(Input.Normal);
     float3 B = normalize(Input.Bitangent);
     float3 T = normalize(Input.Tangent);
     float3x3 TBN = float3x3(T, B, N);
-    normal = normalize(mul(normal, TBN));
+    float3 normal = normalize(mul(Normal, TBN));
 
-    Output.BaseColor = float4(albedo * Model.tint.rgb, Model.tint.a);
+    Output.BaseColor = float4(Albedo * Model.tint.rgb, Model.tint.a);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
-    Output.Material = float4(roughness, metalness, Model.objectID, 0.0);
+    Output.Material = float4(Roughness, Metalness, Model.objectID, 0.0);
     Output.Velocity = velocity;
     
     return Output;
