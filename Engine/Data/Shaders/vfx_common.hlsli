@@ -11,7 +11,7 @@ VS_SIMPLE_OUTPUT _billboard_vs(
     in uniform ConstantBuffer<ModelBuffer> Model,
     uint VertexID)
 {
-    const float scale = 0.05f;
+    const float scale = 0.02f;
     
     // Define quad corners based on vertexID
     const float2 quadVerts[4] =

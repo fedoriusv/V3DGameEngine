@@ -181,6 +181,12 @@ void RenderPipelineDebugStage::execute(Device* device, scene::SceneData& scene, 
         constantBuffer.tint = instance._material._tint;
         constantBuffer.objectID = 0;
 
+        if (list->_parent)
+        {
+            constantBuffer.modelMatrix = list->_parent->_instance._transform.getTransform() * instance._transform.getTransform();
+            constantBuffer.prevModelMatrix = list->_parent->_instance._prevTransform.getTransform() * instance._prevTransform.getTransform();
+        }
+
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),

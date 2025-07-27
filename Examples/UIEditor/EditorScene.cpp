@@ -50,10 +50,10 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     new renderer::RenderPipelineDeferredLightingStage(this);
     new renderer::RenderPipelineVolumeLightingStage(this, modelHandler);
     //new renderer::RenderPipelineMBOITStage(this);
-    //new renderer::RenderPipelineUnlitStage(this, modelHandler);
+    new renderer::RenderPipelineUnlitStage(this, modelHandler);
     new renderer::RenderPipelineOutlineStage(this);
     new renderer::RenderPipelineTAAStage(this);
-    //new renderer::RenderPipelineDebugStage(this, modelHandler);
+    new renderer::RenderPipelineDebugStage(this, modelHandler);
     new renderer::RenderPipelineGammaCorrectionStage(this);
     new renderer::RenderPipelineUIOverlayStage(this, uiHandler);
 }
@@ -532,24 +532,23 @@ void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
         icon->_instance._material._roughness = defaultBlack;
         icon->_instance._material._tint = { 1.0, 1.0, 1.f, 1.0 };
         icon->_instance._transform.setPosition({ 0.f, 1.f, -1.f });
-        icon->_instance._transform.setScale({ 0.1f, 0.1f, 0.1f });
         icon->_instance._prevTransform = icon->_instance._transform;
         icon->_instance._objectID = g_objectIDCounter++;
         icon->_instance._pipelineID = 0;
 
         m_sceneData.m_generalList.push_back(icon);
 
-        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.25f } });
+        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 1.f } });
         scene::DrawNode* line = new scene::DrawNode;
+        line->_parent = icon;
         line->_object = directionalLightLine;
         line->_instance._type = scene::MaterialType::Debug;
         line->_instance._material._tint = { 1.0, 1.0, 0.f, 1.0 };
-        line->_instance._transform.setPosition({ 0.f, 1.f, -1.f });
-        line->_instance._transform.setScale({ 1.f, 1.f, 1.f });
+        line->_instance._transform.setPosition({ 0.f, 0.f, 0.f });
         line->_instance._prevTransform = line->_instance._transform;
         line->_instance._objectID = g_objectIDCounter++;
         line->_instance._pipelineID = 1;
-        m_sceneData.m_lightingState._parent = &line->_instance;
+        m_sceneData.m_lightingState._parent = &icon->_instance;
 
         m_sceneData.m_generalList.push_back(line);
     }
