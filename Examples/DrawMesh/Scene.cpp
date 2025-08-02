@@ -5,7 +5,7 @@
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ImageFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
-#include "Scene/Model.h"
+#include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/Camera/CameraArcballHandler.h"
 

@@ -6,7 +6,7 @@
 #include "Renderer/Device.h"
 #include "Renderer/Texture.h"
 #include "Renderer/SamplerState.h"
-#include "Scene/Model.h"
+#include "Scene/ModelHandler.h"
 #include "Events/Input/InputEventMouse.h"
 #include "Events/Input/InputEventTouch.h"
 #include "Events/Input/InputEventHandler.h"

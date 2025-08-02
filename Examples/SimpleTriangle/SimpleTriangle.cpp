@@ -146,7 +146,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
     m_Pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_Pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_Pipeline->setCullMode(renderer::CullMode::CullMode_None);
-    m_Pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+    m_Pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
     m_Pipeline->setDepthWrite(false);
 
 

@@ -73,7 +73,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
             m_pipelineMSAA->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_pipelineMSAA->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineMSAA->setCullMode(renderer::CullMode::CullMode_None);
-            m_pipelineMSAA->setColorMask(renderer::ColorMask::ColorMask_All);
+            m_pipelineMSAA->setColorMask(0, renderer::ColorMask::ColorMask_All);
             m_pipelineMSAA->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
             m_pipelineMSAA->setDepthWrite(true);
             m_pipelineMSAA->setDepthTest(true);
@@ -151,7 +151,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
             m_pipelineBackbuffer->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
             m_pipelineBackbuffer->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineBackbuffer->setCullMode(renderer::CullMode::CullMode_Back);
-            m_pipelineBackbuffer->setColorMask(renderer::ColorMask::ColorMask_All);
+            m_pipelineBackbuffer->setColorMask(0, renderer::ColorMask::ColorMask_All);
             m_pipelineBackbuffer->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
             m_pipelineBackbuffer->setDepthWrite(false);
             m_pipelineBackbuffer->setDepthTest(false);
@@ -182,7 +182,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
         m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        m_pipeline->setColorMask(renderer::ColorMask::ColorMask_All);
+        m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
         m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
         m_pipeline->setDepthWrite(true);
         m_pipeline->setDepthTest(true);
