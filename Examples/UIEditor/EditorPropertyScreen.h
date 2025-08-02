@@ -34,11 +34,25 @@ private:
     ui::WidgetWindow* m_window;
 
     scene::SceneData* m_sceneData;
-    scene::DrawInstanceDataState* m_selectedObject;
+    scene::DrawNode* m_selectedNode;
 
-    std::array<ui::WidgetInputDragFloat*, 3> m_propertyPosition;
-    std::array<ui::WidgetInputDragFloat*, 3> m_propertyRotation;
-    std::array<ui::WidgetInputDragFloat*, 3> m_propertyScale;
+    //transform
+    struct TransformProperty
+    {
+        std::array<ui::WidgetInputDragFloat*, 3> m_position;
+        std::array<ui::WidgetInputDragFloat*, 3> m_rotation;
+        std::array<ui::WidgetInputDragFloat*, 3> m_scale;
+        u32 m_loadedFlag = 0;
+    } m_transformProperty;
+
+    //light
+    struct Light
+    {
+        ui::WidgetInputDragFloat* m_propertyIntensity;
+        ui::WidgetInputDragFloat* m_propertyTemperature;
+        ui::WidgetColorPalette*   m_propertyColor;
+        u32 m_loadedFlag = 0;
+    } m_lightProperty;
 
     bool m_loaded;
 };

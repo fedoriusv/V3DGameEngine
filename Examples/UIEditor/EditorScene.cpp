@@ -166,8 +166,6 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
     m_camera->setTarget({ 0.f, 0.f, 0.f });
     m_camera->setPosition({ 0.f, 0.25f, -1.f });
 
-    loadResources();
-
     m_sceneData.m_viewportState._viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
 
     scene::DirectionalLight* directionalLight = new scene::DirectionalLight();
@@ -175,6 +173,8 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
     directionalLight->setIntensity(1.f);
     directionalLight->setTemperature(100.0);
     m_sceneData.m_lightingState._directionalLight = directionalLight;
+
+    loadResources();
 
     m_mainPipeline.create(m_device, m_sceneData, m_frameState[m_stateIndex]);
 
@@ -522,7 +522,7 @@ void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
 
     {
         scene::DrawNode* icon = new scene::DrawNode;
-        icon->_object = nullptr;
+        icon->_object = m_sceneData.m_lightingState._directionalLight;
         icon->_instance._type = scene::MaterialType::Billboard;
         icon->_instance._title = "DirectionLight";
         icon->_instance._material._sampler = sampler;
@@ -538,7 +538,7 @@ void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
 
         m_sceneData.m_generalList.push_back(icon);
 
-        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 1.f } });
+        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.5f } });
         scene::DrawNode* line = new scene::DrawNode;
         line->_parent = icon;
         line->_object = directionalLightLine;

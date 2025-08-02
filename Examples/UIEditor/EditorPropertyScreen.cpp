@@ -6,13 +6,18 @@ EditorPropertyScreen::EditorPropertyScreen(event::GameEventReceiver* gameEventRe
     : m_window(nullptr)
 
     , m_sceneData(nullptr)
-    , m_selectedObject(nullptr)
+    , m_selectedNode(nullptr)
 
     , m_loaded(false)
 {
-    m_propertyPosition.fill(nullptr);
-    m_propertyRotation.fill(nullptr);
-    m_propertyScale.fill(nullptr);
+    m_transformProperty.m_position.fill(nullptr);
+    m_transformProperty.m_rotation.fill(nullptr);
+    m_transformProperty.m_scale.fill(nullptr);
+    m_transformProperty.m_loadedFlag = 0;
+
+    m_lightProperty.m_propertyIntensity = nullptr;
+    m_lightProperty.m_propertyTemperature = nullptr;
+    m_lightProperty.m_loadedFlag = 0;
 }
 
 EditorPropertyScreen::~EditorPropertyScreen()
@@ -34,11 +39,11 @@ void EditorPropertyScreen::build()
     ui::WidgetWindow& window = *m_window;
     window.removeWigets();
 
-    if (m_selectedObject)
+    if (m_selectedNode)
     {
         buildTransformProp();
 
-        if (m_selectedObject->_type == scene::MaterialType::Lights)
+        if (m_selectedNode->_object->getType() == typeOf<scene::DirectionalLight>() || m_selectedNode->_object->getType() == typeOf<scene::PointLight>())
         {
             buildLightProp();
         }
@@ -57,32 +62,44 @@ void EditorPropertyScreen::update(f32 dt)
         m_loaded = true;
     }
 
-    if (m_selectedObject)
+    if (m_selectedNode)
     {
-        const scene::Transform& transform = m_selectedObject->_transform;
-
-        if (m_propertyPosition[0] && m_propertyPosition[1] && m_propertyPosition[2])
+        if (m_transformProperty.m_loadedFlag & 0x1FF)
         {
-            const math::Vector3D& pos = m_selectedObject->_transform.getPosition();
-            m_propertyPosition[0]->setValue(pos.getX());
-            m_propertyPosition[1]->setValue(pos.getY());
-            m_propertyPosition[2]->setValue(pos.getZ());
+            const scene::Transform& transform = m_selectedNode->_instance._transform;
+
+            ASSERT(m_transformProperty.m_position[0] && m_transformProperty.m_position[1] && m_transformProperty.m_position[2], "must be valid");
+            const math::Vector3D& pos = transform.getPosition();
+            m_transformProperty.m_position[0]->setValue(pos.getX());
+            m_transformProperty.m_position[1]->setValue(pos.getY());
+            m_transformProperty.m_position[2]->setValue(pos.getZ());
+
+            ASSERT(m_transformProperty.m_rotation[0] && m_transformProperty.m_rotation[1] && m_transformProperty.m_rotation[2], "must be valid");
+            const math::Vector3D& rot = transform.getRotation();
+            m_transformProperty.m_rotation[0]->setValue(rot.getX());
+            m_transformProperty.m_rotation[1]->setValue(rot.getY());
+            m_transformProperty.m_rotation[2]->setValue(rot.getZ());
+
+            ASSERT(m_transformProperty.m_scale[0] && m_transformProperty.m_scale[1] && m_transformProperty.m_scale[2], "must be valid");
+            const math::Vector3D& scl = transform.getScale();
+            m_transformProperty.m_scale[0]->setValue(scl.getX());
+            m_transformProperty.m_scale[1]->setValue(scl.getY());
+            m_transformProperty.m_scale[2]->setValue(scl.getZ());
         }
 
-        if (m_propertyRotation[0] && m_propertyRotation[1] && m_propertyRotation[2])
+        if (m_lightProperty.m_loadedFlag & 0x7)
         {
-            const math::Vector3D& pos = m_selectedObject->_transform.getRotation();
-            m_propertyRotation[0]->setValue(pos.getX());
-            m_propertyRotation[1]->setValue(pos.getY());
-            m_propertyRotation[2]->setValue(pos.getZ());
-        }
+            if (m_selectedNode->_object->getType() == typeOf<scene::DirectionalLight>())
+            {
+                f32 inten = static_cast<scene::DirectionalLight*>(m_selectedNode->_object)->getIntensity();
+                m_lightProperty.m_propertyIntensity->setValue(inten);
 
-        if (m_propertyScale[0] && m_propertyScale[1] && m_propertyScale[2])
-        {
-            const math::Vector3D& pos = m_selectedObject->_transform.getScale();
-            m_propertyScale[0]->setValue(pos.getX());
-            m_propertyScale[1]->setValue(pos.getY());
-            m_propertyScale[2]->setValue(pos.getZ());
+                f32 temp = static_cast<scene::DirectionalLight*>(m_selectedNode->_object)->getTemperature();
+                m_lightProperty.m_propertyTemperature->setValue(temp);
+
+                color::ColorRGBF color = static_cast<scene::DirectionalLight*>(m_selectedNode->_object)->getColor();
+                m_lightProperty.m_propertyColor->setColor({ color._x, color._y, color._z, 1.f });
+            }
         }
     }
 }
@@ -92,7 +109,7 @@ bool EditorPropertyScreen::handleGameEvent(event::GameEventHandler* handler, con
     if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
     {
         const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
-        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? &m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_instance : nullptr;
+        m_selectedNode = (selectionEvent->_selectedIndex != k_emptyIndex) ? m_sceneData->m_generalList[selectionEvent->_selectedIndex] : nullptr;
         m_loaded = false;
     }
 
@@ -110,7 +127,7 @@ void EditorPropertyScreen::buildTransformProp()
     ui::WidgetWindow& window = *m_window;
 
     ui::WidgetTreeNode::TreeNodeFlags flags = ui::WidgetTreeNode::TreeNodeFlag::Framed;
-    if (m_selectedObject)
+    if (m_selectedNode)
     {
         flags |= ui::WidgetTreeNode::TreeNodeFlag::Open;
     }
@@ -127,15 +144,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyPosition[0] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_position[0] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 0;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D pos = m_selectedObject->_transform.getPosition();
+                                    math::Vector3D pos = m_selectedNode->_instance._transform.getPosition();
                                     pos.setX(val);
-                                    m_selectedObject->_transform.setPosition(pos);
+                                    m_selectedNode->_instance._transform.setPosition(pos);
                                 }
                             })
                     )
@@ -145,15 +163,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyPosition[1] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_position[1] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 1;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D pos = m_selectedObject->_transform.getPosition();
+                                    math::Vector3D pos = m_selectedNode->_instance._transform.getPosition();
                                     pos.setY(val);
-                                    m_selectedObject->_transform.setPosition(pos);
+                                    m_selectedNode->_instance._transform.setPosition(pos);
                                 }
                             })
                     )
@@ -163,15 +182,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyPosition[2] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_position[2] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 2;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D pos = m_selectedObject->_transform.getPosition();
+                                    math::Vector3D pos = m_selectedNode->_instance._transform.getPosition();
                                     pos.setZ(val);
-                                    m_selectedObject->_transform.setPosition(pos);
+                                    m_selectedNode->_instance._transform.setPosition(pos);
                                 }
                             })
                     )
@@ -184,15 +204,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyRotation[0] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_rotation[0] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 3;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D rot = m_selectedObject->_transform.getRotation();
+                                    math::Vector3D rot = m_selectedNode->_instance._transform.getRotation();
                                     rot.setX(val);
-                                    m_selectedObject->_transform.setRotation(rot);
+                                    m_selectedNode->_instance._transform.setRotation(rot);
                                 }
                             })
                     )
@@ -202,15 +223,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyRotation[1] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_rotation[1] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 4;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D rot = m_selectedObject->_transform.getRotation();
+                                    math::Vector3D rot = m_selectedNode->_instance._transform.getRotation();
                                     rot.setY(val);
-                                    m_selectedObject->_transform.setRotation(rot);
+                                    m_selectedNode->_instance._transform.setRotation(rot);
                                 }
                             })
                     )
@@ -220,15 +242,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyRotation[2] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_rotation[2] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 5;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D rot = m_selectedObject->_transform.getRotation();
+                                    math::Vector3D rot = m_selectedNode->_instance._transform.getRotation();
                                     rot.setZ(val);
-                                    m_selectedObject->_transform.setRotation(rot);
+                                    m_selectedNode->_instance._transform.setRotation(rot);
                                 }
                             })
                     )
@@ -241,15 +264,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyScale[0] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_scale[0] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 6;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D scale = m_selectedObject->_transform.getScale();
+                                    math::Vector3D scale = m_selectedNode->_instance._transform.getScale();
                                     scale.setX(val);
-                                    m_selectedObject->_transform.setScale(scale);
+                                    m_selectedNode->_instance._transform.setScale(scale);
                                 }
                             })
                     )
@@ -259,15 +283,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyScale[1] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_scale[1] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 7;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D scale = m_selectedObject->_transform.getScale();
+                                    math::Vector3D scale = m_selectedNode->_instance._transform.getScale();
                                     scale.setY(val);
-                                    m_selectedObject->_transform.setScale(scale);
+                                    m_selectedNode->_instance._transform.setScale(scale);
                                 }
                             })
                     )
@@ -277,15 +302,16 @@ void EditorPropertyScreen::buildTransformProp()
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                this->m_propertyScale[2] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_scale[2] = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_transformProperty.m_loadedFlag |= 1 << 8;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
-                                if (this->m_selectedObject)
+                                if (m_selectedNode)
                                 {
-                                    math::Vector3D scale = m_selectedObject->_transform.getScale();
+                                    math::Vector3D scale = m_selectedNode->_instance._transform.getScale();
                                     scale.setZ(val);
-                                    m_selectedObject->_transform.setScale(scale);
+                                    m_selectedNode->_instance._transform.setScale(scale);
                                 }
                             })
                     )
@@ -300,7 +326,7 @@ void EditorPropertyScreen::buildLightProp()
     ui::WidgetWindow& window = *m_window;
 
     ui::WidgetTreeNode::TreeNodeFlags flags = ui::WidgetTreeNode::TreeNodeFlag::Framed;
-    if (m_selectedObject)
+    if (m_selectedNode)
     {
         flags |= ui::WidgetTreeNode::TreeNodeFlag::Open;
     }
@@ -311,15 +337,57 @@ void EditorPropertyScreen::buildLightProp()
             .addWidget(ui::WidgetTreeNode("Light", flags)
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Intensity"))
-                    .addWidget(ui::WidgetInputDragFloat(0.f))
+                    .addWidget(ui::WidgetInputDragFloat(0.f)
+                        .setDragStep(1.f)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertyIntensity = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 0;
+                            })
+                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                            {
+                                if (m_selectedNode && m_selectedNode->_object->getType() == typeOf<scene::DirectionalLight>())
+                                {
+                                    static_cast<scene::DirectionalLight*>(m_selectedNode->_object)->setIntensity(val);
+                                }
+                            })
+                    )
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Temperature"))
-                    .addWidget(ui::WidgetInputDragFloat(0.f))
+                    .addWidget(ui::WidgetInputDragFloat(0.f)
+                        .setDragStep(10.f)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertyTemperature = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 1;
+                            })
+                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                            {
+                                if (m_selectedNode && m_selectedNode->_object->getType() == typeOf<scene::DirectionalLight>())
+                                {
+                                    static_cast<scene::DirectionalLight*>(m_selectedNode->_object)->setTemperature(val);
+                                }
+                            })
+)
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Color"))
-                    .addWidget(ui::WidgetInputDragFloat(0.f))
+                    .addWidget(ui::WidgetColorPalette()
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertyColor = static_cast<ui::WidgetColorPalette*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 2;
+                            })
+                        .setOnColorChangedEvent([this](ui::Widget* w, const color::ColorRGBAF& color) -> void
+                            {
+                                if (m_selectedNode && m_selectedNode->_object->getType() == typeOf<scene::DirectionalLight>())
+                                {
+                                    static_cast<scene::DirectionalLight*>(m_selectedNode->_object)->setColor({ color._x, color._y, color._z });
+                                }
+                            })
+
+                    )
                 )
             )
         );
@@ -331,7 +399,7 @@ void EditorPropertyScreen::buildMaterialProp()
     ui::WidgetWindow& window = *m_window;
 
     ui::WidgetTreeNode::TreeNodeFlags flags = ui::WidgetTreeNode::TreeNodeFlag::Framed;
-    if (m_selectedObject)
+    if (m_selectedNode)
     {
         flags |= ui::WidgetTreeNode::TreeNodeFlag::Open;
     }

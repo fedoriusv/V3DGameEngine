@@ -126,16 +126,15 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
             });
 
         DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline->getName()), color::colorrgbaf::LTGREY);
-        if (list->_object)
+        if (instance._type == scene::MaterialType::Billboard)
+        {
+            cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
+        }
+        else
         {
             const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
             renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
             cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
-        }
-        else
-        {
-            //billboard
-            cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
         }
     }
 
