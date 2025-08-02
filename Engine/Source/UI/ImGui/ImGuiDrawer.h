@@ -66,6 +66,7 @@ namespace ui
         math::float2 calculate_ListBoxSize(Widget* wiget, Widget::State* layoutBaseState, Widget::State* state) override;
         math::float2 calculate_InputDragValueSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) override;
         math::float2 calculate_TreeNodeSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) override;
+        math::float2 calculate_ColorPaletteSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) override;
 
         math::float2 calculate_TableSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) override;
 

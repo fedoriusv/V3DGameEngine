@@ -920,13 +920,6 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
     return active;
 }
 
-bool ImGuiWidgetDrawer::draw_ColorPalette(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state)
-{
-    ASSERT(ImGui::GetCurrentContext(), "must be valid");
-
-    return false;
-}
-
 math::float2 ImGuiWidgetDrawer::calculate_InputDragValueSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");
@@ -966,6 +959,47 @@ math::float2 ImGuiWidgetDrawer::calculate_InputDragValueSize(Widget* widget, Wid
             ImGui::PopFont();
         }
     }
+
+    return { alignmentSize.x, alignmentSize.y };
+}
+
+bool ImGuiWidgetDrawer::draw_ColorPalette(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WidgetColorPalette::StateColorPalette* cpCtx = static_cast<WidgetColorPalette::StateColorPalette*>(state);
+    WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layoutBaseState);
+
+    setupHorizontalAligment(layoutCtx, 0.f, cpCtx->_itemRect.getWidth());
+
+    color::ColorRGBAF color = cpCtx->_color;
+
+    ImGui::PushID(cpCtx->_uid);
+    bool active = ImGui::ColorEdit4("", &color[0]);
+    ImGui::PopID();
+
+    if (active && ImGui::IsItemEdited())
+    {
+        if (cpCtx->_onColorChanged)
+        {
+            std::invoke(cpCtx->_onColorChanged, widget, color);
+        }
+
+        cpCtx->_color = color;
+    }
+
+    return active;
+}
+
+math::float2 ImGuiWidgetDrawer::calculate_ColorPaletteSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WidgetColorPalette::StateColorPalette* cpCtx = static_cast<WidgetColorPalette::StateColorPalette*>(state);
+    WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layoutBaseState);
+
+    ASSERT(layoutCtx->_fontSize < m_widgetHandler->m_fonts.size(), "range out");
+    ImGui::PushFont(m_widgetHandler->m_fonts[layoutCtx->_fontSize]);
+    ImVec2 alignmentSize = ImGui::CalcTextSize(std::to_string(cpCtx->_color[0]).c_str());
+    ImGui::PopFont();
 
     return { alignmentSize.x, alignmentSize.y };
 }

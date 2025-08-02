@@ -162,6 +162,7 @@ namespace ui
         virtual math::float2 calculate_ComboBoxSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
         virtual math::float2 calculate_ListBoxSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
         virtual math::float2 calculate_InputDragValueSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) = 0;
+        virtual math::float2 calculate_ColorPaletteSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
 
         virtual math::float2 calculate_TreeNodeSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;
         virtual math::float2 calculate_TableSize(Widget* widget, Widget::State* layoutBaseState, Widget::State* state) = 0;

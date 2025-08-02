@@ -44,6 +44,12 @@ bool WidgetColorPalette::update(WidgetHandler* handler, Widget* parent, Widget* 
     return false;
 }
 
+math::float2 WidgetColorPalette::calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout)
+{
+    m_data->_itemRect = { {0, 0}, handler->getWidgetDrawer()->calculate_ColorPaletteSize(this, static_cast<WidgetType*>(layout)->m_data, m_data) };
+    return m_data->_itemRect.getSize();
+}
+
 Widget* WidgetColorPalette::copy() const
 {
     return V3D_NEW(WidgetColorPalette, memory::MemoryLabel::MemoryUI)(*this);
