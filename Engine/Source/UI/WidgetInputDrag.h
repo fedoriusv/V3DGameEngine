@@ -28,7 +28,8 @@ namespace ui
         TWidget& setTextColor(const color::ColorRGBAF& color);
         TWidget& setBorderColor(const color::ColorRGBAF& color);
         TWidget& setBackgroundColor(const color::ColorRGBAF& color);
-        TWidget& setDragStep(FieldType step);
+        TWidget& setStep(FieldType step);
+        TWidget& setRange(FieldType min, FieldType max);
 
         TWidget& setSize(const math::Dimension2D& size);
 
@@ -43,6 +44,7 @@ namespace ui
             color::ColorRGBAF           _backgroundColor;
             math::Dimension2D           _size;
             FieldType                   _step = FieldType(1);
+            FieldType                   _range[2] = { FieldType(0), FieldType(0) };
         };
 
     private:
@@ -94,9 +96,18 @@ namespace ui
     }
 
     template<class TWidget, typename FieldType, u32 SIZE>
-    inline TWidget& WidgetInputDragBase<TWidget, FieldType, SIZE>::setDragStep(FieldType step)
+    inline TWidget& WidgetInputDragBase<TWidget, FieldType, SIZE>::setStep(FieldType step)
     {
         Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._step = step;
+        return *static_cast<TWidget*>(this);
+    }
+
+    template<class TWidget, typename FieldType, u32 SIZE>
+    inline TWidget& WidgetInputDragBase<TWidget, FieldType, SIZE>::setRange(FieldType min, FieldType max)
+    {
+        ASSERT(min <= max, "invalid range");
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._range[0] = min;
+        Widget::cast_data<StateType>(WidgetBase<TWidget>::m_data)._range[1] = max;
         return *static_cast<TWidget*>(this);
     }
 
