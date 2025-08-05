@@ -1489,7 +1489,7 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
     RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetTarget);
 #endif //FRAME_PROFILER_INTERNAL
-    TRACE_PROFILER_RENDER_SCOPE("beginRenderTarget", color::color8bit::YELLOW);
+    TRACE_PROFILER_RENDER_SCOPE("beginRenderTarget", color::rgba8::YELLOW);
 
     VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(rendertarget.m_renderpassDesc, rendertarget.m_name);
     rendertarget.m_trackerRenderpass.attach(renderpass);
@@ -1560,7 +1560,7 @@ void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
     RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetPipeline);
 #endif //FRAME_PROFILER_INTERNAL
-    TRACE_PROFILER_RENDER_SCOPE("setPipelineState", color::color8bit::MAGENTA);
+    TRACE_PROFILER_RENDER_SCOPE("setPipelineState", color::rgba8::MAGENTA);
 
     VulkanGraphicPipeline* pipeline = m_device.m_graphicPipelineManager->acquireGraphicPipeline(state);
     state.m_tracker.attach(pipeline);
@@ -1582,7 +1582,7 @@ void VulkanCmdList::setPipelineState(ComputePipelineState& state)
     RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackProfiler(g_CPUProfiler, m_concurrencySlot, RenderFrameProfiler::FrameCounter::SetPipeline);
 #endif //FRAME_PROFILER_INTERNAL
-    TRACE_PROFILER_RENDER_SCOPE("setPipelineState", color::color8bit::MAGENTA);
+    TRACE_PROFILER_RENDER_SCOPE("setPipelineState", color::rgba8::MAGENTA);
 
     VulkanComputePipeline* pipeline = m_device.m_computePipelineManager->acquireGraphicPipeline(state);
     state.m_tracker.attach(pipeline);
@@ -1614,7 +1614,7 @@ void VulkanCmdList::transition(const TextureView& textureView, TransitionOp stat
 
 void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureView)
 {
-    TRACE_PROFILER_RENDER_SCOPE("bindTexture", color::color8bit::GREEN);
+    TRACE_PROFILER_RENDER_SCOPE("bindTexture", color::rgba8::GREEN);
 
     ASSERT(textureView._texture, "nullptr");
     VulkanImage* image = nullptr;
@@ -1632,7 +1632,7 @@ void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureVie
 
 void VulkanCmdList::bindUAV(u32 set, u32 slot, Buffer* buffer)
 {
-    TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::color8bit::GREEN);
+    TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::rgba8::GREEN);
 
     ASSERT(buffer, "nullptr");
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer->getBufferHandle()));
@@ -1641,7 +1641,7 @@ void VulkanCmdList::bindUAV(u32 set, u32 slot, Buffer* buffer)
 
 void VulkanCmdList::bindUAV(u32 set, u32 slot, Texture* texture)
 {
-    TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::color8bit::GREEN);
+    TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::rgba8::GREEN);
 
     ASSERT(texture, "nullptr");
     VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
@@ -1650,7 +1650,7 @@ void VulkanCmdList::bindUAV(u32 set, u32 slot, Texture* texture)
 
 void VulkanCmdList::bindSampler(u32 set, u32 slot, const SamplerState& sampler)
 {
-    TRACE_PROFILER_RENDER_SCOPE("bindSampler", color::color8bit::GREEN);
+    TRACE_PROFILER_RENDER_SCOPE("bindSampler", color::rgba8::GREEN);
 
     VulkanSampler* vkSampler = m_device.m_samplerManager->acquireSampler(sampler);
     ASSERT(vkSampler, "nullptr");
@@ -1661,7 +1661,7 @@ void VulkanCmdList::bindSampler(u32 set, u32 slot, const SamplerState& sampler)
 
 void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data)
 {
-    TRACE_PROFILER_RENDER_SCOPE("bindConstantBuffer", color::color8bit::GREEN);
+    TRACE_PROFILER_RENDER_SCOPE("bindConstantBuffer", color::rgba8::GREEN);
 
     u32 alignmentSize = math::alignUp<u32>(size, m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().minMemoryMapAlignment);
     ConstantBufferRange range = m_CBOManager->acquireConstantBuffer(alignmentSize);
@@ -1673,7 +1673,7 @@ void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, const void* 
 
 void VulkanCmdList::bindPushConstant(ShaderType type, u32 size, const void* data)
 {
-    TRACE_PROFILER_RENDER_SCOPE("bindPushConstant", color::color8bit::GREEN);
+    TRACE_PROFILER_RENDER_SCOPE("bindPushConstant", color::rgba8::GREEN);
     ASSERT(size <= m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxPushConstantsSize, "maxSize");
 
     m_pendingRenderState.bindPushConstant(type, size, data);
@@ -1681,7 +1681,7 @@ void VulkanCmdList::bindPushConstant(ShaderType type, u32 size, const void* data
 
 void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors)
 {
-    TRACE_PROFILER_RENDER_SCOPE("bindDescriptorSet", color::color8bit::GREEN);
+    TRACE_PROFILER_RENDER_SCOPE("bindDescriptorSet", color::rgba8::GREEN);
 
     ASSERT(set < m_device.getVulkanDeviceCaps()._maxDescriptorSets, "set out of range");
     for (const Descriptor& desc : descriptors)
@@ -1742,7 +1742,7 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
 
 bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
 {
-    TRACE_PROFILER_RENDER_SCOPE("prepareDraw", color::color8bit::BLACK);
+    TRACE_PROFILER_RENDER_SCOPE("prepareDraw", color::rgba8::BLACK);
     m_pendingRenderState.flushDebugMarkers(drawBuffer);
 
     ASSERT(drawBuffer, "nullptr");
@@ -1824,7 +1824,7 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
 bool VulkanCmdList::prepareDescriptorSets(VulkanCommandBuffer* drawBuffer)
 {
-    TRACE_PROFILER_RENDER_SCOPE("prepareDescriptorSets", color::color8bit::BLACK);
+    TRACE_PROFILER_RENDER_SCOPE("prepareDescriptorSets", color::rgba8::BLACK);
 
     m_pendingRenderState._descriptorSets.clear();
     const VulkanPipelineLayoutDescription& layoutDesc = m_pendingRenderState._graphicPipeline->getPipelineLayoutDescription();
@@ -1865,7 +1865,7 @@ void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 ve
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::draw", m_concurrencySlot);
 #endif //VULKAN_DEBUG
-    TRACE_PROFILER_RENDER_SCOPE("draw", color::color8bit::RED);
+    TRACE_PROFILER_RENDER_SCOPE("draw", color::rgba8::RED);
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
@@ -1885,7 +1885,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanContext[%u]::drawIndexed", m_concurrencySlot);
 #endif //VULKAN_DEBUG
-    TRACE_PROFILER_RENDER_SCOPE("drawIndexed", color::color8bit::RED);
+    TRACE_PROFILER_RENDER_SCOPE("drawIndexed", color::rgba8::RED);
 
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
