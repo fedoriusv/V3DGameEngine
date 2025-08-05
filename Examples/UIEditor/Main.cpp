@@ -301,7 +301,7 @@ private:
                         {
                             m_EditorGizmo->registerWiget(static_cast<ui::WidgetGizmo*>(w), m_EditorScene->m_sceneData);
                         })
-                    .setOnTransformChangedEvent([this](ui::Widget* w, ui::Widget* p, const scene::Transform& tr) -> void
+                    .setOnTransformChangedEvent([this](ui::Widget* w, ui::Widget* p, const math::Matrix4D& tr) -> void
                         {
                             m_EditorGizmo->modify(tr);
                             m_EditorScene->modifyObject(tr);

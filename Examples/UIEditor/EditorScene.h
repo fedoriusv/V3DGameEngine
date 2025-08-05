@@ -63,7 +63,7 @@ public:
 
 public:
 
-    void modifyObject(const scene::Transform& transform);
+    void modifyObject(const math::Matrix4D& transform);
     void selectObject(u32 i);
 
 public:
@@ -86,15 +86,16 @@ private:
 
     void loadResources();
 
-    renderer::Device*           m_device;
+    renderer::Device*               m_device;
 
-    scene::ModelHandler*        m_modelHandler;
-    ui::WidgetHandler*          m_UIHandler;
-    event::InputEventHandler*   m_inputHandler;
-    event::GameEventHandler*    m_gameHandler;
+    scene::ModelHandler*            m_modelHandler;
+    ui::WidgetHandler*              m_UIHandler;
+    scene::CameraEditorHandler*     m_cameraHandler;
+    event::InputEventHandler*       m_inputHandler;
+    event::GameEventHandler*        m_gameHandler;
 
-    event::GameEventReceiver*   m_gameEventRecevier;
-    RenderPipelineScene         m_mainPipeline;
+    event::GameEventReceiver*       m_gameEventRecevier;
+    RenderPipelineScene             m_mainPipeline;
 
 public:
 
@@ -105,7 +106,6 @@ public:
         f32 _far = 10000.f;
     };
 
-    scene::CameraEditorHandler*     m_camera;
     math::Rect                      m_currentViewportRect;
     ViewportParams                  m_vewportParams;
 
@@ -121,5 +121,6 @@ private:
     void editor_loadDebug(renderer::CmdListRender* cmdList);
 
     void test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaque, u32 countTransparency);
+    void test_loadLights(renderer::CmdListRender* cmdList, u32 pointCount, u32 spotCount);
 
 };

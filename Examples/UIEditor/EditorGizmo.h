@@ -19,7 +19,7 @@ public:
 
     void registerWiget(ui::WidgetGizmo* widget, scene::SceneData& sceneData);
 
-    void modify(const scene::Transform& transform);
+    void modify(const math::Matrix4D& transform);
     void select();
 
     void setEnable(bool enable);
@@ -37,6 +37,6 @@ private:
     ui::WidgetGizmo* m_gizmo;
 
     scene::SceneData* m_sceneData;
-    scene::DrawInstanceDataState* m_selectedObject;
+    scene::DrawNode* m_selectedObject;
     s32 m_currentOp;
 };

@@ -26,9 +26,9 @@ void EditorGizmo::registerWiget(ui::WidgetGizmo* widget, scene::SceneData& scene
     m_sceneData = &sceneData;
 }
 
-void EditorGizmo::modify(const scene::Transform& transform)
+void EditorGizmo::modify(const math::Matrix4D& transform)
 {
-    LOG_DEBUG("position [%f, %f, %f]", transform.getPosition().getX(), transform.getPosition().getY(), transform.getPosition().getZ());
+    LOG_DEBUG("position [%f, %f, %f]", transform.getTranslation().getX(), transform.getTranslation().getY(), transform.getTranslation().getZ());
     LOG_DEBUG("rotation [%f, %f, %f]", transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
     LOG_DEBUG("scale [%f, %f, %f]", transform.getScale().getX(), transform.getScale().getY(), transform.getScale().getZ());
     m_gizmo->setTransform(transform);
@@ -66,7 +66,7 @@ void EditorGizmo::update(f32 dt)
 {
     if (m_selectedObject && m_currentOp > -1)
     {
-        modify(m_selectedObject->_transform);
+        modify(m_selectedObject->_object->getTransform());
     }
 }
 
@@ -75,13 +75,13 @@ bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event:
     if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
     {
         const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
-        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? &m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_instance : nullptr;
+        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? m_sceneData->m_generalList[selectionEvent->_selectedIndex] : nullptr;
         if (m_gizmo)
         {
             if (m_selectedObject && m_currentOp > -1)
             {
                 m_gizmo->setActive(true);
-                modify(m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_instance._transform);
+                modify(m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_object->getTransform());
             }
             else
             {

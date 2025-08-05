@@ -66,22 +66,20 @@ void EditorPropertyScreen::update(f32 dt)
     {
         if (m_transformProperty.m_loadedFlag & 0x1FF)
         {
-            const scene::Transform& transform = m_selectedNode->_instance._transform;
-
             ASSERT(m_transformProperty.m_position[0] && m_transformProperty.m_position[1] && m_transformProperty.m_position[2], "must be valid");
-            const math::Vector3D& pos = transform.getPosition();
+            const math::Vector3D& pos = m_selectedNode->_object->getPosition();
             m_transformProperty.m_position[0]->setValue(pos.getX());
             m_transformProperty.m_position[1]->setValue(pos.getY());
             m_transformProperty.m_position[2]->setValue(pos.getZ());
 
             ASSERT(m_transformProperty.m_rotation[0] && m_transformProperty.m_rotation[1] && m_transformProperty.m_rotation[2], "must be valid");
-            const math::Vector3D& rot = transform.getRotation();
+            const math::Vector3D& rot = m_selectedNode->_object->getRotation();
             m_transformProperty.m_rotation[0]->setValue(rot.getX());
             m_transformProperty.m_rotation[1]->setValue(rot.getY());
             m_transformProperty.m_rotation[2]->setValue(rot.getZ());
 
             ASSERT(m_transformProperty.m_scale[0] && m_transformProperty.m_scale[1] && m_transformProperty.m_scale[2], "must be valid");
-            const math::Vector3D& scl = transform.getScale();
+            const math::Vector3D& scl = m_selectedNode->_object->getScale();
             m_transformProperty.m_scale[0]->setValue(scl.getX());
             m_transformProperty.m_scale[1]->setValue(scl.getY());
             m_transformProperty.m_scale[2]->setValue(scl.getZ());
@@ -140,7 +138,7 @@ void EditorPropertyScreen::buildTransformProp()
                     .addWidget(ui::WidgetText("Location"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -151,15 +149,15 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D pos = m_selectedNode->_instance._transform.getPosition();
+                                    math::Vector3D pos = m_selectedNode->_object->getPosition();
                                     pos.setX(val);
-                                    m_selectedNode->_instance._transform.setPosition(pos);
+                                    m_selectedNode->_object->setPosition(pos);
                                 }
                             })
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -170,15 +168,15 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D pos = m_selectedNode->_instance._transform.getPosition();
+                                    math::Vector3D pos = m_selectedNode->_object->getPosition();
                                     pos.setY(val);
-                                    m_selectedNode->_instance._transform.setPosition(pos);
+                                    m_selectedNode->_object->setPosition(pos);
                                 }
                             })
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -189,9 +187,9 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D pos = m_selectedNode->_instance._transform.getPosition();
+                                    math::Vector3D pos = m_selectedNode->_object->getPosition();
                                     pos.setZ(val);
-                                    m_selectedNode->_instance._transform.setPosition(pos);
+                                    m_selectedNode->_object->setPosition(pos);
                                 }
                             })
                     )
@@ -200,7 +198,7 @@ void EditorPropertyScreen::buildTransformProp()
                     .addWidget(ui::WidgetText("Rotation"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -211,15 +209,15 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D rot = m_selectedNode->_instance._transform.getRotation();
+                                    math::Vector3D rot = m_selectedNode->_object->getRotation();
                                     rot.setX(val);
-                                    m_selectedNode->_instance._transform.setRotation(rot);
+                                    m_selectedNode->_object->setRotation(rot);
                                 }
                             })
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -230,15 +228,15 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D rot = m_selectedNode->_instance._transform.getRotation();
+                                    math::Vector3D rot = m_selectedNode->_object->getRotation();
                                     rot.setY(val);
-                                    m_selectedNode->_instance._transform.setRotation(rot);
+                                    m_selectedNode->_object->setRotation(rot);
                                 }
                             })
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -249,9 +247,9 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D rot = m_selectedNode->_instance._transform.getRotation();
+                                    math::Vector3D rot = m_selectedNode->_object->getRotation();
                                     rot.setZ(val);
-                                    m_selectedNode->_instance._transform.setRotation(rot);
+                                    m_selectedNode->_object->setRotation(rot);
                                 }
                             })
                     )
@@ -260,7 +258,8 @@ void EditorPropertyScreen::buildTransformProp()
                     .addWidget(ui::WidgetText("Scale       "))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
+                        .setRange(0.01f, 1000.f)
                         .setBorderColor({ 1.f, 0.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -271,15 +270,16 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D scale = m_selectedNode->_instance._transform.getScale();
+                                    math::Vector3D scale = m_selectedNode->_object->getScale();
                                     scale.setX(val);
-                                    m_selectedNode->_instance._transform.setScale(scale);
+                                    m_selectedNode->_object->setScale(scale);
                                 }
                             })
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
+                        .setRange(0.01f, 1000.f)
                         .setBorderColor({ 0.f, 1.f, 0.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -290,15 +290,16 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D scale = m_selectedNode->_instance._transform.getScale();
+                                    math::Vector3D scale = m_selectedNode->_object->getScale();
                                     scale.setY(val);
-                                    m_selectedNode->_instance._transform.setScale(scale);
+                                    m_selectedNode->_object->setScale(scale);
                                 }
                             })
                     )
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 100, 20 })
-                        .setDragStep(0.1f)
+                        .setStep(0.1f)
+                        .setRange(0.01f, 1000.f)
                         .setBorderColor({ 0.f, 0.f, 1.f, 1.f })
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
@@ -309,9 +310,9 @@ void EditorPropertyScreen::buildTransformProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    math::Vector3D scale = m_selectedNode->_instance._transform.getScale();
+                                    math::Vector3D scale = m_selectedNode->_object->getScale();
                                     scale.setZ(val);
-                                    m_selectedNode->_instance._transform.setScale(scale);
+                                    m_selectedNode->_object->setScale(scale);
                                 }
                             })
                     )
@@ -338,7 +339,7 @@ void EditorPropertyScreen::buildLightProp()
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Intensity"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
-                        .setDragStep(1.f)
+                        .setStep(1.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyIntensity = static_cast<ui::WidgetInputDragFloat*>(w);
@@ -356,7 +357,7 @@ void EditorPropertyScreen::buildLightProp()
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Temperature"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
-                        .setDragStep(10.f)
+                        .setStep(10.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyTemperature = static_cast<ui::WidgetInputDragFloat*>(w);

@@ -37,8 +37,8 @@ void EditorContentScreen::build()
             m_widgetItems.resize(m_sceneData->m_generalList.size(), nullptr);
             for (u32 index = 0; index < m_sceneData->m_generalList.size(); ++index)
             {
-                scene::DrawInstanceDataState& item = m_sceneData->m_generalList[index]->_instance;
-                if (m_sceneData->m_generalList[index]->_instance._type == scene::MaterialType::Debug)
+                scene::DrawNode& item = *m_sceneData->m_generalList[index];
+                if (item._type == scene::MaterialType::Debug)
                 {
                     //skip debug object list
                     continue;
@@ -50,10 +50,10 @@ void EditorContentScreen::build()
                             m_widgetItems[index] = static_cast<ui::WidgetTreeNode*>(w);
                         })
                     .setIndex(index)
-                    .setSelected(m_sceneData->m_generalList[index]->_instance._selected)
+                    .setSelected(item._selected)
                     .setOnClickEvent([this](ui::Widget* w, s32 index) -> void
                         {
-                            m_sceneData->m_generalList[index]->_instance._selected = true;
+                            m_sceneData->m_generalList[index]->_selected = true;
                             m_gameEventRecevier->sendEvent(new EditorSelectionEvent(index));
                         })
                 );

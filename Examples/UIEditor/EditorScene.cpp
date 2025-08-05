@@ -11,6 +11,8 @@
 
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/Light.h"
+#include "Scene/Billboard.h"
 
 #include "Renderer/Render.h"
 #include "Renderer/Device.h"
@@ -22,7 +24,6 @@
 #include "RenderTechniques/RenderPipelineOutline.h"
 #include "RenderTechniques/RenderPipelineGammaCorrection.h"
 #include "RenderTechniques/RenderPipelineUIOverlay.h"
-#include "RenderTechniques/RenderPipelineComposite.h"
 #include "RenderTechniques/RenderPipelineZPrepass.h"
 #include "RenderTechniques/RenderPipelineFXAA.h"
 #include "RenderTechniques/RenderPipelineTAA.h"
@@ -67,6 +68,7 @@ EditorScene::EditorScene() noexcept
 
     , m_modelHandler(new scene::ModelHandler())
     , m_UIHandler(nullptr)
+    , m_cameraHandler(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
     , m_inputHandler(new event::InputEventHandler())
     , m_gameHandler(new event::GameEventHandler())
     , m_gameEventRecevier(new event::GameEventReceiver([](event::GameEvent* event)
@@ -76,7 +78,6 @@ EditorScene::EditorScene() noexcept
 
     , m_mainPipeline(m_modelHandler, m_UIHandler)
 
-    , m_camera(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
     , m_frameCounter(0)
 
     , m_activeIndex(k_emptyIndex)
@@ -97,7 +98,7 @@ EditorScene::EditorScene() noexcept
                         m_gameEventRecevier->sendEvent(new EditorSelectionEvent(m_activeIndex));
                     }
                 }
-                m_camera->handleInputEventCallback(m_inputHandler, event);
+                m_cameraHandler->handleInputEventCallback(m_inputHandler, event);
             }
         }
     );
@@ -110,10 +111,10 @@ EditorScene::EditorScene() noexcept
                 {
                     if (event->_key == event::KeyCode::KeyKey_F) //focus on selected object
                     {
-                        m_camera->setTarget(m_sceneData.m_generalList[m_activeIndex]->_instance._transform.getPosition()); //TODO
+                        m_cameraHandler->setTarget(m_sceneData.m_generalList[m_activeIndex]->_object->getPosition());
                     }
                 }
-                m_camera->handleInputEventCallback(m_inputHandler, event);
+                m_cameraHandler->handleInputEventCallback(m_inputHandler, event);
             }
         }
     );
@@ -152,27 +153,20 @@ EditorScene::~EditorScene()
     delete m_gameEventRecevier;
     delete m_inputHandler;
     delete m_gameHandler;
-
-    delete m_camera;
+    delete m_cameraHandler;
 }
 
 void EditorScene::create(renderer::Device* device, const math::Dimension2D& viewportSize)
 {
     m_device = device;
     m_currentViewportRect = math::Rect(0, 0, viewportSize._width, viewportSize._height);
-    m_camera->setPerspective(m_vewportParams._fov, viewportSize, m_vewportParams._near, m_vewportParams._far);
-    m_camera->setMoveSpeed(0.5f);
-    m_camera->setRotationSpeed(25.0f);
-    m_camera->setTarget({ 0.f, 0.f, 0.f });
-    m_camera->setPosition({ 0.f, 0.25f, -1.f });
+    m_cameraHandler->setPerspective(m_vewportParams._fov, viewportSize, m_vewportParams._near, m_vewportParams._far);
+    m_cameraHandler->setMoveSpeed(0.5f);
+    m_cameraHandler->setRotationSpeed(25.0f);
+    m_cameraHandler->setTarget({ 0.f, 0.f, 0.f });
+    m_cameraHandler->setPosition({ 0.f, 0.25f, -1.f });
 
     m_sceneData.m_viewportState._viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
-
-    scene::DirectionalLight* directionalLight = new scene::DirectionalLight();
-    directionalLight->setColor({ 1.f, 1.f, 1.f });
-    directionalLight->setIntensity(1.f);
-    directionalLight->setTemperature(100.0);
-    m_sceneData.m_lightingState._directionalLight = directionalLight;
 
     loadResources();
 
@@ -203,8 +197,8 @@ void EditorScene::preRender(f32 dt)
     renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
     m_sceneData.m_renderState.m_cmdList = cmdList;
 
-    m_camera->update(dt);
-    m_sceneData.m_viewportState._camera = m_camera;
+    m_cameraHandler->update(dt);
+    m_sceneData.m_viewportState._camera = m_cameraHandler;
 
     s32 posX = (s32)m_inputHandler->getAbsoluteCursorPosition()._x - (s32)m_currentViewportRect.getLeftX();
     posX = (posX < 0) ? 0 : posX;
@@ -215,22 +209,22 @@ void EditorScene::preRender(f32 dt)
     viewportState.prevProjectionMatrix = viewportState.projectionMatrix;
     viewportState.prevViewMatrix = viewportState.viewMatrix;
     viewportState.prevCameraJitter = viewportState.cameraJitter;
-    viewportState.projectionMatrix = m_camera->getCamera().getProjectionMatrix();
-    viewportState.invProjectionMatrix = m_camera->getCamera().getProjectionMatrix().getInversed();
-    viewportState.viewMatrix = m_camera->getCamera().getViewMatrix();
-    viewportState.invViewMatrix = m_camera->getCamera().getViewMatrix().getInversed();
+    viewportState.projectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix();
+    viewportState.invProjectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix().getInversed();
+    viewportState.viewMatrix = m_cameraHandler->getCamera().getViewMatrix();
+    viewportState.invViewMatrix = m_cameraHandler->getCamera().getViewMatrix().getInversed();
     viewportState.cameraJitter = scene::CameraHandler::calculateJitter(m_frameCounter, m_sceneData.m_viewportState._viewpotSize);
-    viewportState.cameraPosition = { m_camera->getPosition().getX(), m_camera->getPosition().getY(), m_camera->getPosition().getZ(), 0.f };
+    viewportState.cameraPosition = { m_cameraHandler->getPosition().getX(), m_cameraHandler->getPosition().getY(), m_cameraHandler->getPosition().getZ(), 0.f };
     viewportState.viewportSize = { (f32)m_sceneData.m_viewportState._viewpotSize._width, (f32)m_sceneData.m_viewportState._viewpotSize._height };
-    viewportState.clipNearFar = { m_camera->getNear(), m_camera->getFar() };
+    viewportState.clipNearFar = { m_cameraHandler->getNear(), m_cameraHandler->getFar() };
     viewportState.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
     viewportState.cursorPosition = { (f32)posX, (f32)posY };
     viewportState.time = utils::Timer::getCurrentTime();
 
     scene::LightingState& lightState = m_sceneData.m_lightingState;
-    lightState._directionalLight->setTransform(lightState._parent->_transform.getTransform());
+    lightState._directionalLight->setTransform(lightState._parent->_object->getTransform());
 
-    m_modelHandler->visibilityTest(m_sceneData);
+    m_modelHandler->update(m_sceneData, dt);
     if (m_activeIndex != k_emptyIndex)
     {
         m_sceneData.m_lists[toEnumType(scene::MaterialType::Selected)].push_back(m_sceneData.m_generalList[m_activeIndex]);
@@ -253,11 +247,11 @@ void EditorScene::submitRender()
     m_stateIndex = 0;//(m_stateIndex + 1) % m_states.size();
 }
 
-void EditorScene::modifyObject(const scene::Transform& transform)
+void EditorScene::modifyObject(const math::Matrix4D& transform)
 {
     if (m_activeIndex != k_emptyIndex)
     {
-        m_sceneData.m_generalList[m_activeIndex]->_instance._transform = transform;
+        m_sceneData.m_generalList[m_activeIndex]->_object->setTransform(transform);
     }
 }
 
@@ -282,9 +276,9 @@ void EditorScene::onChanged(const v3d::math::Rect& viewport)
 
 void EditorScene::onChanged(const math::Matrix4D& view)
 {
-    m_camera->setViewMatrix(view);
-    m_camera->setTarget(m_camera->getPosition() + m_camera->getCamera().getForwardVector() * 2.f);
-    m_camera->update(0.f);
+    m_cameraHandler->setViewMatrix(view);
+    m_cameraHandler->setTarget(m_cameraHandler->getPosition() + m_cameraHandler->getCamera().getForwardVector() * 2.f);
+    m_cameraHandler->update(0.f);
 }
 
 const renderer::Texture2D* EditorScene::getOutputTexture() const
@@ -302,7 +296,7 @@ const math::Rect& EditorScene::getViewportArea() const
 
 scene::Camera* EditorScene::getCamera()
 {
-    return &m_camera->getCamera();
+    return &m_cameraHandler->getCamera();
 }
 
 event::InputEventHandler* EditorScene::getInputHandler()
@@ -385,7 +379,8 @@ void EditorScene::loadResources()
     m_sceneData.m_globalResources.bind("nearest_sampler_repeat", nearest_sampler_repeat);
     m_sceneData.m_globalResources.bind("nearest_sampler_clamp", nearest_sampler_clamp);
 
-    test_loadCubes(cmdList, 20, 2);
+    test_loadCubes(cmdList, 20, 0);
+    test_loadLights(cmdList, 1, 0);
     editor_loadDebug(cmdList);
 
     m_device->submit(cmdList, true);
@@ -438,9 +433,6 @@ void EditorScene::test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaq
             return model;
         };
 
-    scene::Model* cube = loadModel(cmdList, "cube1.dae");
-    scene::Model* sphere = loadModel(cmdList, "sphere1.dae");
-
     ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
     ASSERT(linear_sampler_h.isValid(), "must be valid");
     renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(linear_sampler_h);
@@ -453,7 +445,7 @@ void EditorScene::test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaq
     ASSERT(uv_h.isValid(), "must be valid");
     renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
 
-    scene::Model* models[2] = { cube, sphere };
+    std::string models[2] = { "cube.dae", "sphere.dae" };
     scene::MaterialState material[2];
 
     material[0]._baseColor = loadTexture2D(cmdList, "Bricks054/Bricks054_1K-PNG_Color.png", true);
@@ -476,19 +468,111 @@ void EditorScene::test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaq
         math::float3 pos = rendomVector() * 1.0f;
         math::float3 scale = rendomVector() * 10.f;
 
-        scene::DrawNode* node = new scene::DrawNode;
-        node->_object = models[rd]->m_geometry[0]._LODs[0];
-        node->_instance._type = scene::MaterialType::Opaque;
-        node->_instance._title = models[rd]->m_geometry[0]._LODs[0]->m_name;
-        node->_instance._material = material[rd];
-        node->_instance._transform.setPosition({ pos._x, pos._y, pos._z });
-        node->_instance._transform.setScale({ scale._x, scale._x, scale._x });
-        node->_instance._prevTransform = node->_instance._transform;
-        node->_instance._objectID = g_objectIDCounter++;
-        node->_instance._pipelineID = 0;
+        scene::Model* model = loadModel(cmdList, models[rd]);
+        ASSERT(model, "nullptr");
+        scene::Mesh* mesh = model->m_geometry[0]._LODs[0];
+        ASSERT(mesh, "nullptr");
+        mesh->setPosition({ pos._x, pos._y, pos._z });
+        mesh->setScale({ scale._x, scale._x, scale._x });
 
+        scene::DrawNode* node = new scene::DrawNode;
+        node->_type = scene::MaterialType::Opaque;
+        node->_object = mesh;
+        node->_title = model->m_geometry[0]._LODs[0]->m_name;
+        node->_material = material[rd];
+        node->_objectID = g_objectIDCounter++;
+        node->_pipelineID = 0;
         m_sceneData.m_generalList.push_back(node);
     }
+}
+
+void EditorScene::test_loadLights(renderer::CmdListRender* cmdList, u32 pointCount, u32 spotCount)
+{
+    ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
+    ASSERT(linear_sampler_h.isValid(), "must be valid");
+    renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(linear_sampler_h);
+
+    ObjectHandle default_black_h = m_sceneData.m_globalResources.get("default_black");
+    ASSERT(default_black_h.isValid(), "must be valid");
+    renderer::Texture2D* defaultBlack = objectFromHandle<renderer::Texture2D>(default_black_h);
+
+    ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+    ASSERT(uv_h.isValid(), "must be valid");
+    renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+    {
+        scene::DirectionalLight* directionalLight = new scene::DirectionalLight();
+        directionalLight->setColor({ 1.f, 1.f, 1.f });
+        directionalLight->setIntensity(1.f);
+        directionalLight->setTemperature(100.0);
+        directionalLight->setPosition({ 0.f, 0.f, 0.f });
+
+        scene::Billboard* directionalLightIndicator = new scene::Billboard();
+        directionalLightIndicator->setPosition({ 0.f, 1.f, -1.f });
+
+        scene::DrawNode* indicator = new scene::DrawNode;
+        indicator->_type = scene::MaterialType::Billboard;
+        indicator->_object = directionalLightIndicator;
+        indicator->_title = "DirectionLight";
+        indicator->_material._sampler = sampler;
+        indicator->_material._baseColor = uvGrid;
+        indicator->_material._normals = defaultBlack;
+        indicator->_material._metalness = defaultBlack;
+        indicator->_material._roughness = defaultBlack;
+        indicator->_material._tint = { 1.0, 1.0, 1.f, 1.0 };
+        indicator->_objectID = g_objectIDCounter++;
+        indicator->_pipelineID = 0;
+        m_sceneData.m_generalList.push_back(indicator);
+
+        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.5f } });
+        directionalLightLine->setPosition({ 0.f, 0.f, 0.f });
+
+        scene::DrawNode* line = new scene::DrawNode;
+        line->_type = scene::MaterialType::Debug;
+        line->_parent = indicator;
+        line->_object = directionalLightLine;
+        line->_material._tint = { 1.0, 1.0, 0.f, 1.0 };
+        line->_objectID = g_objectIDCounter++;
+        line->_pipelineID = 1;
+        m_sceneData.m_generalList.push_back(line);
+
+        m_sceneData.m_lightingState._directionalLight = directionalLight;
+        m_sceneData.m_lightingState._parent = indicator;
+    }
+
+
+
+    for (u32 i = 0; i < pointCount; ++i)
+    {
+        scene::PointLight* light = scene::LightHelper::createPointLight(m_device, cmdList, 1.f, "PointLight");
+        light->setColor({ 1.f, 1.f, 1.f });
+        light->setPosition({ 0.f, 0.f, 0.f });
+        light->setScale({ 1.f, 1.f, 1.f });
+
+        scene::DrawNode* point = new scene::DrawNode;
+        point->_type = scene::MaterialType::Lights;
+        point->_object = light;
+        point->_title = "PointLight";
+        point->_objectID = g_objectIDCounter++;
+        point->_pipelineID = 0;
+        m_sceneData.m_generalList.push_back(point);
+
+
+        scene::DrawNode* icon = new scene::DrawNode;
+        icon->_type = scene::MaterialType::Billboard;
+        icon->_object = light;
+        icon->_title = "PointLight";
+        icon->_material._sampler = sampler;
+        icon->_material._baseColor = uvGrid;
+        icon->_material._normals = defaultBlack;
+        icon->_material._metalness = defaultBlack;
+        icon->_material._roughness = defaultBlack;
+        icon->_material._tint = { 1.0, 1.0, 1.f, 1.0 };
+        icon->_objectID = g_objectIDCounter++;
+        icon->_pipelineID = 0;
+        m_sceneData.m_generalList.push_back(icon);
+    }
+
 }
 
 void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
@@ -507,49 +591,15 @@ void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
 
     {
         scene::Mesh* prim = scene::MeshHelper::createGrid(m_device, cmdList, 10.0f, 64, 64);
+        prim->setPosition({ 0.f, 0.f, 0.f });
+        prim->setScale({ 1.f, 1.f, 1.f });
+
         scene::DrawNode* grid = new scene::DrawNode;
+        grid->_type = scene::MaterialType::Debug;
         grid->_object = prim;
-        grid->_instance._type = scene::MaterialType::Debug;
-        grid->_instance._material._tint = { 0.5, 0.5, 0.5, 1.0 };
-        grid->_instance._transform.setPosition({ 0.f, 0.f, 0.f });
-        grid->_instance._transform.setScale({ 1.f, 1.f, 1.f });
-        grid->_instance._prevTransform = grid->_instance._transform;
-        grid->_instance._objectID = g_objectIDCounter++;
-        grid->_instance._pipelineID = 1;
-
+        grid->_material._tint = { 0.5, 0.5, 0.5, 1.0 };
+        grid->_objectID = g_objectIDCounter++;
+        grid->_pipelineID = 1;
         m_sceneData.m_generalList.push_back(grid);
-    }
-
-    {
-        scene::DrawNode* icon = new scene::DrawNode;
-        icon->_object = m_sceneData.m_lightingState._directionalLight;
-        icon->_instance._type = scene::MaterialType::Billboard;
-        icon->_instance._title = "DirectionLight";
-        icon->_instance._material._sampler = sampler;
-        icon->_instance._material._baseColor = uvGrid;
-        icon->_instance._material._normals = defaultBlack;
-        icon->_instance._material._metalness = defaultBlack;
-        icon->_instance._material._roughness = defaultBlack;
-        icon->_instance._material._tint = { 1.0, 1.0, 1.f, 1.0 };
-        icon->_instance._transform.setPosition({ 0.f, 1.f, -1.f });
-        icon->_instance._prevTransform = icon->_instance._transform;
-        icon->_instance._objectID = g_objectIDCounter++;
-        icon->_instance._pipelineID = 0;
-
-        m_sceneData.m_generalList.push_back(icon);
-
-        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.5f } });
-        scene::DrawNode* line = new scene::DrawNode;
-        line->_parent = icon;
-        line->_object = directionalLightLine;
-        line->_instance._type = scene::MaterialType::Debug;
-        line->_instance._material._tint = { 1.0, 1.0, 0.f, 1.0 };
-        line->_instance._transform.setPosition({ 0.f, 0.f, 0.f });
-        line->_instance._prevTransform = line->_instance._transform;
-        line->_instance._objectID = g_objectIDCounter++;
-        line->_instance._pipelineID = 1;
-        m_sceneData.m_lightingState._parent = &icon->_instance;
-
-        m_sceneData.m_generalList.push_back(line);
     }
 }
