@@ -1434,7 +1434,7 @@ void ImGuiWidgetDrawer::draw_Gizmo(Widget* wiget, Widget* base, Widget::State* l
     if (gizmoCtx->_isActive && gizmoCtx->_camera)
     {
         const scene::Camera& camera = *gizmoCtx->_camera;
-        scene::Transform transform = gizmoCtx->_transform;
+        math::Matrix4D transform = gizmoCtx->_transform;
 
         static auto convertOp = [](WidgetGizmo::Operation op) -> ImGuizmo::OPERATION
             {
@@ -1467,7 +1467,7 @@ void ImGuiWidgetDrawer::draw_Gizmo(Widget* wiget, Widget* base, Widget::State* l
         f32 rawTransformMatrix[16] = {};
         camera.getViewMatrix().get(rawViewMatrix);
         camera.getProjectionMatrix().get(rawProjectionMatrix);
-        transform.getTransform().get(rawTransformMatrix);
+        transform.get(rawTransformMatrix);
 
         ImGuizmo::Manipulate(rawViewMatrix, rawProjectionMatrix, gizmoOp, gizmoMode, rawTransformMatrix, nullptr, nullptr);
 
@@ -1481,10 +1481,7 @@ void ImGuiWidgetDrawer::draw_Gizmo(Widget* wiget, Widget* base, Widget::State* l
             math::Matrix4D matrix;
             matrix.set(rawTransformMatrix);
 
-            scene::Transform modifyTransform;
-            modifyTransform.setTransform(matrix);
-
-            std::invoke(gizmoCtx->_onTransformChangedEvent, wiget, base, modifyTransform);
+            std::invoke(gizmoCtx->_onTransformChangedEvent, wiget, base, matrix);
         }
     }
 }

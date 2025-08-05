@@ -35,7 +35,6 @@ namespace ui
     using OnWidgetEventDimention2DParam = std::function<void(Widget*, Widget*, const math::Dimension2D&)>;
     using OnWidgetEventPoint2DParam = std::function<void(Widget*, Widget*, const math::Point2D&)>;
     using OnWidgetEventRectParam = std::function<void(Widget*, Widget*, const math::Rect&)>;
-    using OnWidgetEventTransformParam = std::function<void(Widget*, Widget*, const scene::Transform&)>;
     using OnWidgetEventMatrix4x4Param = std::function<void(Widget*, Widget*, const math::Matrix4D&)>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

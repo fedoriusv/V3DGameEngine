@@ -40,22 +40,22 @@ namespace ui
         ~WidgetGizmo();
 
         WidgetGizmo& setCamera(const scene::Camera* camera);
-        WidgetGizmo& setTransform(const scene::Transform& transform);
+        WidgetGizmo& setTransform(const math::Matrix4D& transform);
         WidgetGizmo& setOperation(Operation op);
         WidgetGizmo& setMode(Mode mode);
 
         WidgetGizmo& setOnHoveredEvent(const OnWidgetEvent& event);
-        WidgetGizmo& setOnTransformChangedEvent(const OnWidgetEventTransformParam& event);
+        WidgetGizmo& setOnTransformChangedEvent(const OnWidgetEventMatrix4x4Param& event);
 
         TypePtr getType() const final;
 
         struct StateGizmo : StateBase
         {
             OnWidgetEvent               _onHoveredEvent;
-            OnWidgetEventTransformParam _onTransformChangedEvent;
+            OnWidgetEventMatrix4x4Param _onTransformChangedEvent;
             Operation                   _operation  = Operation::Translate;
             Mode                        _mode       = Mode::Local;
-            scene::Transform            _transform;
+            math::Matrix4D              _transform;
             const scene::Camera*        _camera     = nullptr;
         };
 
@@ -74,7 +74,7 @@ namespace ui
         return *this;
     }
 
-    inline WidgetGizmo& WidgetGizmo::setTransform(const scene::Transform& transform)
+    inline WidgetGizmo& WidgetGizmo::setTransform(const math::Matrix4D& transform)
     {
         Widget::cast_data<StateType>(m_data)._transform = transform;
         return *this;
@@ -92,7 +92,7 @@ namespace ui
         return *this;
     }
 
-    inline WidgetGizmo& WidgetGizmo::setOnTransformChangedEvent(const OnWidgetEventTransformParam& event)
+    inline WidgetGizmo& WidgetGizmo::setOnTransformChangedEvent(const OnWidgetEventMatrix4x4Param& event)
     {
         Widget::cast_data<StateType>(m_data)._onTransformChangedEvent = event;
         return *this;
