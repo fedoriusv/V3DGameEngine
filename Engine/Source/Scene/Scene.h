@@ -81,11 +81,13 @@ namespace scene
         math::float4            _tint;
     };
 
-    //TODO
-    struct DrawInstanceDataState
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    struct DrawNode
     {
-        scene::Transform       _transform;
-        scene::Transform       _prevTransform;
+        DrawNode*              _parent = nullptr;
+        Renderable*            _object = nullptr;
+
         MaterialState          _material;
         std::string            _title;
         u64                    _pipelineID;
@@ -98,24 +100,14 @@ namespace scene
     //TODO
     struct LightingState
     {
-        DrawInstanceDataState*  _parent = nullptr;
-        DirectionalLight*       _directionalLight;
+        DrawNode*         _parent = nullptr;
+        DirectionalLight* _directionalLight;
     };
 
     //TODO remove
     struct RenderState
     {
         renderer::CmdListRender* m_cmdList;
-    };
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    struct DrawNode
-    {
-        DrawNode*              _parent = nullptr;
-        Renderable*            _object;
-
-        DrawInstanceDataState  _instance;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

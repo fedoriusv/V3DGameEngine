@@ -154,7 +154,7 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "Transparency", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "Transparency", color::rgbaf::GREEN);
 
     //pass 1
     {
@@ -169,10 +169,9 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
+        for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
         {
-            scene::DrawInstanceDataState& instance = list->_instance;
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
 
             struct ModelBuffer
             {
@@ -185,23 +184,23 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = instance._transform.getTransform();
-            constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
+            constantBuffer.modelMatrix = item->_object->getTransform();
+            constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
             constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tint = instance._material._tint;
-            constantBuffer.objectID = instance._objectID;
+            constantBuffer.tint = item->_material._tint;
+            constantBuffer.objectID = item->_objectID;
 
             scene.m_renderState.m_cmdList->bindDescriptorSet(1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(instance._material._sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(instance._material._baseColor), 3),
-                    renderer::Descriptor(renderer::TextureView(instance._material._normals), 4),
-                    renderer::Descriptor(renderer::TextureView(instance._material._metalness), 5),
-                    renderer::Descriptor(renderer::TextureView(instance._material._roughness), 6),
+                    renderer::Descriptor(item->_material._sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
+                    renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
+                    renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
+                    renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
             renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
             cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
         }
@@ -221,10 +220,9 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
+        for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
         {
-            scene::DrawInstanceDataState& instance = list->_instance;
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
 
             struct ModelBuffer
             {
@@ -237,25 +235,25 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = instance._transform.getTransform();
-            constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
+            constantBuffer.modelMatrix = item->_object->getTransform();
+            constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
             constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tint = instance._material._tint;
-            constantBuffer.objectID = instance._objectID;
+            constantBuffer.tint = item->_material._tint;
+            constantBuffer.objectID = item->_objectID;
 
             cmdList->bindDescriptorSet(1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(instance._material._sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(instance._material._baseColor), 3),
-                    renderer::Descriptor(renderer::TextureView(instance._material._normals), 4),
-                    renderer::Descriptor(renderer::TextureView(instance._material._metalness), 5),
-                    renderer::Descriptor(renderer::TextureView(instance._material._roughness), 6),
+                    renderer::Descriptor(item->_material._sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
+                    renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
+                    renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
+                    renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
                     renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 7),
                     renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(1), 0, 0), 8),
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
             renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
             cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
         }

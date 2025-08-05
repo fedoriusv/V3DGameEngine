@@ -43,7 +43,7 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::SceneData& scene
 
    m_depthPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_depthPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-   m_depthPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+   m_depthPipeline->setCullMode(renderer::CullMode::CullMode_None);
 #if ENABLE_REVERSED_Z
    m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
@@ -83,13 +83,11 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& scen
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "ZPrepass", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "ZPrepass", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_depthRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setStencilRef(0);
-
     cmdList->setPipelineState(*m_depthPipeline);
 
     cmdList->bindDescriptorSet(0,
@@ -97,10 +95,10 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& scen
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
         });
 
-    for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
+    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
     {
-        scene::DrawInstanceDataState& instance = list->_instance;
-        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+        cmdList->setStencilRef(0x01);
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
 
         struct ModelBuffer
         {
@@ -109,22 +107,22 @@ void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& scen
             math::Matrix4D normalMatrix;
             math::float4   tint;
             u64            objectID;
-            u64            _pad = 0;
+            u64           _pad = 0;
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = instance._transform.getTransform();
-        constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
+        constantBuffer.modelMatrix = mesh.getTransform();
+        constantBuffer.prevModelMatrix = mesh.getPrevTransform();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = instance._material._tint;
-        constantBuffer.objectID = instance._objectID;
+        constantBuffer.tint = item->_material._tint;
+        constantBuffer.objectID = item->_objectID;
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, 1),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_depthPipeline->getName()), color::colorrgbaf::LTGREY);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_depthPipeline->getName()), color::rgbaf::LTGREY);
         renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
         cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
     }

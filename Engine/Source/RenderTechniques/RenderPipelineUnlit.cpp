@@ -91,7 +91,7 @@ void RenderPipelineUnlitStage::execute(Device* device, scene::SceneData& scene, 
 
     if (!scene.m_lists[toEnumType(scene::MaterialType::Billboard)].empty())
     {
-        DEBUG_MARKER_SCOPE(cmdList, "Billboard", color::colorrgbaf::GREEN);
+        DEBUG_MARKER_SCOPE(cmdList, "Billboard", color::rgbaf::GREEN);
 
         ObjectHandle rt_h = scene.m_globalResources.get("render_target");
         ASSERT(rt_h.isValid(), "must be valid");
@@ -141,12 +141,10 @@ void RenderPipelineUnlitStage::execute(Device* device, scene::SceneData& scene, 
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Billboard)])
+        for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Billboard)])
         {
-            scene::DrawInstanceDataState& instance = list->_instance;
-
             cmdList->setStencilRef(0x0);
-            cmdList->setPipelineState(*m_pipelines[instance._pipelineID]);
+            cmdList->setPipelineState(*m_pipelines[item->_pipelineID]);
 
             struct ModelBuffer
             {
@@ -159,21 +157,21 @@ void RenderPipelineUnlitStage::execute(Device* device, scene::SceneData& scene, 
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = instance._transform.getTransform();
-            constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
+            constantBuffer.modelMatrix = item->_object->getTransform();
+            constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
             constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
             constantBuffer.normalMatrix.makeTransposed();
-            constantBuffer.tint = instance._material._tint;
-            constantBuffer.objectID = instance._objectID;
+            constantBuffer.tint = item->_material._tint;
+            constantBuffer.objectID = item->_objectID;
 
             cmdList->bindDescriptorSet(1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(instance._material._sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(instance._material._baseColor), 3),
+                    renderer::Descriptor(item->_material._sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipelines[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipelines[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
             cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
         }
 

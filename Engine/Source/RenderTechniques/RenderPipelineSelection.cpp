@@ -80,7 +80,7 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "Selection", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "Selection", color::rgbaf::GREEN);
 
     if (scene.m_lists[toEnumType(scene::MaterialType::Selected)].empty())
     {
@@ -99,10 +99,8 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
         });
 
-    for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Selected)])
+    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Selected)])
     {
-        scene::DrawInstanceDataState& instance = list->_instance;
-
         struct ModelBuffer
         {
             math::Matrix4D modelMatrix;
@@ -110,29 +108,29 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
             math::Matrix4D normalMatrix;
             math::float4   tint;
             u64            objectID;
-            u64            _pad = 0;
+            u64           _pad = 0;
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = instance._transform.getTransform();
-        constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
+        constantBuffer.modelMatrix = item->_object->getTransform();
+        constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = instance._material._tint;
-        constantBuffer.objectID = instance._objectID;
+        constantBuffer.tint = item->_material._tint;
+        constantBuffer.objectID = item->_objectID;
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline->getName()), color::colorrgbaf::LTGREY);
-        if (instance._type == scene::MaterialType::Billboard)
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline->getName()), color::rgbaf::LTGREY);
+        if (item->_type == scene::MaterialType::Billboard)
         {
             cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
         }
         else
         {
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
             renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
             cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
         }

@@ -81,7 +81,7 @@ void RenderPipelineTAAStage::execute(Device* device, scene::SceneData& scene, sc
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "TAA", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "TAA", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_renderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });

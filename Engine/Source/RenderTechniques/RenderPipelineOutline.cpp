@@ -85,7 +85,7 @@ void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& scene
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "Outline", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "Outline", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_renderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });

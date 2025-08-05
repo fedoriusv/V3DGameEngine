@@ -46,14 +46,14 @@ void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& scene,
 
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+        pipeline->setCullMode(renderer::CullMode::CullMode_None);
 #if ENABLE_REVERSED_Z
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
 #endif
         pipeline->setDepthTest(true);
-        pipeline->setDepthWrite(true);
+        pipeline->setDepthWrite(false);
         pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
         pipeline->setColorMask(1, renderer::ColorMask::ColorMask_All);
         pipeline->setColorMask(2, renderer::ColorMask::ColorMask_All);
@@ -124,19 +124,17 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& scene
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "GBuffer", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "GBuffer", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_GBufferRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
 
-    for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
+    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
     {
-        scene::DrawInstanceDataState& instance = list->_instance;
-        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
 
-        cmdList->setStencilRef(0x1);
-        cmdList->setPipelineState(*m_pipeline[instance._pipelineID]);
+        cmdList->setPipelineState(*m_pipeline[item->_pipelineID]);
 
         cmdList->bindDescriptorSet(0,
             {
@@ -154,35 +152,33 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& scene
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = instance._transform.getTransform();
-        constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
+        constantBuffer.modelMatrix = mesh.getTransform();
+        constantBuffer.prevModelMatrix = mesh.getPrevTransform();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
         constantBuffer.normalMatrix.makeTransposed();
-        constantBuffer.tint = instance._material._tint;
-        constantBuffer.objectID = instance._objectID;
+        constantBuffer.tint = item->_material._tint;
+        constantBuffer.objectID = item->_objectID;
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                renderer::Descriptor(instance._material._sampler, 2),
-                renderer::Descriptor(renderer::TextureView(instance._material._baseColor), 3),
-                renderer::Descriptor(renderer::TextureView(instance._material._normals), 4),
-                renderer::Descriptor(renderer::TextureView(instance._material._metalness), 5),
-                renderer::Descriptor(renderer::TextureView(instance._material._roughness), 6),
+                renderer::Descriptor(item->_material._sampler, 2),
+                renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
+                renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
+                renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
+                renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
         renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
         cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
     }
 
-    for (auto& list : scene.m_lists[toEnumType(scene::MaterialType::MaskedOpaque)])
+    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::MaskedOpaque)])
     {
-        scene::DrawInstanceDataState& instance = list->_instance;
-        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(list->_object);
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
 
-        cmdList->setStencilRef(0x1);
-        cmdList->setPipelineState(*m_pipeline[instance._pipelineID]);
+        cmdList->setPipelineState(*m_pipeline[item->_pipelineID]);
 
         ObjectHandle noise = scene.m_globalResources.get("tiling_noise");
         ASSERT(noise.isValid(), "must be valid");
@@ -204,24 +200,24 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& scene
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = instance._transform.getTransform();
-        constantBuffer.prevModelMatrix = instance._prevTransform.getTransform();
+        constantBuffer.modelMatrix = mesh.getTransform();
+        constantBuffer.prevModelMatrix = mesh.getPrevTransform();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = instance._material._tint;
-        constantBuffer.objectID = instance._objectID;
+        constantBuffer.tint = item->_material._tint;
+        constantBuffer.objectID = item->_objectID;
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                renderer::Descriptor(instance._material._sampler, 2),
-                renderer::Descriptor(renderer::TextureView(instance._material._baseColor), 3),
-                renderer::Descriptor(renderer::TextureView(instance._material._normals), 4),
-                renderer::Descriptor(renderer::TextureView(instance._material._metalness), 5),
-                renderer::Descriptor(renderer::TextureView(instance._material._roughness), 6),
+                renderer::Descriptor(item->_material._sampler, 2),
+                renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
+                renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
+                renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
+                renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
                 renderer::Descriptor(renderer::TextureView(noiseTexture, 0, 0), 7),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", instance._objectID, m_pipeline[instance._pipelineID]->getName()), color::colorrgbaf::LTGREY);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
         renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
         cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
     }

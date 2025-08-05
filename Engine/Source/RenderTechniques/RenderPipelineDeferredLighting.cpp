@@ -72,7 +72,7 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "DeferredLighting", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "DeferredLighting", color::rgbaf::GREEN);
 
     ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
     ASSERT(depth_stencil_h.isValid(), "must be valid");
@@ -119,7 +119,7 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
     };
 
     LightBuffer lightBuffer;
-    lightBuffer.position = dirLight.getTransform().getPosition();
+    lightBuffer.position = dirLight.getTransform().getTranslation();
     lightBuffer.direction = dirLight.getDirection();
     lightBuffer.color = { dirLight.getColor()._x, dirLight.getColor()._y, dirLight.getColor()._z, 1.f };
     lightBuffer.type = 0;
@@ -157,7 +157,8 @@ void RenderPipelineDeferredLightingStage::createRenderTarget(Device* device, sce
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        });
+        }
+    );
 }
 
 void RenderPipelineDeferredLightingStage::destroyRenderTarget(Device* device, scene::SceneData& data)

@@ -77,7 +77,7 @@ void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::SceneDat
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "Gamma", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "Gamma", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_gammaRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });

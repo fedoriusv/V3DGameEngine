@@ -1,7 +1,5 @@
 #include "RenderTechniques/RenderPipelineFXAA.h"
 
-#include "RenderPipelineComposite.h"
-
 #include "Resource/ResourceManager.h"
 
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -74,7 +72,7 @@ void RenderPipelineFXAAStage::execute(Device* device, scene::SceneData& scene, s
     renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
-    DEBUG_MARKER_SCOPE(cmdList, "FXAA", color::colorrgbaf::GREEN);
+    DEBUG_MARKER_SCOPE(cmdList, "FXAA", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_renderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
@@ -86,7 +84,7 @@ void RenderPipelineFXAAStage::execute(Device* device, scene::SceneData& scene, s
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
         });
 
-    ObjectHandle render_target = scene.m_globalResources.get("full_composite");
+    ObjectHandle render_target = scene.m_globalResources.get("render_target");
     ASSERT(render_target.isValid(), "must be valid");
     renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(render_target);
 
@@ -101,7 +99,6 @@ void RenderPipelineFXAAStage::execute(Device* device, scene::SceneData& scene, s
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-
     cmdList->endRenderTarget();
 
     scene.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
