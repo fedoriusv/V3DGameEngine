@@ -398,6 +398,10 @@ void EditorPropertyScreen::buildMaterialProp()
     ASSERT(m_window, "must be valid");
     ui::WidgetWindow& window = *m_window;
 
+    ObjectHandle dummy_h = m_sceneData->m_globalResources.get("default_white");
+    ASSERT(dummy_h.isValid(), "must be valid");
+    renderer::Texture2D* dummyTexture = objectFromHandle<renderer::Texture2D>(dummy_h);
+
     ui::WidgetTreeNode::TreeNodeFlags flags = ui::WidgetTreeNode::TreeNodeFlag::Framed;
     if (m_selectedNode)
     {
@@ -408,6 +412,29 @@ void EditorPropertyScreen::buildMaterialProp()
         .addWidget(ui::WidgetLayout()
             .setFontSize(ui::WidgetLayout::MediumFont)
             .addWidget(ui::WidgetTreeNode("Material", flags)
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("MaterialType"))
+                    .addWidget(ui::WidgetText("<text>"))
+                )
+                .addWidget(ui::WidgetText("Name: <text>"))
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("BaseColor"))
+                    .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 }))
+                )
+                .addWidget(ui::WidgetText("Name: <text>"))
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("Normal  "))
+                    .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 }))
+                )
+                .addWidget(ui::WidgetText("Name: <text>"))
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("Material  "))
+                    .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 }))
+                )
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("Tint"))
+                    .addWidget(ui::WidgetColorPalette())
+                )
             )
         );
 }
