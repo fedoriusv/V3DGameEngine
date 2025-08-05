@@ -19,10 +19,12 @@ namespace utils
     {
     public:
 
-        Observer() = default;
-        virtual ~Observer() = default;
-
         virtual void handleNotify(const Reporter<Type>* reporter, const Type& data) = 0;
+
+    protected:
+
+        Observer() = default;
+        ~Observer() = default;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,9 +37,6 @@ namespace utils
     class V3D_API Reporter
     {
     public:
-
-        Reporter() = default;
-        virtual ~Reporter() = default;
 
         void registerNotify(Observer<Type>* object)
         {
@@ -70,6 +69,11 @@ namespace utils
                 observer->handleNotify(this, data);
             }
         }
+
+    protected:
+
+        Reporter() = default;
+        ~Reporter() = default;
 
     private:
 

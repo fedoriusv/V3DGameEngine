@@ -327,6 +327,11 @@ Mesh* MeshHelper::createCone(renderer::Device* device, renderer::CmdListRender* 
     return mesh;
 }
 
+Mesh* MeshHelper::createCylinder(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, f32 height, u32 segments, const std::string& name)
+{
+    return nullptr;
+}
+
 Mesh* MeshHelper::createPlane(renderer::Device* device, renderer::CmdListRender* cmdList, f32 width, f32 height, u32 segmentsX, u32 segmentsY, const std::string& name)
 {
     StaticMesh* mesh = V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject)();

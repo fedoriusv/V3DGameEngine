@@ -18,6 +18,13 @@ namespace utils
 
         using ValueType = Type;
 
+        Type ID() const
+        {
+            return m_ID;
+        }
+
+    protected:
+
         ResourceID() noexcept
             : m_ID(0)
         {
@@ -27,11 +34,6 @@ namespace utils
         }
 
         ~ResourceID() = default;
-
-        Type ID() const
-        {
-            return m_ID;
-        }
 
     private:
 

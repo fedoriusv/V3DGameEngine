@@ -11,7 +11,7 @@ namespace utils
     /**
     * @brief Spinlock class
     */
-    class Spinlock
+    class V3D_API Spinlock
     {
     public:
 

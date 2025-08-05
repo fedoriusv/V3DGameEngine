@@ -81,26 +81,6 @@ void Camera::setTransform(const math::Matrix4D& transform)
     m_matricesFlags |= CameraState::CameraState_View;
 }
 
-const math::Vector3D& Camera::getPosition() const
-{
-    return m_transform.getPosition();
-}
-
-const math::Vector3D& Camera::getRotation() const
-{
-    return m_transform.getRotation();
-}
-
-const math::Vector3D& Camera::getScale() const
-{
-    return m_transform.getScale();
-}
-
-const math::Matrix4D& Camera::getTransform() const
-{
-    return m_transform.getTransform();
-}
-
 const math::Vector3D& Camera::getTarget() const
 {
     return m_target;

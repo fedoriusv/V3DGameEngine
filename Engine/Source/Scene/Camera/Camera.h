@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "Scene/Renderable.h"
-#include "Scene/Component.h"
 #include "Resource/Resource.h"
 
 namespace v3d
@@ -15,7 +14,7 @@ namespace scene
     * @brief Camera class. Component, Resource. Game side.
     * Calculates View and Projection matrices
     */
-    class Camera : public Renderable, public resource::Resource
+    class Camera : public Object, public resource::Resource, public Renderable
     {
     public:
 
@@ -40,11 +39,6 @@ namespace scene
         void setRotation(const math::Vector3D& rotation);
         void setScale(const math::Vector3D& scale);
         void setTransform(const math::Matrix4D& transform);
-
-        const math::Vector3D& getPosition() const;
-        const math::Vector3D& getRotation() const;
-        const math::Vector3D& getScale() const;
-        const math::Matrix4D& getTransform() const;
 
         TypePtr getType() const final;
 
@@ -91,7 +85,6 @@ namespace scene
         void recalculateProjectionMatrix() const;
         void recalculateViewMatrix() const;
 
-        Transform                m_transform;
         mutable math::Matrix4D   m_matrices[Matrix_Count];
         mutable math::Vector3D   m_target;
         mutable math::Vector3D   m_up;

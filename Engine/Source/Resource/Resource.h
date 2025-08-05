@@ -95,7 +95,7 @@ namespace resource
     /**
     * @brief Base Interface for Resource class
     */
-    class V3D_API Resource : public utils::Reporter<ResourceReport>, public utils::ResourceID<Resource, u32>
+    class V3D_API Resource : public utils::ResourceID<Resource, u64>, public utils::Reporter<ResourceReport>
     {
     public:
 

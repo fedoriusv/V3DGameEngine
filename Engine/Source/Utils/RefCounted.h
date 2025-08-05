@@ -12,14 +12,16 @@ namespace utils
     * @brief RefCounted class.
     * @see IntrusivePointer
     */
-    class RefCounted
+    class V3D_API RefCounted
     {
     public:
 
+        s64 getRefs() const;
+
+    protected:
+
         explicit RefCounted(s64 refCount = 0) noexcept;
         virtual ~RefCounted() = default;
-
-        s64 getRefs() const;
 
     private:
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Scene/Component.h"
 #include "Scene/Scene.h"
 #include "Resource/Resource.h"
 
@@ -75,12 +74,14 @@ namespace scene
 
         static ModelHandler* createModelHandler();
 
-        void visibilityTest(scene::SceneData& scene);
+        void update(scene::SceneData& scene, f32 dt);
 
         void drawStaticGeometry(renderer::CmdListRender* cmdList, InstanceDraw* instance);
         void drawAnimatedGeometry(renderer::CmdListRender* cmdList);
 
     private:
+
+        void visibilityTest(scene::SceneData& scene);
 
         renderer::Device* m_device;
     };

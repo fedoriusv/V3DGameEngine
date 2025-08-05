@@ -7,14 +7,24 @@
 
 namespace v3d
 {
+namespace renderer
+{
+    class Device;
+    class CmdListRender;
+} //namespace renderer
 namespace scene
 {
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Mesh;
+    class LightHelper;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief Light interface
     */
-    class Light : public Renderable, public resource::Resource
+    class Light : public Object, public resource::Resource, public Renderable
     {
     public:
 
@@ -22,14 +32,11 @@ namespace scene
         void setIntensity(f32 intensity);
         void setTemperature(f32 temperature);
 
-        void setPosition(const math::Vector3D& position);
-        void setRotation(const math::Vector3D& rotation);
-        void setTransform(const math::Matrix4D& transform);
-
         f32 getIntensity() const;
         f32 getTemperature() const;
         const color::ColorRGBF& getColor() const;
-        const scene::Transform& getTransform() const;
+
+        const Mesh* getVolumeMesh() const;
 
     protected:
 
@@ -43,11 +50,12 @@ namespace scene
         explicit Light(Type type) noexcept;
         virtual ~Light();
 
-        scene::Transform m_transform;
-        color::ColorRGBF m_color;
-        f32              m_intensity;
-        f32              m_temperature;
-        Type             m_type;
+        color::ColorRGBF  m_color;
+        Type              m_type;
+        f32               m_intensity;
+        f32               m_temperature;
+        Mesh*             m_volume;
+        std::string       m_name;
 
     private:
 
@@ -85,9 +93,9 @@ namespace scene
         return m_color;
     }
 
-    inline const scene::Transform& Light::getTransform() const
+    inline const Mesh* Light::getVolumeMesh() const
     {
-        return m_transform;
+        return m_volume;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,10 +113,6 @@ namespace scene
         const math::Vector3D getDirection() const;
 
         TypePtr getType() const final;
-
-    private:
-
-        const math::Vector4D k_forwardVector;
     };
 
     inline TypePtr DirectionalLight::getType() const
@@ -118,7 +122,7 @@ namespace scene
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        /**
+    /**
     * @brief PointLight class
     */
     class PointLight : public Light
@@ -132,15 +136,47 @@ namespace scene
 
     private:
 
-        math::Vector4D  m_position;
-        f32             m_attenuation;
-        f32             m_radius;
+        friend LightHelper;
+
+        f32 m_attenuation;
     };
 
     inline TypePtr PointLight::getType() const
     {
         return typeOf<PointLight>();
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief SpotLight class
+    */
+    class SpotLight : public Light
+    {
+    public:
+
+        SpotLight() noexcept;
+        ~SpotLight();
+
+        TypePtr getType() const final;
+
+    private:
+    };
+
+    inline TypePtr SpotLight::getType() const
+    {
+        return typeOf<SpotLight>();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class LightHelper
+    {
+    public:
+
+        [[nodisard]] static PointLight* createPointLight(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, const std::string& name = "");
+        [[nodisard]] static SpotLight* createSpotLight(renderer::Device* device, renderer::CmdListRender* cmdList, const std::string& name = "");
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -160,6 +196,16 @@ namespace scene
 
     template<>
     struct TypeOf<scene::PointLight>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<scene::SpotLight>
     {
         static TypePtr get()
         {

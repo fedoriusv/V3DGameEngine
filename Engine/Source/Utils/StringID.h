@@ -47,7 +47,7 @@ namespace utils
     * @brief StringID. Compile time string
     */
     template <UIntType T>
-    class TStringID
+    class V3D_API TStringID
     {
     public:
 

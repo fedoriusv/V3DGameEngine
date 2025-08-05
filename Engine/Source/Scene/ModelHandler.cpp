@@ -73,11 +73,23 @@ namespace scene
      //group by type
      for (auto& item : scene.m_generalList)
      {
-         scene.m_lists[toEnumType(item->_instance._type)].push_back(item);
+         scene.m_lists[toEnumType(item->_type)].push_back(item);
      }
 
      //fructum test
+     //TODO
+ }
 
+ void ModelHandler::update(scene::SceneData& scene, f32 dt)
+ {
+     visibilityTest(scene);
+     for (auto& item : scene.m_generalList)
+     {
+         if (item->_object)
+         {
+             item->_object->m_prevTransform.setTransform(item->_object->getTransform());
+         }
+     }
  }
 
  void ModelHandler::drawStaticGeometry(renderer::CmdListRender* cmdList, InstanceDraw* instance)

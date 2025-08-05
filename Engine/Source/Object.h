@@ -91,7 +91,7 @@ namespace v3d
     /**
     * @brief Object base game class. Game side
     */
-    class Object : public utils::RefCounted
+    class V3D_API Object : public utils::RefCounted
     {
     public:
 

@@ -12,7 +12,7 @@ namespace utils
     * Singleton class. Lazy Singleton
     */
     template <class T>
-    class Singleton
+    class V3D_API Singleton
     {
     public:
 
