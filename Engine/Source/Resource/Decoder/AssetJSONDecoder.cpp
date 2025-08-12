@@ -18,7 +18,7 @@ namespace resource
 static std::map<std::string, resource::ResourceType> k_resourceType =
 {
     { "technique", ResourceType::Technique },
-    { "material", ResourceType::Material },
+    //{ "material", ResourceType::Material },
 };
 
 static void parseTechnique(const json& data);
@@ -71,9 +71,9 @@ Resource* AssetJSONDecoder::decode(const stream::Stream* stream, const Policy* p
         parseTechnique(data);
         break;
 
-    case ResourceType::Material:
-        parseMaterial(data);
-        break;
+    //case ResourceType::Material:
+    //    parseMaterial(data);
+    //    break;
     }
 
     std::string s = data.dump();

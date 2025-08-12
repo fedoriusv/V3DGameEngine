@@ -27,26 +27,46 @@ namespace resource
         */
         enum ModelLoaderFlag : u32
         {
-            SkipIndexBuffer = 1 << 0,                    //Don't create Index Buffer
-            SkipNormals = 1 << 1,                        //Don't use Normal attribute
-            SkipTangentAndBitangent = 1 << 2,            //Don't use Tangent & Bitangetns attributes
-            SkipTextureCoord = 1 << 3,                   //Don't use Texture attributes
-            SkipMaterial = 1 << 4,
+            SkipIndexBuffer         = 1 << 0,   //Don't create Index Buffer
+            SkipMaterial            = 1 << 1,
+            SkipLights              = 1 << 2,
+            SkipCameras             = 1 << 3,
 
-            SeperatePositionStream = 1 << 5,             //Save Position data to saparate stream
-            GenerateBoundingBoxes = 1 << 6,              //Generate BoundingBox for meshes
+            SeperatePositionStream  = 1 << 4,   //Save Position data to saparate stream
 
-            FlipYPosition = 1 << 7,                      //Flip Y position
-            FlipYTextureCoord = 1 << 8,                  //Flip Y texture coordinage
+            FlipYPosition           = 1 << 5,   //Flip Y position
+            FlipYTextureCoord       = 1 << 6,   //Flip Y texture coordinage
 
-            LocalTransform = 1 << 9,                     //Ignore all releative transforms
-            SplitLargeMeshes = 1 << 10,
+            LocalTransform          = 1 << 7,   //Ignore all releative transforms
+            SplitLargeMeshes        = 1 << 8,   //Optimization
 
         };
         typedef u32 ModelLoaderFlags;
 
+    /**
+    * @brief VertexProperies enum
+    */
+    enum class VertexProperies : u32
+    {
+        VertexProperies_Empty = 0,
+        VertexProperies_Position = 1 << 0,
+        VertexProperies_Normals = 1 << 1,
+        VertexProperies_Tangent = 1 << 2,
+        VertexProperies_Bitangent = 1 << 3,
+        VertexProperies_TextCoord0 = 1 << 4,
+        VertexProperies_TextCoord1 = 1 << 5,
+        VertexProperies_TextCoord2 = 1 << 6,
+        VertexProperies_TextCoord3 = 1 << 7,
+        VertexProperies_Color0 = 1 << 8,
+        VertexProperies_Color1 = 1 << 9,
+        VertexProperies_Color2 = 1 << 10,
+        VertexProperies_Color3 = 1 << 11,
+    };
+    typedef u32 VertexProperiesFlags;
+
         struct ModelPolicy : ResourceDecoder::Policy
         {
+            VertexProperiesFlags vertexProperies;
         };
 
         /**

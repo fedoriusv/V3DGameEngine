@@ -31,8 +31,10 @@ namespace resource
     private:
 
         u32 decodeMesh(const aiScene* scene, stream::Stream* stream, ModelFileLoader::ModelLoaderFlags flags, u32 vertexPropFlags) const;
+        u32 decodeSkeleton(const aiScene* scene, stream::Stream* stream) const;
         u32 decodeMaterial(const aiScene* scene, stream::Stream* stream) const;
-        u32 decodeAABB(const aiScene* scene, stream::Stream* stream) const;
+        u32 decodeLight(const aiScene* scene, stream::Stream* stream) const;
+        u32 decodeCamera(const aiScene* scene, stream::Stream* stream) const;
 
         mutable std::vector<std::tuple<u32, u32>> m_materialMapper;
     };

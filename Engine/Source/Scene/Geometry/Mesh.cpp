@@ -1,5 +1,5 @@
 #include "Mesh.h"
-#include "Resource/Mesh.h"
+#include "Resource/Model.h"
 #include "Renderer/Device.h"
 #include "Renderer/Buffer.h"
 #include "Utils/Logger.h"
@@ -36,25 +36,33 @@ Mesh::~Mesh()
 }
 
 
-Mesh* MeshHelper::createStaticMesh(renderer::Device* device, renderer::CmdListRender* cmdList, resource::MeshResource* resource, const std::string& name)
+Mesh* MeshHelper::createStaticMesh(renderer::Device* device, renderer::CmdListRender* cmdList, const resource::ModelResource* modelResource, u32 model, u32 LOD, const std::string& name)
 {
-    ASSERT(resource && resource->m_loaded, "must be valid");
-    StaticMesh* mesh = V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject)();
-    mesh->m_description = resource->m_description;
-    mesh->m_name.assign(name.empty() ? reinterpret_cast<const c8*>(resource->m_header._name) : name);
+    ASSERT(modelResource && modelResource->m_loaded, "must be valid");
+    ASSERT(!modelResource->m_geometry[model]._LODs.empty() && modelResource->m_geometry[model]._LODs[LOD], "must be valid");
+    const resource::ModelResource::MeshResource* meshResource = modelResource->m_geometry[model]._LODs[LOD];
 
-    if (get<0>(resource->m_indexData._indexBuffer))
+    StaticMesh* mesh = V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject)();
+    mesh->m_description = meshResource->m_description;
+    mesh->m_name.assign(name.empty() ? meshResource->m_name : name);
+
+    if (get<0>(meshResource->m_indexData._indexBuffer))
     {
-        renderer::IndexBuffer* indexBuffer = V3D_NEW(renderer::IndexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::Buffer_GPUOnly, resource->getIndexBufferType(), resource->getIndexBufferCount(), "IndexBuffer");
-        u32 dataSize = (resource->getIndexBufferType() == renderer::IndexBufferType::IndexType_32) ? sizeof(u32) : sizeof(u16);
-        cmdList->uploadData(indexBuffer, 0, indexBuffer->getIndicesCount() * dataSize, resource->getIndexBufferData());
+        void* data = std::get<1>(meshResource->m_indexData._indexBuffer);
+        u32 sizeType = (meshResource->m_indexData._indexType == renderer::IndexBufferType::IndexType_32) ? sizeof(u32) : sizeof(u16);
+
+        renderer::IndexBuffer* indexBuffer = V3D_NEW(renderer::IndexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::Buffer_GPUOnly, meshResource->m_indexData._indexType, meshResource->m_indexData._indexCount, "IndexBuffer");
+        cmdList->uploadData(indexBuffer, 0, indexBuffer->getIndicesCount() * sizeType, data);
         mesh->m_indexBuffer = indexBuffer;
     }
 
-    for (u32 index = 0; index < resource->m_vertexData._vertexBuffers.size(); ++index)
+    for (u32 index = 0; index < meshResource->m_vertexData._vertexBuffers.size(); ++index)
     {
-        renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, resource->getVertexBufferCount(), resource->getVertexBufferSize(), "VertexBuffer");
-        cmdList->uploadData(vertexBuffer, 0, resource->getVertexBufferSize(), resource->getVertexBufferData());
+        u32 sizeInBytes = std::get<0>(meshResource->m_vertexData._vertexBuffers[index])->size();
+        void* data = std::get<1>(meshResource->m_vertexData._vertexBuffers[index]);
+
+        renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, meshResource->m_vertexData._vertexCount, sizeInBytes, "VertexBuffer");
+        cmdList->uploadData(vertexBuffer, 0, sizeInBytes, data);
         mesh->m_vertexBuffer.push_back(vertexBuffer);
     }
 
@@ -329,7 +337,118 @@ Mesh* MeshHelper::createCone(renderer::Device* device, renderer::CmdListRender* 
 
 Mesh* MeshHelper::createCylinder(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, f32 height, u32 segments, const std::string& name)
 {
-    return nullptr;
+    StaticMesh* mesh = V3D_NEW(StaticMesh, memory::MemoryLabel::MemoryObject)();
+    mesh->m_description = renderer::VertexFormatSimpleLitDesc;
+    mesh->m_name = name;
+
+    std::vector<u32> indices;
+    std::vector<renderer::VertexFormatSimpleLit> vertices;
+
+    f32 halfHeight = height * 0.5f;
+
+    // ===== Side wall =====
+    for (int i = 0; i <= segments; ++i)
+    {
+        float theta = (float)i / segments * 2.0f * math::k_pi;
+        float x = cosf(theta);
+        float z = sinf(theta);
+        float u = (float)i / segments;
+
+        renderer::VertexFormatSimpleLit vTop = {
+            { radius * x, +halfHeight, radius * z },
+            { x, 0.0f, z },
+            { u, 0.0f }
+        };
+
+        renderer::VertexFormatSimpleLit vBottom = {
+            { radius * x, -halfHeight, radius * z },
+            { x, 0.0f, z },
+            { u, 1.0f }
+        };
+
+        vertices.push_back(vTop);
+        vertices.push_back(vBottom);
+    }
+
+    // -------- Side Indices --------
+    for (int i = 0; i < segments; ++i)
+    {
+        int base = i * 2;
+        indices.push_back(base);
+        indices.push_back(base + 1);
+        indices.push_back(base + 2);
+
+        indices.push_back(base + 1);
+        indices.push_back(base + 3);
+        indices.push_back(base + 2);
+    }
+
+
+    // -------- Top Cap --------
+    uint32_t topCenterIndex = (uint32_t)vertices.size();
+    vertices.push_back({
+        { 0.0f, +halfHeight, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.5f, 0.5f }
+        });
+
+    for (int i = 0; i <= segments; ++i)
+    {
+        float theta = (float)i / segments * 2.0f * math::k_pi;
+        float x = cosf(theta);
+        float z = sinf(theta);
+
+        vertices.push_back({
+            { radius * x, +halfHeight, radius * z },
+            { 0.0f, 1.0f, 0.0f },
+            { 0.5f + x * 0.5f, 0.5f - z * 0.5f }
+            });
+    }
+
+    for (int i = 0; i < segments; ++i)
+    {
+        indices.push_back(topCenterIndex);
+        indices.push_back(topCenterIndex + i + 1);
+        indices.push_back(topCenterIndex + i + 2);
+    }
+
+    // -------- Bottom Cap --------
+    uint32_t bottomCenterIndex = (uint32_t)vertices.size();
+    vertices.push_back({
+        { 0.0f, -halfHeight, 0.0f },
+        { 0.0f, -1.0f, 0.0f },
+        { 0.5f, 0.5f }
+        });
+
+    for (int i = 0; i <= segments; ++i)
+    {
+        float theta = (float)i / segments * 2.0f * math::k_pi;
+        float x = cosf(theta);
+        float z = sinf(theta);
+
+        vertices.push_back({
+            { radius * x, -halfHeight, radius * z },
+            { 0.0f, -1.0f, 0.0f },
+            { 0.5f + x * 0.5f, 0.5f + z * 0.5f }
+            });
+    }
+
+    for (int i = 0; i < segments; ++i)
+    {
+        indices.push_back(bottomCenterIndex);
+        indices.push_back(bottomCenterIndex + i + 2);
+        indices.push_back(bottomCenterIndex + i + 1);
+    }
+
+    renderer::IndexBuffer* indexBuffer = V3D_NEW(renderer::IndexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::Buffer_GPUOnly, renderer::IndexBufferType::IndexType_32, indices.size(), "IndexBuffer");
+    cmdList->uploadData(indexBuffer, 0, indices.size() * sizeof(u32), indices.data());
+    mesh->m_indexBuffer = indexBuffer;
+
+    renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(renderer::VertexFormatSimpleLitDesc), "VertexBuffer");
+    cmdList->uploadData(vertexBuffer, 0, vertices.size() * sizeof(renderer::VertexFormatSimpleLit), vertices.data());
+    mesh->m_vertexBuffer.push_back(vertexBuffer);
+
+    return mesh;
 }
 
 Mesh* MeshHelper::createPlane(renderer::Device* device, renderer::CmdListRender* cmdList, f32 width, f32 height, u32 segmentsX, u32 segmentsY, const std::string& name)

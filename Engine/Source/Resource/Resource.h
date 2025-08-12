@@ -25,10 +25,7 @@ namespace resource
         Technique,
         Shader,
         Bitmap,
-        Mesh,
         Model,
-        Material,
-        Light,
 
         Count
     };

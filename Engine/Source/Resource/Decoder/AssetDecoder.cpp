@@ -91,19 +91,10 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
     }
     break;
 
-    case ResourceType::Material:
-    {
-        //scene::MaterialHeader* materialHeader = V3D_NEW(scene::MaterialHeader, memory::MemoryLabel::MemoryObject);
-        //materialHeader->operator<<(stream);
-
-        //resource = ::V3D_NEW(scene::Material, memory::MemoryLabel::MemoryObject)(materialHeader);
-    }
-    break;
-
     default:
         ASSERT(false, "resource is not found");
     };
-    static_assert(toEnumType(ResourceType::Count) == 8, "handle all resources and increment the value if is needed");
+    static_assert(toEnumType(ResourceType::Count) == 5, "handle all resources and increment the value if is needed");
 
     ASSERT(resource, "nullptr");
     if (!resource->load(stream))

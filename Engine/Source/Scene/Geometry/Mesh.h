@@ -10,7 +10,7 @@ namespace v3d
 {
 namespace resource
 {
-    class MeshResource;
+    class ModelResource;
 } //namespace resource
 namespace renderer
 {
@@ -61,7 +61,7 @@ namespace scene
     {
     public:
 
-        [[nodisard]] static Mesh* createStaticMesh(renderer::Device* device, renderer::CmdListRender* cmdList, resource::MeshResource* resource, const std::string& name = "");
+        [[nodisard]] static Mesh* createStaticMesh(renderer::Device* device, renderer::CmdListRender* cmdList, const resource::ModelResource* resource, u32 model, u32 LOD, const std::string& name = "");
 
         [[nodisard]] static Mesh* createCube(renderer::Device* device, renderer::CmdListRender* cmdList, f32 extent = 1.0f, const std::string& name = "cube");
         [[nodisard]] static Mesh* createSphere(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, u32 stacks = 64, u32 slices = 64, const std::string& name = "sphere");

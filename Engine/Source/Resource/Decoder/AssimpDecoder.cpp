@@ -7,8 +7,10 @@
 #include "Utils/Timer.h"
 
 #include "Resource/Model.h"
-#include "Resource/Mesh.h"
+#include "Resource/Bitmap.h"
 #include "Resource/Loader//ModelFileLoader.h"
+#include "Resource/Loader/ImageFileLoader.h"
+#include "Resource/ResourceManager.h"
 #include "Stream/FileLoader.h"
 
 #ifdef USE_ASSIMP
@@ -23,6 +25,14 @@ namespace v3d
 {
 namespace resource
 {
+
+const ModelFileLoader::VertexProperiesFlags k_defaultVertexProps =
+    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position) |
+    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals) |
+    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent) |
+    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent) |
+    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord0) |
+    0;
 
 AssimpDecoder::AssimpDecoder(const std::vector<std::string>& supportedExtensions) noexcept
     : ResourceDecoder(supportedExtensions)
@@ -49,7 +59,9 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
         timer.start();
 #endif //LOG_LOADIMG_TIME
 
-        MeshResource::VertexProperiesFlags activeFlags = MeshResource::VertexProperies::VertexProperies_Position;
+        const ModelFileLoader::ModelPolicy* modlePolicy = static_cast<const ModelFileLoader::ModelPolicy*>(policy);
+        ModelFileLoader::VertexProperiesFlags vertexProps = modlePolicy->vertexProperies ? modlePolicy->vertexProperies : k_defaultVertexProps;
+
         u32 assimpFlags =
             aiProcess_ValidateDataStructure |
             aiProcess_ImproveCacheLocality |
@@ -62,6 +74,7 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
             aiProcess_ConvertToLeftHanded |
             aiProcess_SortByPType |
             aiProcess_GlobalScale |
+            aiProcess_GenBoundingBoxes |
             0;
 
         if (!(flags & ModelFileLoader::SkipIndexBuffer))
@@ -69,28 +82,20 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
             assimpFlags |= aiProcess_JoinIdenticalVertices;
         }
 
-        if (!(flags & ModelFileLoader::SkipNormals))
+        if (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals))
         {
             assimpFlags |= aiProcess_GenSmoothNormals;
-            activeFlags |= MeshResource::VertexProperies::VertexProperies_Normals;
         }
 
-        if (!(flags & ModelFileLoader::SkipTangentAndBitangent))
+        if ((vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent)) || (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent)))
         {
             assimpFlags |= aiProcess_CalcTangentSpace;
-            activeFlags |= MeshResource::VertexProperies::VertexProperies_Tangent | MeshResource::VertexProperies::VertexProperies_Bitangent;
         }
 
-        if (!(flags & ModelFileLoader::SkipTextureCoord))
+        if ((vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord0)) || (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord1)) ||
+            (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord2)) || (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord3)))
         {
             assimpFlags |= aiProcess_GenUVCoords | aiProcess_TransformUVCoords;
-            activeFlags |= MeshResource::VertexProperies::VertexProperies_TextCoord0 | MeshResource::VertexProperies::VertexProperies_TextCoord1 |
-                MeshResource::VertexProperies::VertexProperies_TextCoord2 | MeshResource::VertexProperies::VertexProperies_TextCoord3;
-        }
-
-        if (flags & ModelFileLoader::GenerateBoundingBoxes)
-        {
-            assimpFlags |= aiProcess_GenBoundingBoxes;
         }
 
         if (flags & ModelFileLoader::SplitLargeMeshes)
@@ -133,6 +138,10 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
         {
             contentFlags |= ModelResource::ModelContent_Materials;
         }
+        if (scene->HasLights())
+        {
+            contentFlags |= ModelResource::ModelContent_Lights;
+        }
 
         u32 modelStreamSize = 0;
         stream::Stream* modelStream = stream::StreamManager::createMemoryStream();
@@ -140,13 +149,19 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
         modelStream->write<ModelResource::ModelContentFlags>(contentFlags);
         if (contentFlags & ModelResource::ModelContent_Meshes)
         {
-            modelStreamSize += AssimpDecoder::decodeMesh(scene, modelStream, flags, activeFlags);
+            modelStreamSize += AssimpDecoder::decodeMesh(scene, modelStream, flags, vertexProps);
         }
 
         if (contentFlags & ModelResource::ModelContent_Materials)
         {
             modelStreamSize += AssimpDecoder::decodeMaterial(scene, modelStream);
             contentFlags |= ModelResource::ModelContent_Materials;
+        }
+
+        if (contentFlags & ModelResource::ModelContent_Lights)
+        {
+            modelStreamSize += AssimpDecoder::decodeLight(scene, modelStream);
+            contentFlags |= ModelResource::ModelContent_Lights;
         }
 
         ModelResource::ModelHeader header;
@@ -183,13 +198,13 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
     u32 streamMeshesSize = sizeof(u32);
     for (u32 m = 0; m < scene->mNumMeshes; m++)
     {
-        MeshResource::VertexProperiesFlags contentFlag = 0;
         std::vector<renderer::VertexInputAttributeDesc::InputAttribute> inputAttributes;
-        static auto buildVertexData = [&inputAttributes, &contentFlag](const aiMesh* mesh, MeshResource::VertexProperiesFlags presentFlags) -> u32
+        static auto buildVertexData = [&inputAttributes](const aiMesh* mesh, ModelFileLoader::VertexProperiesFlags presentFlags) -> u32
         {
             u32 vertexSize = 0;
-            if (mesh->HasPositions() && (presentFlags & MeshResource::VertexProperies::VertexProperies_Position))
+            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position))
             {
+                ASSERT(mesh->HasPositions(), "must be resented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Position vec3");
 
                 renderer::VertexInputAttributeDesc::InputAttribute attrib;
@@ -199,12 +214,13 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                 attrib._offset = vertexSize;
                 inputAttributes.push_back(attrib);
 
-                contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Position;
-                vertexSize += sizeof(math::TVector3D<f32>);
+                vertexSize += sizeof(math::float3);
             }
 
-            if (mesh->HasNormals() && (presentFlags & MeshResource::VertexProperies::VertexProperies_Normals))
+
+            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals))
             {
+                ASSERT(mesh->HasNormals(), "must be resented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Normals vec3");
 
                 renderer::VertexInputAttributeDesc::InputAttribute attrib;
@@ -214,45 +230,50 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                 attrib._offset = vertexSize;
                 inputAttributes.push_back(attrib);
 
-                contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Normals;
-                vertexSize += sizeof(math::TVector3D<f32>);
+                vertexSize += sizeof(math::float3);
             }
 
-            if (mesh->HasTangentsAndBitangents() && 
-                (presentFlags & (MeshResource::VertexProperies::VertexProperies_Tangent | MeshResource::VertexProperies::VertexProperies_Bitangent)))
+            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent))
             {
-                {
-                    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Tangent vec3");
+                ASSERT(mesh->HasTangentsAndBitangents(), "must be resented");
+                LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Tangent vec3");
 
-                    renderer::VertexInputAttributeDesc::InputAttribute attrib;
-                    attrib._binding = 0;
-                    attrib._stream = 0;
-                    attrib._format = renderer::Format::Format_R32G32B32_SFloat;
-                    attrib._offset = vertexSize;
-                    inputAttributes.push_back(attrib);
+                renderer::VertexInputAttributeDesc::InputAttribute attrib;
+                attrib._binding = 0;
+                attrib._stream = 0;
+                attrib._format = renderer::Format::Format_R32G32B32_SFloat;
+                attrib._offset = vertexSize;
+                inputAttributes.push_back(attrib);
 
-                    contentFlag |= resource::MeshResource::VertexProperies::VertexProperies_Tangent;
-                    vertexSize += sizeof(math::TVector3D<f32>);
-                }
-                
-                {
-                    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Bitangent vec3");
-
-                    renderer::VertexInputAttributeDesc::InputAttribute attrib;
-                    attrib._binding = 0;
-                    attrib._stream = 0;
-                    attrib._format = renderer::Format::Format_R32G32B32_SFloat;
-                    attrib._offset = vertexSize;
-                    inputAttributes.push_back(attrib);
-
-                    contentFlag |= MeshResource::VertexProperies::VertexProperies_Bitangent;
-                    vertexSize += sizeof(math::TVector3D<f32>);
-                }
+                vertexSize += sizeof(math::float3);
             }
+
+            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent))
+            {
+                ASSERT(mesh->HasTangentsAndBitangents(), "must be resented");
+                LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Bitangent vec3");
+
+                renderer::VertexInputAttributeDesc::InputAttribute attrib;
+                attrib._binding = 0;
+                attrib._stream = 0;
+                attrib._format = renderer::Format::Format_R32G32B32_SFloat;
+                attrib._offset = vertexSize;
+                inputAttributes.push_back(attrib);
+
+                vertexSize += sizeof(math::float3);
+            }
+
+            static const ModelFileLoader::VertexProperies uvFlag[k_maxTextureCoordsCount] =
+            {
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord0,
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord1,
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord2,
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord3
+            };
 
             for (u32 uv = 0; uv < k_maxTextureCoordsCount; uv++)
             {
-                if (mesh->HasTextureCoords(uv) && (presentFlags & MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv))
+                if (presentFlags & toEnumType(uvFlag[uv]))
                 {
                     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_TextCoord[%d] vec2", uv);
 
@@ -263,14 +284,21 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     attrib._offset = vertexSize;
                     inputAttributes.push_back(attrib);
 
-                    contentFlag |= MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv;
                     vertexSize += sizeof(math::float2);
                 }
             }
 
+            static const ModelFileLoader::VertexProperies colorFlag[k_maxVertexColorCount] =
+            {
+                ModelFileLoader::VertexProperies::VertexProperies_Color0,
+                ModelFileLoader::VertexProperies::VertexProperies_Color1,
+                ModelFileLoader::VertexProperies::VertexProperies_Color2,
+                ModelFileLoader::VertexProperies::VertexProperies_Color3
+            };
+
             for (u32 c = 0; c < k_maxVertexColorCount; c++)
             {
-                if (mesh->HasVertexColors(c) && (presentFlags & MeshResource::VertexProperies::VertexProperies_Color0 + c))
+                if (presentFlags & toEnumType(colorFlag[c]))
                 {
                     LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Color[%d] vec2", c);
 
@@ -281,8 +309,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
                     attrib._offset = vertexSize;
                     inputAttributes.push_back(attrib);
 
-                    contentFlag |= MeshResource::VertexProperies::VertexProperies_Color0 + c;
-                    vertexSize += sizeof(math::TVector4D<f32>);
+                    vertexSize += sizeof(math::float4);
                 }
             }
 
@@ -290,7 +317,9 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
         };
 
         const aiMesh* mesh = scene->mMeshes[m];
-        LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Load mesh index %d, name %s, material index %d", m, mesh->mName.C_Str(), mesh->mMaterialIndex);
+        std::string name = mesh->mName.C_Str();
+
+        LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Load mesh index %d, name %s, material index %d", m, name.c_str(), mesh->mMaterialIndex);
         ASSERT((mesh->mPrimitiveTypes & aiPrimitiveType_TRIANGLE) != 0, "must be triangle");
 
         modelStream->write<u32>(1); //Assimp doesn't support LODs loading, always one
@@ -299,17 +328,19 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
         u64 meshStreamSize = 0;
         stream::Stream* meshStream = stream::StreamManager::createMemoryStream();
 
+        meshStreamSize += meshStream->write(name);
+
         //Calculate size of vertex
         u32 bindingIndex = 0;
         renderer::VertexInputAttributeDesc attribDescription;
         if (flags & ModelFileLoader::SeperatePositionStream)
         {
-            u32 stride = buildVertexData(mesh, resource::MeshResource::VertexProperies::VertexProperies_Position);
+            u32 stride = buildVertexData(mesh, toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position));
             ASSERT(stride > 0, "invalid stride");
             u32 meshBufferSize = stride * mesh->mNumVertices;
             attribDescription._inputBindings[attribDescription._countInputBindings++] = renderer::VertexInputAttributeDesc::InputBinding(bindingIndex, renderer::InputRate::InputRate_Vertex, stride);
 
-            vertexPropFlags |= ~MeshResource::VertexProperies::VertexProperies_Position;
+            vertexPropFlags |= ~toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position);
             ++bindingIndex;
         }
         u32 stride = buildVertexData(mesh, vertexPropFlags);
@@ -329,7 +360,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
         //Fill data of a vertex
         if (flags & ModelFileLoader::SeperatePositionStream)
         {
-            u32 stride = buildVertexData(mesh, resource::MeshResource::VertexProperies::VertexProperies_Position);
+            u32 stride = buildVertexData(mesh, toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position));
             ASSERT(stride > 0, "invalid stride");
             u32 meshBufferSize = stride * mesh->mNumVertices;
 
@@ -340,13 +371,13 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
             {
                 for (u32 v = 0; v < mesh->mNumVertices; v++)
                 {
-                    math::TVector3D<f32> position;
+                    math::float3 position;
                     position._x = mesh->mVertices[v].x;
                     position._y = (flags & ModelFileLoader::FlipYPosition) ? -mesh->mVertices[v].y : mesh->mVertices[v].y;
                     position._z = mesh->mVertices[v].z;
 
-                    meshStream->write<math::TVector3D<f32>>(position);
-                    meshStreamSize += sizeof(math::TVector3D<f32>);
+                    meshStream->write<math::float3>(position);
+                    meshStreamSize += sizeof(math::float3);
                 }
             }
         }
@@ -358,73 +389,111 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
 
         for (u32 v = 0; v < mesh->mNumVertices; v++)
         {
-            if (mesh->HasPositions() && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_Position))
+            if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position))
             {
-                math::TVector3D<f32> position;
+                ASSERT(mesh->HasPositions(), "must be presented");
+                math::float3 position;
                 position._x = mesh->mVertices[v].x;
                 position._y = (flags & ModelFileLoader::FlipYPosition) ? -mesh->mVertices[v].y : mesh->mVertices[v].y;
                 position._z = mesh->mVertices[v].z;
 
-                meshStream->write<math::TVector3D<f32>>(position);
-                meshStreamSize += sizeof(math::TVector3D<f32>);
+                meshStream->write<math::float3>(position);
+                meshStreamSize += sizeof(math::float3);
             }
 
-            if (mesh->HasNormals() && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_Normals))
+            if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals))
             {
-                math::TVector3D<f32> normal;
+                ASSERT(mesh->HasNormals(), "must be presented");
+                math::float3 normal;
                 normal._x = mesh->mNormals[v].x;
                 normal._y = mesh->mNormals[v].y;
                 normal._z = mesh->mNormals[v].z;
 
-                meshStream->write<math::TVector3D<f32>>(normal);
-                meshStreamSize += sizeof(math::TVector3D<f32>);
+                meshStream->write<math::float3>(normal);
+                meshStreamSize += sizeof(math::float3);
             }
 
-            if (mesh->HasTangentsAndBitangents() && 
-                (vertexPropFlags & (MeshResource::VertexProperies::VertexProperies_Tangent | MeshResource::VertexProperies::VertexProperies_Bitangent)))
+            if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent))
             {
-                math::TVector3D<f32> tangent;
+                ASSERT(mesh->HasTangentsAndBitangents(), "must be presented");
+                math::float3 tangent;
                 tangent._x = mesh->mTangents[v].x;
                 tangent._y = mesh->mTangents[v].y;
                 tangent._z = mesh->mTangents[v].z;
 
-                meshStream->write<math::TVector3D<f32>>(tangent);
-                meshStreamSize += sizeof(math::TVector3D<f32>);
+                meshStream->write<math::float3>(tangent);
+                meshStreamSize += sizeof(math::float3);
+            }
 
-                math::TVector3D<f32> bitangent;
+            if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent))
+            {
+                ASSERT(mesh->HasTangentsAndBitangents(), "must be presented");
+                math::float3 bitangent;
                 bitangent._x = mesh->mBitangents[v].x;
                 bitangent._y = mesh->mBitangents[v].y;
                 bitangent._z = mesh->mBitangents[v].z;
 
-                meshStream->write<math::TVector3D<f32>>(bitangent);
-                meshStreamSize += sizeof(math::TVector3D<f32>);
+                meshStream->write<math::float3>(bitangent);
+                meshStreamSize += sizeof(math::float3);
             }
+
+
+            static const ModelFileLoader::VertexProperies uvFlag[k_maxTextureCoordsCount] =
+            {
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord0,
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord1,
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord2,
+                ModelFileLoader::VertexProperies::VertexProperies_TextCoord3
+            };
 
             for (u32 uv = 0; uv < resource::k_maxTextureCoordsCount; uv++)
             {
-                if (mesh->HasTextureCoords(uv) && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_TextCoord0 + uv))
+                if (vertexPropFlags & toEnumType(uvFlag[uv]))
                 {
                     math::float2 coord;
-                    coord._x = mesh->mTextureCoords[uv][v].x;
-                    coord._y = (flags & ModelFileLoader::FlipYTextureCoord) ? -mesh->mTextureCoords[uv][v].y : mesh->mTextureCoords[uv][v].y;
-
+                    if (mesh->HasTextureCoords(uv))
+                    {
+                        coord._x = mesh->mTextureCoords[uv][v].x;
+                        coord._y = (flags & ModelFileLoader::FlipYTextureCoord) ? -mesh->mTextureCoords[uv][v].y : mesh->mTextureCoords[uv][v].y;
+                    }
+                    else
+                    {
+                        coord._x = 0.f;
+                        coord._y = 0.f;
+                    }
                     meshStream->write<math::float2>(coord);
                     meshStreamSize += sizeof(math::float2);
                 }
             }
 
+
+            static const ModelFileLoader::VertexProperies colorFlag[k_maxVertexColorCount] =
+            {
+                ModelFileLoader::VertexProperies::VertexProperies_Color0,
+                ModelFileLoader::VertexProperies::VertexProperies_Color1,
+                ModelFileLoader::VertexProperies::VertexProperies_Color2,
+                ModelFileLoader::VertexProperies::VertexProperies_Color3
+            };
+
             for (u32 c = 0; c < resource::k_maxVertexColorCount; c++)
             {
-                if (mesh->HasVertexColors(c) && (vertexPropFlags & MeshResource::VertexProperies::VertexProperies_Color0 + c))
+                if (vertexPropFlags & toEnumType(colorFlag[c]))
                 {
-                    math::TVector4D<f32> color;
-                    color._x = mesh->mColors[c][v].r;
-                    color._y = mesh->mColors[c][v].g;
-                    color._z = mesh->mColors[c][v].b;
-                    color._w = mesh->mColors[c][v].a;
+                    math::float4 color;
+                    if (mesh->HasVertexColors(c))
+                    {
+                        color._x = mesh->mColors[c][v].r;
+                        color._y = mesh->mColors[c][v].g;
+                        color._z = mesh->mColors[c][v].b;
+                        color._w = mesh->mColors[c][v].a;
+                    }
+                    else
+                    {
+                        color = { 0.f, 0.f, 0.f, 1.f };
+                    }
 
-                    meshStream->write<math::TVector4D<f32>>(color);
-                    meshStreamSize += sizeof(math::TVector4D<f32>);
+                    meshStream->write<math::float4>(color);
+                    meshStreamSize += sizeof(math::float4);
                 }
             }
         }
@@ -457,27 +526,17 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
             meshStream->write<u32>(0);
             meshStreamSize += sizeof(u32);
         }
+
+        math::TVector3D<f32> min(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
+        math::TVector3D<f32> max(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
+        math::AABB aabb(min, max);
+
+        meshStream->write<math::AABB>(aabb);
+        meshStreamSize += sizeof(math::AABB);
+
 #ifdef DEBUG
         ASSERT(meshStreamSize == meshStream->size(), "different sizes");
 #endif //DEBUG
-
-        if (flags & ModelFileLoader::GenerateBoundingBoxes)
-        {
-            math::TVector3D<f32> min(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
-            math::TVector3D<f32> max(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
-            math::AABB aabb(min, max);
-
-            meshStream->write<math::AABB>(aabb);
-            meshStreamSize += sizeof(math::AABB);
-        }
-#ifdef DEBUG
-        ASSERT(meshStreamSize == meshStream->size(), "different sizes");
-#endif //DEBUG
-
-        resource::MeshResource::MeshHeader meshHeader;
-        resource::ResourceHeader::fill(&meshHeader, mesh->mName.C_Str(), meshStream->size(), modelStream->size() + sizeof(resource::MeshResource::MeshHeader));
-
-        streamMeshesSize += meshHeader >> modelStream;
 
         meshStream->seekBeg(0);
         modelStream->write(meshStream->map(meshStream->size()), meshStream->size());
@@ -492,9 +551,21 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, stream::Stream* modelStream,
     return streamMeshesSize;
 }
 
+u32 AssimpDecoder::decodeSkeleton(const aiScene* scene, stream::Stream* stream) const
+{
+    return u32();
+}
+
 u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStream) const
 {
     ASSERT(modelStream, "nullptr");
+
+    enum PropertyType : u8
+    {
+        Scalar = 0,
+        Vector = 1,
+        Texture = 2
+    };
 
     auto parseUnknownProperty = [](aiMaterial* material, aiMaterialProperty* propery)
     {
@@ -539,447 +610,483 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* modelStr
         }
     };
 
-    //auto parseProperty = [&parseUnknownProperty](aiMaterial* material, aiMaterialProperty* materialProperty, u32 id, stream::Stream* stream) -> bool
-    //{
-    //    scene::Material::Property property;
-    //    property._index = id;
-    //    property._array = 1;
+    auto parseProperty = [&parseUnknownProperty](aiMaterial* material, aiMaterialProperty* materialProperty, u32 id, stream::Stream* stream) -> bool
+    {
+        if (materialProperty->mKey == aiString("$mat.twosided"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Integer, "wrong type");
+            s32 value;
+            aiReturn result = material->Get(AI_MATKEY_TWOSIDED, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //    if (materialProperty->mKey == aiString("$mat.twosided"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Integer, "wrong type");
-    //        s32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_TWOSIDED, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            std::string name = "Twosided";
+            u8 type = PropertyType::Scalar;
 
-    //        bool twoSided = value;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        return false;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.shadingm"))
-    //    {
-    //        if (materialProperty->mType == aiPTI_Integer)
-    //        {
-    //            s32 value;
-    //            aiReturn result = material->Get(AI_MATKEY_SHADING_MODEL, value);
-    //            ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$mat.shadingm"))
+        {
+            if (materialProperty->mType == aiPTI_Integer)
+            {
+                s32 value;
+                aiReturn result = material->Get(AI_MATKEY_SHADING_MODEL, value);
+                ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //            aiShadingMode model = (aiShadingMode)value;
+                aiShadingMode model = (aiShadingMode)value;
 
-    //            return false;
-    //        }
-    //        else if (materialProperty->mType == aiPTI_Buffer)
-    //        {
-    //            if (materialProperty->mDataLength == sizeof(u32))
-    //            {
-    //                u32 value;
-    //                aiReturn result = material->Get(AI_MATKEY_SHADING_MODEL, value);
-    //                ASSERT(result == aiReturn_SUCCESS, "can't read");
+                return false;
+            }
+            else if (materialProperty->mType == aiPTI_Buffer && materialProperty->mDataLength == sizeof(u32))
+            {
+                u32 value;
+                aiReturn result = material->Get(AI_MATKEY_SHADING_MODEL, value);
+                ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //                aiShadingMode model = (aiShadingMode)value;
+                aiShadingMode model = (aiShadingMode)value;
 
-    //                return false;
-    //            }
-    //        }
+                return false;
+            }
 
-    //        ASSERT(false, "wrong type");
-    //        return false;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.wireframe"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Integer, "wrong type");
-    //        s32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_ENABLE_WIREFRAME, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            ASSERT(false, "wrong type");
+            return false;
+        }
+        else if (materialProperty->mKey == aiString("$mat.wireframe"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Integer, "wrong type");
+            s32 value;
+            aiReturn result = material->Get(AI_MATKEY_ENABLE_WIREFRAME, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        bool isWireframe = value;
+            bool isWireframe = value;
 
-    //        return false;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.blend"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Integer, "wrong type");
-    //        s32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_BLEND_FUNC, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return false;
+        }
+        else if (materialProperty->mKey == aiString("$mat.blend"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Integer, "wrong type");
+            s32 value;
+            aiReturn result = material->Get(AI_MATKEY_BLEND_FUNC, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        //TODO
+            return false;
+        }
+        else if (materialProperty->mKey == aiString("$mat.opacity"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            f32 value;
+            aiReturn result = material->Get(AI_MATKEY_OPACITY, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        return false;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.opacity"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        f32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_OPACITY, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            std::string name = "Opacity";
+            u8 type = PropertyType::Scalar;
 
-    //        property._label = scene::Material::Property_Opacity;
-    //        property._type = scene::Material::PropertyType::Value;
-    //        property._data = scene::Material::Property::ValueProperty{ value };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.transparencyfactor"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        f32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_TRANSPARENCYFACTOR, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$mat.transparencyfactor"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            f32 value;
+            aiReturn result = material->Get(AI_MATKEY_TRANSPARENCYFACTOR, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        property._label = scene::Material::Property_Transparent;
-    //        property._type = scene::Material::PropertyType::Value;
-    //        property._data = scene::Material::Property::ValueProperty{ value };
-    //        property >> stream;
+            std::string name = "Transparent";
+            u8 type = PropertyType::Scalar;
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.bumpscaling"))
-    //    {
-    //        f32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_BUMPSCALING, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        property._label = scene::Material::Property_Bump;
-    //        property._type = scene::Material::PropertyType::Value;
-    //        property._data = scene::Material::Property::ValueProperty{ value };
-    //        property >> stream;
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$mat.bumpscaling"))
+        {
+            f32 value;
+            aiReturn result = material->Get(AI_MATKEY_BUMPSCALING, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.shininess"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        f32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_SHININESS, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            std::string name = "Bump";
+            u8 type = PropertyType::Scalar;
 
-    //        property._label = scene::Material::Property_Shininess;
-    //        property._type = scene::Material::PropertyType::Value;
-    //        property._data = scene::Material::Property::ValueProperty{ value };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.reflectivity"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        f32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_REFLECTIVITY, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$mat.shininess"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            f32 value;
+            aiReturn result = material->Get(AI_MATKEY_SHININESS, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        property._label = scene::Material::Property_Reflection;
-    //        property._type = scene::Material::PropertyType::Value;
-    //        property._data = scene::Material::Property::ValueProperty{ value };
-    //        property >> stream;
+            std::string name = "Shininess";
+            u8 type = PropertyType::Scalar;
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.shinpercent"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        f32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_SHININESS_STRENGTH, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        property._label = scene::Material::Property_Shininess;
-    //        property._type = scene::Material::PropertyType::Value;
-    //        property._data = scene::Material::Property::ValueProperty{ value };
-    //        property >> stream;
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$mat.reflectivity"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            f32 value;
+            aiReturn result = material->Get(AI_MATKEY_REFLECTIVITY, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$mat.refracti"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        f32 value;
-    //        aiReturn result = material->Get(AI_MATKEY_REFRACTI, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            std::string name = "Reflectivity";
+            u8 type = PropertyType::Scalar;
 
-    //        property._label = scene::Material::Property_Refract;
-    //        property._type = scene::Material::PropertyType::Value;
-    //        property._data = scene::Material::Property::ValueProperty{ value };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$clr.diffuse"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        aiColor4D value;
-    //        aiReturn result = material->Get(AI_MATKEY_COLOR_DIFFUSE, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$mat.shinpercent"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            f32 value;
+            aiReturn result = material->Get(AI_MATKEY_SHININESS_STRENGTH, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::TVector4D<f32> color;
-    //        color.m_x = value.r;
-    //        color.m_y = value.g;
-    //        color.m_z = value.b;
-    //        color.m_w = value.a;
+            std::string name = "Shininess";
+            u8 type = PropertyType::Scalar;
 
-    //        property._label = scene::Material::Property_Diffuse;
-    //        property._type = scene::Material::PropertyType::Vector;
-    //        property._data = scene::Material::Property::VectorProperty{ color };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$clr.ambient"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        aiColor4D value;
-    //        aiReturn result = material->Get(AI_MATKEY_COLOR_AMBIENT, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$mat.refracti"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            f32 value;
+            aiReturn result = material->Get(AI_MATKEY_REFRACTI, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::TVector4D<f32> color;
-    //        color.m_x = value.r;
-    //        color.m_y = value.g;
-    //        color.m_z = value.b;
-    //        color.m_w = value.a;
+            std::string name = "Refract";
+            u8 type = PropertyType::Scalar;
 
-    //        property._label = scene::Material::Property_Ambient;
-    //        property._type = scene::Material::PropertyType::Vector;
-    //        property._data = scene::Material::Property::VectorProperty{ color };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<f32>(value);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$clr.specular"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        aiColor4D value;
-    //        aiReturn result = material->Get(AI_MATKEY_COLOR_SPECULAR, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$clr.diffuse"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            aiColor4D value;
+            aiReturn result = material->Get(AI_MATKEY_COLOR_DIFFUSE, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::TVector4D<f32> color;
-    //        color.m_x = value.r;
-    //        color.m_y = value.g;
-    //        color.m_z = value.b;
-    //        color.m_w = value.a;
+            std::string name = "DiffuseColor";
+            u8 type = PropertyType::Vector;
+            math::float4 color;
+            color._x = value.r;
+            color._y = value.g;
+            color._z = value.b;
+            color._w = value.a;
 
-    //        property._label = scene::Material::Property_Specular;
-    //        property._type = scene::Material::PropertyType::Vector;
-    //        property._data = scene::Material::Property::VectorProperty{ color };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<math::float4>(color);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$clr.emissive"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        aiColor4D value;
-    //        aiReturn result = material->Get(AI_MATKEY_COLOR_EMISSIVE, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$clr.ambient"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            aiColor4D value;
+            aiReturn result = material->Get(AI_MATKEY_COLOR_AMBIENT, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::TVector4D<f32> color;
-    //        color.m_x = value.r;
-    //        color.m_y = value.g;
-    //        color.m_z = value.b;
-    //        color.m_w = value.a;
+            std::string name = "AmbientColor";
+            u8 type = PropertyType::Vector;
+            math::float4 color;
+            color._x = value.r;
+            color._y = value.g;
+            color._z = value.b;
+            color._w = value.a;
 
-    //        property._label = scene::Material::Property_Emission;
-    //        property._type = scene::Material::PropertyType::Vector;
-    //        property._data = scene::Material::Property::VectorProperty{ color };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<math::float4>(color);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$clr.transparent"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        aiColor4D value;
-    //        aiReturn result = material->Get(AI_MATKEY_COLOR_TRANSPARENT, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$clr.specular"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            aiColor4D value;
+            aiReturn result = material->Get(AI_MATKEY_COLOR_SPECULAR, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::TVector4D<f32> color;
-    //        color.m_x = value.r;
-    //        color.m_y = value.g;
-    //        color.m_z = value.b;
-    //        color.m_w = value.a;
+            std::string name = "SpecularColor";
+            u8 type = PropertyType::Vector;
+            math::float4 color;
+            color._x = value.r;
+            color._y = value.g;
+            color._z = value.b;
+            color._w = value.a;
 
-    //        property._label = scene::Material::Property_Transparent;
-    //        property._type = scene::Material::PropertyType::Vector;
-    //        property._data = scene::Material::Property::VectorProperty{ color };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<math::float4>(color);
 
-    //        return true;
-    //    }
-    //    else if (materialProperty->mKey == aiString("$clr.reflective"))
-    //    {
-    //        ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
-    //        aiColor4D value;
-    //        aiReturn result = material->Get(AI_MATKEY_COLOR_REFLECTIVE, value);
-    //        ASSERT(result == aiReturn_SUCCESS, "can't read");
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$clr.emissive"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            aiColor4D value;
+            aiReturn result = material->Get(AI_MATKEY_COLOR_EMISSIVE, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //        math::TVector4D<f32> color;
-    //        color.m_x = value.r;
-    //        color.m_y = value.g;
-    //        color.m_z = value.b;
-    //        color.m_w = value.a;
+            std::string name = "EmissiveColor";
+            u8 type = PropertyType::Vector;
+            math::float4 color;
+            color._x = value.r;
+            color._y = value.g;
+            color._z = value.b;
+            color._w = value.a;
 
-    //        property._label = scene::Material::Property_Reflection;
-    //        property._type = scene::Material::PropertyType::Vector;
-    //        property._data = scene::Material::Property::VectorProperty{ color };
-    //        property >> stream;
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<math::float4>(color);
 
-    //        return true;
-    //    }
-    //    else
-    //    {
-    //        ASSERT(false, "unhandle");
-    //        parseUnknownProperty(material, materialProperty);
-    //    }
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$clr.transparent"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            aiColor4D value;
+            aiReturn result = material->Get(AI_MATKEY_COLOR_TRANSPARENT, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //    return false;
-    //};
+            std::string name = "TransparentColor";
+            u8 type = PropertyType::Vector;
+            math::float4 color;
+            color._x = value.r;
+            color._y = value.g;
+            color._z = value.b;
+            color._w = value.a;
 
-    //const std::map<std::string, std::function<bool(aiMaterial*, aiMaterialProperty*, u32, stream::Stream*)>> vectorProperties =
-    //{
-    //    //{ "?mat.name", parseProperty },
-    //    { "$mat.twosided", parseProperty },
-    //    { "$mat.shadingm", parseProperty },
-    //    { "$mat.wireframe", parseProperty },
-    //    { "$mat.blend", parseProperty },
-    //    { "$mat.opacity", parseProperty },
-    //    { "$mat.transparencyfactor", parseProperty },
-    //    { "$mat.bumpscaling",parseProperty },
-    //    { "$mat.shininess", parseProperty },
-    //    { "$mat.reflectivity", parseProperty },
-    //    { "$mat.shinpercent", parseProperty },
-    //    { "$mat.refracti", parseProperty },
-    //    { "$clr.diffuse", parseProperty },
-    //    { "$clr.ambient", parseProperty },
-    //    { "$clr.specular",parseProperty },
-    //    { "$clr.emissive", parseProperty },
-    //    { "$clr.transparent", parseProperty },
-    //    { "$clr.reflective",parseProperty },
-    //    { "?bg.global", parseProperty },
-    //    { "?sh.lang", parseProperty },
-    //    { "?sh.vs", parseProperty },
-    //    { "?sh.fs", parseProperty },
-    //    { "?sh.gs", parseProperty },
-    //    { "?sh.ts", parseProperty },
-    //    { "?sh.ps", parseProperty },
-    //    { "?sh.cs", parseProperty },
-    //};
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<math::float4>(color);
 
-    //modelStream->write<u32>(scene->mNumMaterials);
-    //u32 streamMaterialsSize = sizeof(u32);
+            return true;
+        }
+        else if (materialProperty->mKey == aiString("$clr.reflective"))
+        {
+            ASSERT(materialProperty->mType == aiPTI_Float, "wrong type");
+            aiColor4D value;
+            aiReturn result = material->Get(AI_MATKEY_COLOR_REFLECTIVE, value);
+            ASSERT(result == aiReturn_SUCCESS, "can't read");
 
-    //for (u32 m = 0; m < scene->mNumMaterials; m++)
-    //{
-    //    stream::Stream* materialStream = stream::StreamManager::createMemoryStream();
-    //    u32 propertiesCount = 0;
+            std::string name = "ReflectiveColor";
+            u8 type = PropertyType::Vector;
+            math::float4 color;
+            color._x = value.r;
+            color._y = value.g;
+            color._z = value.b;
+            color._w = value.a;
 
-    //    aiMaterial* material = scene->mMaterials[m];
+            stream->write(name);
+            stream->write<u8>(type);
+            stream->write<math::float4>(color);
 
-    //    for (u32 p = 0; p < material->mNumProperties; ++p)
-    //    {
-    //        aiMaterialProperty* property = material->mProperties[p];
+            return true;
+        }
+        else
+        {
+            ASSERT(false, "unhandle");
+            parseUnknownProperty(material, materialProperty);
+        }
 
-    //        auto found = vectorProperties.find(property->mKey.C_Str());
-    //        if (found != vectorProperties.cend())
-    //        {
-    //            if (found->second(material, property, p, materialStream))
-    //            {
-    //                ++propertiesCount;
-    //            }
-    //        }
-    //    }
+        return false;
+    };
 
-    //    auto texturePropertyName = [](aiTextureType type) -> scene::Material::PropertyName
-    //    {
-    //        switch (type)
-    //        {
-    //        case aiTextureType::aiTextureType_DIFFUSE:
-    //            return scene::Material::PropertyName::Property_Diffuse;
-    //        case aiTextureType::aiTextureType_SPECULAR:
-    //            return scene::Material::PropertyName::Property_Specular;
-    //        case aiTextureType::aiTextureType_AMBIENT:
-    //            return scene::Material::PropertyName::Property_Ambient;
-    //        case aiTextureType::aiTextureType_EMISSIVE:
-    //            return scene::Material::PropertyName::Property_Emission;
-    //        case aiTextureType::aiTextureType_HEIGHT:
-    //            return scene::Material::PropertyName::Property_Height;
-    //        case aiTextureType::aiTextureType_NORMALS:
-    //            return scene::Material::PropertyName::Property_Normal;
-    //        case aiTextureType::aiTextureType_SHININESS:
-    //            return scene::Material::PropertyName::Property_Shininess;
-    //        case aiTextureType::aiTextureType_OPACITY:
-    //            return scene::Material::PropertyName::Property_Opacity;
-    //        case aiTextureType::aiTextureType_DISPLACEMENT:
-    //            return scene::Material::PropertyName::Property_Displacement;
-    //        case aiTextureType::aiTextureType_LIGHTMAP:
-    //            return scene::Material::PropertyName::Property_Light;
-    //        case aiTextureType::aiTextureType_REFLECTION:
-    //            return scene::Material::PropertyName::Property_Reflection;
-    //        case aiTextureType::aiTextureType_BASE_COLOR:
-    //            return scene::Material::PropertyName::Property_Albedo;
-    //        case aiTextureType::aiTextureType_NORMAL_CAMERA:
-    //            return scene::Material::PropertyName::Property_Normal;
-    //        case aiTextureType::aiTextureType_EMISSION_COLOR:
-    //            return scene::Material::PropertyName::Property_Emission;
-    //        case aiTextureType::aiTextureType_METALNESS:
-    //            return scene::Material::PropertyName::Property_Metallic;
-    //        case aiTextureType::aiTextureType_DIFFUSE_ROUGHNESS:
-    //            return scene::Material::PropertyName::Property_Roughness;
-    //        case aiTextureType::aiTextureType_AMBIENT_OCCLUSION:
-    //            return scene::Material::PropertyName::Property_AmbientOcclusion;
+    const std::map<std::string, std::function<bool(aiMaterial*, aiMaterialProperty*, u32, stream::Stream*)>> vectorProperties =
+    {
+        //{ "?mat.name", parseProperty },
+        { "$mat.twosided", parseProperty },
+        { "$mat.shadingm", parseProperty },
+        { "$mat.wireframe", parseProperty },
+        { "$mat.blend", parseProperty },
+        { "$mat.opacity", parseProperty },
+        { "$mat.transparencyfactor", parseProperty },
+        { "$mat.bumpscaling",parseProperty },
+        { "$mat.shininess", parseProperty },
+        { "$mat.reflectivity", parseProperty },
+        { "$mat.shinpercent", parseProperty },
+        { "$mat.refracti", parseProperty },
+        { "$clr.diffuse", parseProperty },
+        { "$clr.ambient", parseProperty },
+        { "$clr.specular",parseProperty },
+        { "$clr.emissive", parseProperty },
+        { "$clr.transparent", parseProperty },
+        { "$clr.reflective",parseProperty },
+        { "?bg.global", parseProperty },
+        { "?sh.lang", parseProperty },
+        { "?sh.vs", parseProperty },
+        { "?sh.fs", parseProperty },
+        { "?sh.gs", parseProperty },
+        { "?sh.ts", parseProperty },
+        { "?sh.ps", parseProperty },
+        { "?sh.cs", parseProperty },
+    };
 
-    //        case aiTextureType::aiTextureType_NONE:
-    //        default:
-    //            ASSERT(false, "not found");
-    //            return scene::Material::PropertyName::Property_Unknown;
-    //        }
+    modelStream->write<u32>(scene->mNumMaterials);
+    u32 streamMaterialsSize = sizeof(u32);
 
-    //        return scene::Material::PropertyName::Property_Unknown;
-    //    };
+    u32 uid = 0;
+    std::map<u32, std::string> imageList;
+    for (u32 m = 0; m < scene->mNumMaterials; m++)
+    {
+        stream::Stream* materialStream = stream::StreamManager::createMemoryStream();
+        u32 propertiesCount = 0;
 
-    //    for (u32 type = aiTextureType::aiTextureType_NONE; type <= aiTextureType::aiTextureType_UNKNOWN; ++type)
-    //    {
-    //        u32 countTextures = material->GetTextureCount((aiTextureType)type);
-    //        for (u32 t = 0; t < countTextures; ++t)
-    //        {
-    //            u32 textureID = material->mNumProperties + type + t;
+        aiMaterial* material = scene->mMaterials[m];
+        std::string name = std::string(material->GetName().C_Str());
 
-    //            aiString path;
-    //            aiReturn result = material->GetTexture((aiTextureType)type, t, &path);
-    //            ASSERT(result == aiReturn_SUCCESS, "can't read");
+        for (u32 p = 0; p < material->mNumProperties; ++p)
+        {
+            aiMaterialProperty* property = material->mProperties[p];
 
-    //            scene::Material::Property property;
-    //            property._index = textureID;
-    //            property._array = 1;
-    //            property._label = texturePropertyName((aiTextureType)type);
-    //            property._type = scene::Material::PropertyType::Texture;
-    //            property._data = scene::Material::Property::TextureProperty{ path.C_Str() };
-    //            property >> materialStream;
-    //        }
-    //    }
-    //    aiString name = material->GetName();
+            auto found = vectorProperties.find(property->mKey.C_Str());
+            if (found != vectorProperties.cend())
+            {
+                if (found->second(material, property, p, materialStream))
+                {
+                    ++propertiesCount;
+                }
+            }
+        }
 
-    //    resource::MaterialHeader materialHeader;
-    //    resource::ResourceHeader::fillResourceHeader(&materialHeader, name.C_Str(), materialStream->size(), modelStream->size() + sizeof(scene::MaterialHeader));
-    //    materialHeader._numProperties = propertiesCount;
-    //    streamMaterialsSize += materialHeader >> modelStream;
+        auto texturePropertyName = [](aiTextureType type) -> std::string
+        {
+            switch (type)
+            {
+            case aiTextureType::aiTextureType_DIFFUSE:
+                return "Diffuse";
+            case aiTextureType::aiTextureType_SPECULAR:
+                return "Specular";
+            case aiTextureType::aiTextureType_AMBIENT:
+                return "Ambient";
+            case aiTextureType::aiTextureType_EMISSIVE:
+                return "Emission";
+            case aiTextureType::aiTextureType_HEIGHT:
+                return "Height";
+            case aiTextureType::aiTextureType_NORMALS:
+                return "Normal";
+            case aiTextureType::aiTextureType_SHININESS:
+                return "Shininess";
+            case aiTextureType::aiTextureType_OPACITY:
+                return "Opacity";
+            case aiTextureType::aiTextureType_DISPLACEMENT:
+                return "Displacement";
+            case aiTextureType::aiTextureType_LIGHTMAP:
+                return "Lightmap";
+            case aiTextureType::aiTextureType_REFLECTION:
+                return "Reflection";
+            case aiTextureType::aiTextureType_BASE_COLOR:
+                return "BaseColor";
+            case aiTextureType::aiTextureType_NORMAL_CAMERA:
+                return "Normal";
+            case aiTextureType::aiTextureType_EMISSION_COLOR:
+                return "Emission";
+            case aiTextureType::aiTextureType_METALNESS:
+                return "Metalness";
+            case aiTextureType::aiTextureType_DIFFUSE_ROUGHNESS:
+                return "Roughness";
+            case aiTextureType::aiTextureType_AMBIENT_OCCLUSION:
+                return "AmbientOcclusion";
 
-    //    materialStream->seekBeg(0);
-    //    void* data = materialStream->map(materialStream->size());
-    //    modelStream->write(data, materialStream->size());
-    //    streamMaterialsSize += materialStream->size();
-    //    materialStream->unmap();
-    //    stream::StreamManager::destroyStream(materialStream);
+            case aiTextureType::aiTextureType_NONE:
+            default:
+                ASSERT(false, "not found");
+                return "Unknown";
+            }
 
-    //    LOG_DEBUG("MeshAssimpDecoder::decodeMaterial: Load material[%d] name %s", m, name.C_Str());
-    //}
+            return "Unknown";
+        };
 
-    //LOG_DEBUG("MeshAssimpDecoder::decodeMesh: load materials: %d, size %d bytes", scene->mNumMaterials, streamMaterialsSize);
-    //return streamMaterialsSize;
+        for (u32 type = aiTextureType::aiTextureType_NONE; type <= aiTextureType::aiTextureType_UNKNOWN; ++type)
+        {
+            u32 countTextures = material->GetTextureCount((aiTextureType)type);
+            for (u32 t = 0; t < countTextures; ++t)
+            {
+                aiString path;
+                aiReturn result = material->GetTexture((aiTextureType)type, t, &path);
+                ASSERT(result == aiReturn_SUCCESS, "can't read");
+
+                std::string name = texturePropertyName((aiTextureType)type);
+                u8 type = PropertyType::Texture;
+                u32 index = uid++;
+
+                materialStream->write(name);
+                materialStream->write<u8>(type);
+                materialStream->write<u32>(index);
+                ++propertiesCount;
+
+                imageList.emplace(index, path.C_Str());
+            }
+        }
+
+        streamMaterialsSize += modelStream->write(name);
+        modelStream->write<u32>(propertiesCount);
+        streamMaterialsSize += sizeof(u32);
+
+        materialStream->seekBeg(0);
+        modelStream->write(materialStream->map(materialStream->size()), materialStream->size());
+        streamMaterialsSize += materialStream->size();
+
+        materialStream->unmap();
+        stream::StreamManager::destroyStream(materialStream);
+
+        LOG_DEBUG("MeshAssimpDecoder::decodeMaterial: Load material[%d] name %s", m, name.c_str());
+    }
+
+    modelStream->write<u32>(static_cast<u32>(imageList.size()));
+    for (auto& [id, textureName] : imageList)
+    {
+        streamMaterialsSize += modelStream->write(textureName);
+    };
+
+    LOG_DEBUG("MeshAssimpDecoder::decodeMesh: load materials: %d, size %d bytes", scene->mNumMaterials, streamMaterialsSize);
+    return streamMaterialsSize;
+}
+
+u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream) const
+{
+    for (u32 i = 0; i < scene->mNumLights; ++i)
+    {
+        aiLight* light = scene->mLights[i];
+        std::string name = light->mName.C_Str();
+
+        //TODO
+    }
+
     return 0;
 }
 
-u32 AssimpDecoder::decodeAABB(const aiScene* scene, stream::Stream* stream) const
+u32 AssimpDecoder::decodeCamera(const aiScene* scene, stream::Stream* stream) const
 {
-    return 0;
+    return u32();
 }
 
 } //namespace decoders
