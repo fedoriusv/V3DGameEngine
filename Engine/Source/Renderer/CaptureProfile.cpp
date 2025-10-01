@@ -39,7 +39,7 @@ bool CaptureRenderdocProfile::create()
             g_renderdoc->SetCaptureOptionU32(eRENDERDOC_Option_DebugOutputMute, 0);
 
             m_loaded = true;
-            showOverlay(true);
+            showOverlay(false);
 
             return true;
         }
