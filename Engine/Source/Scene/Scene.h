@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/ResourceID.h"
+#include "Utils/Copiable.h"
 #include "Scene/Transform.h"
 #include "Scene/Camera/CameraHandler.h"
 #include "Scene/Light.h"
@@ -8,6 +10,8 @@
 #include "Renderer/Buffer.h"
 #include "Renderer/Texture.h"
 #include "Renderer/SamplerState.h"
+
+#include "RenderTechniques/RenderPipelinePass.h"
 #include "RenderTechniques/RenderObjectTracker.h"
 
 #include "Renderer/Device.h"
@@ -18,28 +22,8 @@ namespace scene
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    enum class MaterialType
-    {
-        Opaque,
-        SkinnedOpaque,
-        MaskedOpaque,
-        
-        Transparency,
-        SkinnedTransparency,
-
-        Billboard,
-        VFX,
-
-        Lights,
-        Shadowmap,
-
-        Selected,
-        Debug,
-
-        Custom,
-
-        Count
-    };
+    class Component;
+    class ModelHandler;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +46,7 @@ namespace scene
             math::float2   cursorPosition;
             u64            time;
 
-        }                       _viewportBuffer;
+        } _viewportBuffer;
 
         math::Dimension2D       _viewpotSize;
         scene::CameraHandler*   _camera;
@@ -70,58 +54,186 @@ namespace scene
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //TODO
-    struct MaterialState
+    struct Settings
     {
-        renderer::SamplerState* _sampler = nullptr;
-        renderer::Texture2D*    _baseColor = nullptr;
-        renderer::Texture2D*    _normals = nullptr;
-        renderer::Texture2D*    _roughness = nullptr;
-        renderer::Texture2D*    _metalness = nullptr;
-        math::float4            _tint;
+        renderer::Format _colorFormat = renderer::Format_R16G16B16A16_SFloat;
+        renderer::Format _depthFormat = renderer::Format_D24_UNorm_S8_UInt;
     };
+
+    enum class TransformMode
+    {
+        Local,
+        Global
+    };
+
+    class SceneNode : public utils::ResourceID<SceneNode, u64>
+    {
+    public:
+
+        explicit SceneNode() noexcept;
+        virtual ~SceneNode();
+
+        void addChild(SceneNode* node);
+        void addComponent(Component* component);
+
+        template<class TComponent>
+        TComponent* getComponentByType()
+        {
+            for (Component* component : m_components)
+            {
+                if (component->isBaseOfType<TComponent>())
+                {
+                    return static_cast<TComponent*>(component);
+                }
+            }
+
+            return nullptr;
+        }
+
+        static void forEach(SceneNode* node, const std::function<void(SceneNode* parent, SceneNode* node)>& entry);
+        static SceneNode* searchNode(SceneNode* node, const std::function<bool(SceneNode* node)>& entry);
+
+    public:
+
+        void setPosition(TransformMode mode, const math::Vector3D& position);
+        void setRotation(TransformMode mode, const math::Vector3D& rotation);
+        void setScale(TransformMode mode, const math::Vector3D& scale);
+        void setTransform(TransformMode mode, const math::Matrix4D& transform);
+
+        math::Vector3D getDirection() const;
+        const Transform& getTransform() const;
+        const Transform& getPrevTransform() const;
+        const Transform& getTransform(TransformMode mode) const;
+    public:
+
+        SceneNode*            m_parent;
+        std::list<SceneNode*> m_children;
+        std::list<Component*> m_components;
+        std::string           m_name;
+        bool                  m_visible = true;
+
+    private:
+
+        //Instance state
+        Transform             m_transform[2];
+        Transform             m_prevTransform;
+
+        bool                  m_dirty = true;
+
+    protected:
+
+        friend ModelHandler;
+
+        SceneNode(const SceneNode& node) noexcept;
+    };
+
+    inline void SceneNode::addComponent(Component* component)
+    {
+        m_components.push_back(component);
+    }
+
+    inline void SceneNode::setPosition(TransformMode mode, const math::Vector3D& position)
+    {
+        m_transform[toEnumType(mode)].setPosition(position);
+        m_dirty = true;
+    }
+
+    inline void SceneNode::setRotation(TransformMode mode, const math::Vector3D& rotation)
+    {
+        m_transform[toEnumType(mode)].setRotation(rotation);
+        m_dirty = true;
+    }
+
+    inline void SceneNode::setScale(TransformMode mode, const math::Vector3D& scale)
+    {
+        m_transform[toEnumType(mode)].setScale(scale);
+        m_dirty = true;
+    }
+
+    inline void SceneNode::setTransform(TransformMode mode, const math::Matrix4D& transform)
+    {
+        m_transform[toEnumType(mode)].setMatrix(transform);
+        m_dirty = true;
+    }
+
+    inline math::Vector3D SceneNode::getDirection() const
+    {
+        return math::Vector3D(
+            m_transform[toEnumType(TransformMode::Global)].getMatrix()[8],
+            m_transform[toEnumType(TransformMode::Global)].getMatrix()[9],
+            m_transform[toEnumType(TransformMode::Global)].getMatrix()[10]).normalize();
+    }
+
+    inline const Transform& SceneNode::getTransform() const
+    {
+        return m_transform[toEnumType(TransformMode::Global)];
+    }
+
+    inline const Transform& SceneNode::getPrevTransform() const
+    {
+        return m_prevTransform;
+    }
+
+    inline const Transform& SceneNode::getTransform(TransformMode mode) const
+    {
+        return m_transform[toEnumType(mode)];
+    }
+
+    inline void SceneNode::forEach(SceneNode* node, const std::function<void(SceneNode* parent, SceneNode* node)>& entry)
+    {
+        std::invoke(entry, node->m_parent, node);
+
+        for (SceneNode* childNode : node->m_children)
+        {
+            forEach(childNode, entry);
+        }
+    }
+
+    inline SceneNode* SceneNode::searchNode(SceneNode* node, const std::function<bool(SceneNode* node)>& entry)
+    {
+        if (entry(node))
+        {
+            return node;
+        }
+
+        for (SceneNode* childNode : node->m_children)
+        {
+            return searchNode(childNode, entry);
+        }
+
+        return nullptr;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    struct DrawNode
+    struct NodeEntry
     {
-        DrawNode*              _parent = nullptr;
-        Renderable*            _object = nullptr;
-
-        MaterialState          _material;
-        std::string            _title;
-        u64                    _pipelineID;
-        u64                    _objectID;
-        MaterialType           _type;
-        bool                   _visible = true;
-        bool                   _selected = false;
+        SceneNode* object = nullptr;
+        scene::RenderPipelinePass passID = scene::RenderPipelinePass::Custom;
+        u32 pipelineID = 0;
     };
 
-    //TODO
-    struct LightingState
+    struct DrawNodeEntry : NodeEntry
     {
-        DrawNode*         _parent = nullptr;
-        DirectionalLight* _directionalLight;
+        Component* geometry = nullptr;
+        Component* material = nullptr;
     };
 
-    //TODO remove
-    struct RenderState
+    struct LightNodeEntry : NodeEntry
     {
-        renderer::CmdListRender* m_cmdList;
+        Component* light = nullptr;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct SceneData
     {
-        renderer::RenderObjectTracker   m_globalResources;
-                                        
-        std::vector<DrawNode*>          m_generalList;
-        std::vector<DrawNode*>          m_lists[toEnumType(MaterialType::Count)];
-                                        
-        ViewportState                   m_viewportState;
-        RenderState                     m_renderState;
-        LightingState                   m_lightingState;
+        scene::RenderObjectTracker m_globalResources;
+        std::vector<SceneNode*>    m_nodes;
+        std::vector<NodeEntry*>    m_generalRenderList;
+        std::vector<NodeEntry*>    m_renderLists[toEnumType(RenderPipelinePass::Count)];
+        ViewportState              m_viewportState;
+        Settings                   m_settings;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,8 +243,24 @@ namespace scene
         struct Allocator
         {
         };
+
         Allocator* _dynamicAllocator;
         Allocator* _staticAllocator;
+
+        renderer::CmdListRender* m_cmdList;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class Scene
+    {
+    public:
+        Scene() noexcept = default;
+        virtual ~Scene() = default;
+
+    public:
+
+        bool m_editorMode = false;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

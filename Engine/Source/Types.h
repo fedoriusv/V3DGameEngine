@@ -30,6 +30,28 @@ namespace v3d
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    template<typename E>
+    constexpr auto enumTypeToIndex(E enumerator)
+    {
+#ifdef _MSC_VER
+        return _tzcnt_u32(static_cast<std::underlying_type_t<E>>(enumerator));
+#else
+        return __builtin_ctz(static_cast<std::underlying_type_t<E>>(enumerator));
+#endif
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<class... Ts>
+    struct overloaded : Ts... 
+    { 
+        using Ts::operator()...;
+    };
+
+    template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     template<typename T>
     concept FloatType = std::is_same_v<T, f32> || std::is_same_v<T, f64> || std::is_same_v<T, f80>;
 
@@ -37,6 +59,11 @@ namespace v3d
 
     template<typename T>
     concept UIntType = std::is_same_v<T, u32> || std::is_same_v<T, u64>;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<typename T>
+    concept EnumType = std::is_enum_v<T>;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

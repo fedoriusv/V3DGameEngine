@@ -21,7 +21,7 @@ namespace v3d
     {
         static TypePtr get()
         {
-            static_assert(false, "must not be called");
+            ASSERT(false, "must not be called");
             return TypeOf<ObjectType>::get();
         }
     };
