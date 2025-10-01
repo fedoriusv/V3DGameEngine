@@ -28,13 +28,15 @@ public:
 private:
 
     void buildTransformProp();
+    void buildGeometryProp();
     void buildLightProp();
     void buildMaterialProp();
 
     ui::WidgetWindow* m_window;
+    event::GameEventReceiver* m_gameEventRecevier;
 
     scene::SceneData* m_sceneData;
-    scene::DrawNode* m_selectedNode;
+    scene::SceneNode* m_selectedNode;
 
     //transform
     struct TransformProperty
@@ -42,6 +44,7 @@ private:
         std::array<ui::WidgetInputDragFloat*, 3> m_position;
         std::array<ui::WidgetInputDragFloat*, 3> m_rotation;
         std::array<ui::WidgetInputDragFloat*, 3> m_scale;
+        scene::TransformMode m_mode = scene::TransformMode::Local;
         u32 m_loadedFlag = 0;
     } m_transformProperty;
 

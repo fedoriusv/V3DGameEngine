@@ -5,6 +5,7 @@ EditorContentScreen::EditorContentScreen(event::GameEventReceiver* gameEventRece
     , m_window(nullptr)
 
     , m_sceneData(nullptr)
+    , m_selectedWidget(nullptr)
     , m_loaded(false)
 {
 }
@@ -34,30 +35,48 @@ void EditorContentScreen::build()
         ui::WidgetTreeNode sceneNode("Scene", ui::WidgetTreeNode::TreeNodeFlag::Framed | ui::WidgetTreeNode::TreeNodeFlag::Open);
         if (m_sceneData)
         {
-            m_widgetItems.resize(m_sceneData->m_generalList.size(), nullptr);
-            for (u32 index = 0; index < m_sceneData->m_generalList.size(); ++index)
-            {
-                scene::DrawNode& item = *m_sceneData->m_generalList[index];
-                if (item._type == scene::MaterialType::Debug)
+            static std::function<void(ui::WidgetTreeNode&, scene::SceneNode*)> processNode = [this](ui::WidgetTreeNode& rootNode, scene::SceneNode* root) mutable
                 {
-                    //skip debug object list
-                    continue;
-                }
+                    ui::WidgetTreeNode sceneNode = ui::WidgetTreeNode(root->m_name, root->m_children.empty() ? ui::WidgetTreeNode::TreeNodeFlag::NoCollapsed : 0)
+                        .setOnCreated([this, root](ui::Widget* w)
+                            {
+                                m_widgetItems.emplace(root, static_cast<ui::WidgetTreeNode*>(w));
+                            })
+                        .setToolTip(true, root->m_name)
+                        .setUserData(root)
+                        .setSelected(false)
+                        .setOnClickEvent([this](ui::Widget* w, void* data) -> void
+                            {
+                                scene::SceneNode* node = static_cast<scene::SceneNode*>(data);
+                                m_gameEventRecevier->sendEvent(new EditorSelectionEvent(node));
+                            });
 
-                sceneNode.addWidget(ui::WidgetTreeNode(item._title, ui::WidgetTreeNode::TreeNodeFlag::NoCollapsed)
-                    .setOnCreated([this, index](ui::Widget* w)
-                        {
-                            m_widgetItems[index] = static_cast<ui::WidgetTreeNode*>(w);
-                        })
-                    .setIndex(index)
-                    .setSelected(item._selected)
-                    .setOnClickEvent([this](ui::Widget* w, s32 index) -> void
-                        {
-                            m_sceneData->m_generalList[index]->_selected = true;
-                            m_gameEventRecevier->sendEvent(new EditorSelectionEvent(index));
-                        })
-                );
+                    for (scene::SceneNode* node : root->m_children)
+                    {
+                        processNode(sceneNode, node);
+                    }
+
+                    rootNode.addWidget(std::move(sceneNode));
+                };
+
+            for (scene::SceneNode* node : m_sceneData->m_nodes)
+            {
+                processNode(sceneNode, node);
             }
+
+            ////todo node list
+            //m_widgetItems.resize(m_sceneData->m_generalRenderList.size(), nullptr);
+            //for (u32 index = 0; index < m_sceneData->m_generalRenderList.size(); ++index)
+            //{
+            //    scene::NodeEntry& item = *m_sceneData->m_generalRenderList[index];
+            //    //if (item._type == scene::MaterialType::Debug ||
+            //    //    item._type == scene::MaterialType::DirectionLight || 
+            //    //    item._type == scene::MaterialType::PunctualLights)
+            //    //{
+            //    //    //skip debug object list
+            //    //    continue;
+            //    //}
+            //}
         }
 
         window
@@ -84,23 +103,15 @@ bool EditorContentScreen::handleGameEvent(event::GameEventHandler* handler, cons
         if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
         {
             const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
-            if (m_widgetItems.size() < m_sceneData->m_generalList.size())
+            if (m_selectedWidget)
             {
-                m_widgetItems.resize(m_sceneData->m_generalList.size(), nullptr);
-                m_loaded = false;
+                m_selectedWidget->setSelected(false);
             }
-
-            for (auto& item : m_widgetItems)
+            
+            if (auto found = m_widgetItems.find(selectionEvent->_node); found != m_widgetItems.cend())
             {
-                if (item)
-                {
-                    item->setSelected(false);
-                }
-            }
-
-            if (selectionEvent->_selectedIndex != k_emptyIndex)
-            {
-                m_widgetItems[selectionEvent->_selectedIndex]->setSelected(true);
+                m_selectedWidget = found->second;
+                m_selectedWidget->setSelected(true);
             }
         }
 

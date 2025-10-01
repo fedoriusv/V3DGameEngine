@@ -1,7 +1,6 @@
 #include "EditorScene.h"
 #include "Utils/Logger.h"
 
-#include "Resource/Model.h"
 #include "Resource/Bitmap.h"
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
@@ -11,8 +10,11 @@
 
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/Geometry/StaticMesh.h"
+#include "Scene/Model.h"
 #include "Scene/Light.h"
 #include "Scene/Billboard.h"
+#include "Scene/Material.h"
 
 #include "Renderer/Render.h"
 #include "Renderer/Device.h"
@@ -39,24 +41,24 @@
 #include "Events/Input/InputEventMouse.h"
 #include "Events/Input/InputEventKeyboard.h"
 
-s32 g_objectIDCounter = 1;
+#include "FrameProfiler.h"
 
 using namespace v3d;
 
 EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* modelHandler, ui::WidgetHandler* uiHandler)
 {
-    new renderer::RenderPipelineZPrepassStage(this, modelHandler);
-    new renderer::RenderPipelineGBufferStage(this, modelHandler);
-    new renderer::RenderPipelineSelectionStage(this, modelHandler);
-    new renderer::RenderPipelineDeferredLightingStage(this);
-    new renderer::RenderPipelineVolumeLightingStage(this, modelHandler);
-    //new renderer::RenderPipelineMBOITStage(this);
-    new renderer::RenderPipelineUnlitStage(this, modelHandler);
-    new renderer::RenderPipelineOutlineStage(this);
-    new renderer::RenderPipelineTAAStage(this);
-    new renderer::RenderPipelineDebugStage(this, modelHandler);
-    new renderer::RenderPipelineGammaCorrectionStage(this);
-    new renderer::RenderPipelineUIOverlayStage(this, uiHandler);
+    new scene::RenderPipelineZPrepassStage(this, modelHandler);
+    new scene::RenderPipelineGBufferStage(this, modelHandler);
+    new scene::RenderPipelineSelectionStage(this, modelHandler);
+    new scene::RenderPipelineDeferredLightingStage(this);
+    new scene::RenderPipelineVolumeLightingStage(this, modelHandler);
+    //new scene::RenderPipelineMBOITStage(this);
+    new scene::RenderPipelineUnlitStage(this, modelHandler);
+    new scene::RenderPipelineOutlineStage(this);
+    new scene::RenderPipelineTAAStage(this);
+    new scene::RenderPipelineDebugStage(this, modelHandler);
+    new scene::RenderPipelineGammaCorrectionStage(this);
+    new scene::RenderPipelineUIOverlayStage(this, uiHandler);
 }
 
 EditorScene::RenderPipelineScene::~RenderPipelineScene()
@@ -77,12 +79,13 @@ EditorScene::EditorScene() noexcept
         }))
 
     , m_mainPipeline(m_modelHandler, m_UIHandler)
-
     , m_frameCounter(0)
 
     , m_activeIndex(k_emptyIndex)
 
 {
+    m_editorMode = true;
+
     m_inputHandler->bind([this](const event::MouseInputEvent* event)
         {
             if (m_currentViewportRect.isPointInside({ (f32)m_inputHandler->getAbsoluteCursorPosition()._x, (f32)m_inputHandler->getAbsoluteCursorPosition()._y }))
@@ -92,10 +95,22 @@ EditorScene::EditorScene() noexcept
                     ObjectHandle selectedObject = m_sceneData.m_globalResources.get("readback_objectIDData");
                     if (selectedObject.isValid())
                     {
-                        renderer::RenderPipelineOutlineStage::MappedData* readback_objectIDData = objectFromHandle<renderer::RenderPipelineOutlineStage::MappedData>(selectedObject);
-                        m_activeIndex = (readback_objectIDData->_ptr) ? readback_objectIDData->_ptr[0] - 1 : k_emptyIndex;
-
-                        m_gameEventRecevier->sendEvent(new EditorSelectionEvent(m_activeIndex));
+                        scene::RenderPipelineOutlineStage::MappedData* readback_objectIDData = objectFromHandle<scene::RenderPipelineOutlineStage::MappedData>(selectedObject);
+                        scene::SceneNode* selectedNode = nullptr;
+                        m_activeIndex = k_emptyIndex;
+                        if (readback_objectIDData->_ptr)
+                        {
+                            u32 id = readback_objectIDData->_ptr[0];
+                            if (auto found = std::find_if(m_sceneData.m_generalRenderList.cbegin(), m_sceneData.m_generalRenderList.cend(), [id](scene::NodeEntry* node)
+                                {
+                                    return node->object->ID() == id;
+                                }); found != m_sceneData.m_generalRenderList.cend())
+                            {
+                                selectedNode = (*found)->object;
+                                m_activeIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
+                            }
+                        }
+                        m_gameEventRecevier->sendEvent(new EditorSelectionEvent(selectedNode));
                     }
                 }
                 m_cameraHandler->handleInputEventCallback(m_inputHandler, event);
@@ -111,7 +126,7 @@ EditorScene::EditorScene() noexcept
                 {
                     if (event->_key == event::KeyCode::KeyKey_F) //focus on selected object
                     {
-                        m_cameraHandler->setTarget(m_sceneData.m_generalList[m_activeIndex]->_object->getPosition());
+                        //m_cameraHandler->setTarget(m_sceneData.m_generalList[m_activeIndex]->_object->getPosition());
                     }
                 }
                 m_cameraHandler->handleInputEventCallback(m_inputHandler, event);
@@ -124,7 +139,15 @@ EditorScene::EditorScene() noexcept
             if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
             {
                 const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
-                m_activeIndex = selectionEvent->_selectedIndex;
+                scene::SceneNode* selectedNode = selectionEvent->_node;
+
+                if (auto found = std::find_if(m_sceneData.m_generalRenderList.cbegin(), m_sceneData.m_generalRenderList.cend(), [selectedNode](scene::NodeEntry* node)
+                    {
+                        return node->object == selectedNode;
+                    }); found != m_sceneData.m_generalRenderList.cend())
+                {
+                    m_activeIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
+                }
             }
         }
     );
@@ -133,11 +156,13 @@ EditorScene::EditorScene() noexcept
 
     resource::ResourceManager::createInstance();
     resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/textures/");
+    resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/models/");
+    resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/");
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/textures/");
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/models/");
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/shaders/");
 
-    resource::ResourceManager::getInstance()->addPath("../../../../engine/data/_suntemple/");
+    resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/SunTemple/");
 
     m_frameState.resize(3, {});
     m_stateIndex = 0;
@@ -161,7 +186,7 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
     m_device = device;
     m_currentViewportRect = math::Rect(0, 0, viewportSize._width, viewportSize._height);
     m_cameraHandler->setPerspective(m_vewportParams._fov, viewportSize, m_vewportParams._near, m_vewportParams._far);
-    m_cameraHandler->setMoveSpeed(0.5f);
+    m_cameraHandler->setMoveSpeed(1.f);
     m_cameraHandler->setRotationSpeed(25.0f);
     m_cameraHandler->setTarget({ 0.f, 0.f, 0.f });
     m_cameraHandler->setPosition({ 0.f, 0.25f, -1.f });
@@ -169,18 +194,17 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
     m_sceneData.m_viewportState._viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
 
     loadResources();
+    finalize();
 
     m_mainPipeline.create(m_device, m_sceneData, m_frameState[m_stateIndex]);
 
-    m_gameEventRecevier->sendEvent(new EditorSelectionEvent(k_emptyIndex));
+    renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
+    m_frameState[m_stateIndex].m_cmdList = cmdList;
 }
 
 void EditorScene::destroy()
 {
     m_mainPipeline.destroy(m_device, m_sceneData, m_frameState[m_stateIndex]);
-
-    delete m_sceneData.m_lightingState._directionalLight;
-    m_sceneData.m_lightingState._directionalLight = nullptr;
 }
 
 void EditorScene::beginFrame()
@@ -194,8 +218,10 @@ void EditorScene::endFrame()
 
 void EditorScene::preRender(f32 dt)
 {
-    renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    m_sceneData.m_renderState.m_cmdList = cmdList;
+    TRACE_PROFILER_SCOPE("PreRender", color::rgba8::WHITE);
+
+    //renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
+    //m_frameState[m_stateIndex].m_cmdList = cmdList;
 
     m_cameraHandler->update(dt);
     m_sceneData.m_viewportState._camera = m_cameraHandler;
@@ -221,28 +247,30 @@ void EditorScene::preRender(f32 dt)
     viewportState.cursorPosition = { (f32)posX, (f32)posY };
     viewportState.time = utils::Timer::getCurrentTime();
 
-    scene::LightingState& lightState = m_sceneData.m_lightingState;
-    lightState._directionalLight->setTransform(lightState._parent->_object->getTransform());
-
-    m_modelHandler->update(m_sceneData, dt);
+    m_modelHandler->preUpdate(dt, m_sceneData);
     if (m_activeIndex != k_emptyIndex)
     {
-        m_sceneData.m_lists[toEnumType(scene::MaterialType::Selected)].push_back(m_sceneData.m_generalList[m_activeIndex]);
+        m_sceneData.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].push_back(m_sceneData.m_generalRenderList[m_activeIndex]);
     }
 
     m_mainPipeline.prepare(m_device, m_sceneData, m_frameState[m_stateIndex]);
 }
 
-void EditorScene::postRender()
+void EditorScene::postRender(f32 dt)
 {
+    TRACE_PROFILER_SCOPE("PostRender", color::rgba8::WHITE);
+
     m_mainPipeline.execute(m_device, m_sceneData, m_frameState[m_stateIndex]);
+    m_modelHandler->postUpdate(dt, m_sceneData);
 }
 
 void EditorScene::submitRender()
 {
-    m_device->submit(m_sceneData.m_renderState.m_cmdList, true);
-    m_device->destroyCommandList(m_sceneData.m_renderState.m_cmdList);
-    m_sceneData.m_renderState.m_cmdList = nullptr;
+    TRACE_PROFILER_SCOPE("SubmitRender", color::rgba8::WHITE);
+
+    m_device->submit(m_frameState[m_stateIndex].m_cmdList, false);
+    //m_device->destroyCommandList(m_frameState[m_stateIndex].m_cmdList);
+    //m_frameState[m_stateIndex].m_cmdList = nullptr;
 
     m_stateIndex = 0;//(m_stateIndex + 1) % m_states.size();
 }
@@ -251,14 +279,8 @@ void EditorScene::modifyObject(const math::Matrix4D& transform)
 {
     if (m_activeIndex != k_emptyIndex)
     {
-        m_sceneData.m_generalList[m_activeIndex]->_object->setTransform(transform);
+        m_sceneData.m_generalRenderList[m_activeIndex]->object->setTransform(scene::TransformMode::Local, transform);
     }
-}
-
-void EditorScene::selectObject(u32 i)
-{
-    m_activeIndex = i;
-    m_gameEventRecevier->sendEvent(new EditorSelectionEvent(m_activeIndex));
 }
 
 void EditorScene::onChanged(const v3d::math::Rect& viewport)
@@ -314,39 +336,95 @@ event::GameEventReceiver* EditorScene::getGameEventReceiver()
     return m_gameEventRecevier;
 }
 
-void EditorScene::loadResources()
+void EditorScene::finalize()
 {
-    static auto loadTexture2D = [this](renderer::CmdListRender* cmdList, const std::string& file) -> renderer::Texture2D*
+    static std::function<void(scene::SceneNode* node)> processNode = [&](scene::SceneNode* node)
         {
-            resource::Bitmap* bitmap = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>(file);
-            if (bitmap)
+            if (scene::Mesh* geometry = node->getComponentByType<scene::Mesh>(); geometry)
             {
-                renderer::Texture2D* texture = new renderer::Texture2D(m_device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-                    bitmap->getFormat(), { bitmap->getDimension()._width, bitmap->getDimension()._height }, 1, bitmap->getMipmapsCount(), file);
-                ASSERT(texture, "not valid");
+                scene::Material* material = node->getComponentByType<scene::Material>();
 
-                cmdList->uploadData(texture, bitmap->getSize(), bitmap->getBitmap());
-                m_device->submit(cmdList, true);
+                scene::DrawNodeEntry* entry = new scene::DrawNodeEntry;
+                entry->object = node;
+                entry->geometry = geometry;
+                entry->material = material;
+                if (material)
+                {
+                    if (material->getShadingModel() == scene::MaterialShadingModel::Custom)
+                    {
+                        entry->passID = (scene::RenderPipelinePass)material->getProperty<u32>("materialID");
+                        entry->pipelineID = material->getProperty<u32>("pipelineID");
+                    }
+                    else if (material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness || material->getShadingModel() == scene::MaterialShadingModel::PBR_Specular)
+                    {
+                        bool isOpaque = true;
+                        entry->passID = isOpaque ? scene::RenderPipelinePass::Opaque : scene::RenderPipelinePass::Transparency;
+                        entry->pipelineID = material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness ? 0 : 1;
+                    }
+                }
 
-                resource::ResourceManager::getInstance()->remove(bitmap);
-
-                return texture;
+                m_sceneData.m_generalRenderList.push_back(entry);
             }
 
-            return nullptr;
+            if (scene::Billboard* unlit = node->getComponentByType<scene::Billboard>(); unlit)
+            {
+                scene::Material* material = node->getComponentByType<scene::Material>();
+
+                scene::DrawNodeEntry* entry = new scene::DrawNodeEntry;
+                entry->object = node;
+                entry->material = material;
+                entry->passID = scene::RenderPipelinePass::Indicator;
+                entry->pipelineID = 0;
+
+                m_sceneData.m_generalRenderList.push_back(entry);
+            }
+
+            if (scene::DirectionalLight* light = node->getComponentByType<scene::DirectionalLight>(); light)
+            {
+                scene::LightNodeEntry* entry = new scene::LightNodeEntry;
+                entry->object = node;
+                entry->light = light;
+                entry->passID = scene::RenderPipelinePass::DirectionLight;
+                entry->pipelineID = 0;
+
+                m_sceneData.m_generalRenderList.push_back(entry);
+            }
+            else if (scene::Light* light = node->getComponentByType<scene::Light>(); light)
+            {
+                scene::LightNodeEntry* entry = new scene::LightNodeEntry;
+                entry->object = node;
+                entry->light = light;
+                entry->passID = scene::RenderPipelinePass::PunctualLights;
+
+                m_sceneData.m_generalRenderList.push_back(entry);
+            }
+
+            for (auto& child : node->m_children)
+            {
+                processNode(child);
+            }
         };
 
-    renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
+    for (auto& node : m_sceneData.m_nodes)
+    {
+        processNode(node);
+    }
+}
 
-    renderer::Texture2D* default_black = loadTexture2D(cmdList, "default_black.dds");
-    renderer::Texture2D* default_white = loadTexture2D(cmdList, "default_white.dds");
-    renderer::Texture2D* default_normal = loadTexture2D(cmdList, "default_normal.dds");
-    renderer::Texture2D* default_material = loadTexture2D(cmdList, "default_material.dds");
-    renderer::Texture2D* default_roughness = loadTexture2D(cmdList, "default_black.dds");
-    renderer::Texture2D* default_metalness = loadTexture2D(cmdList, "default_black.dds");
-    renderer::Texture2D* uv_grid = loadTexture2D(cmdList, "uv_grid.dds");
-    renderer::Texture2D* noise_blue = loadTexture2D(cmdList, "noise_blue.dds");
-    renderer::Texture2D* tiling_noise = loadTexture2D(cmdList, "good64x64tilingnoisehighfreq.dds");
+void EditorScene::loadResources()
+{
+    resource::ImageDecoder::TexturePolicy policy;
+    policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
+
+    renderer::Texture2D* default_black = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_black.dds", policy);
+    renderer::Texture2D* default_white = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_white.dds", policy);
+    renderer::Texture2D* default_normal = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_normal.dds", policy);
+    renderer::Texture2D* default_material = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_material.dds", policy);
+    renderer::Texture2D* default_roughness = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_black.dds", policy);
+    renderer::Texture2D* default_metalness = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_black.dds", policy);
+    renderer::Texture2D* uv_grid = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "uv_grid.dds", policy);
+    renderer::Texture2D* noise_blue = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "noise_blue.dds", policy);
+    renderer::Texture2D* tiling_noise = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "good64x64tilingnoisehighfreq.dds", policy);
 
     m_sceneData.m_globalResources.bind("default_black", default_black);
     m_sceneData.m_globalResources.bind("default_white", default_white);
@@ -379,58 +457,35 @@ void EditorScene::loadResources()
     m_sceneData.m_globalResources.bind("nearest_sampler_repeat", nearest_sampler_repeat);
     m_sceneData.m_globalResources.bind("nearest_sampler_clamp", nearest_sampler_clamp);
 
-    test_loadCubes(cmdList, 20, 0);
-    test_loadLights(cmdList, 1, 0);
-    editor_loadDebug(cmdList);
+    if (m_editorMode)
+    {
+        //editor_loadDebug();
+    }
 
-    m_device->submit(cmdList, true);
-    m_device->destroyCommandList(cmdList);
+    test_loadTestScene();
+    //test_loadScene(cmdList, "SunTemple.fbx");
 }
 
-void EditorScene::test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaque, u32 countTransparency)
+void EditorScene::test_loadScene(const std::string& name)
 {
+    resource::ModelFileLoader::ModelPolicy policy;
+    policy.scaleFactor = 0.01f;
+    policy.overridedShadingModel = scene::MaterialShadingModel::PBR_MetallicRoughness;
+
+    scene::Model* scene = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, name, policy, 
+        /*resource::ModelFileLoader::Optimization |*/ 0);
+    ASSERT(scene, "nullptr");
+
+    m_sceneData.m_nodes.push_back(scene);
+}
+
+void EditorScene::test_loadTestScene()
+{
+    test_loadLights();
+
     auto rendomVector = []() ->math::float3
         {
             return { math::random<f32>(0.0, 1.0), math::random<f32>(0.0, 1.0), math::random<f32>(0.0, 1.0) };
-        };
-
-    //load texture
-    static auto loadTexture2D = [this](renderer::CmdListRender* cmdList, const std::string& file, bool generateMips) -> renderer::Texture2D*
-        {
-            resource::ImageLoaderFlags flags = 0;
-            if (generateMips)
-            {
-                flags |= resource::ImageLoaderFlag::ImageLoader_GenerateMipmaps;
-            }
-            resource::Bitmap* bitmap = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>(file, flags);
-            if (bitmap)
-            {
-                renderer::Texture2D* texture = new renderer::Texture2D(m_device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
-                    bitmap->getFormat(), { bitmap->getDimension()._width, bitmap->getDimension()._height }, 1, bitmap->getMipmapsCount(), file);
-                ASSERT(texture, "not valid");
-
-                cmdList->uploadData(texture, bitmap->getSize(), bitmap->getBitmap());
-                m_device->submit(cmdList, true);
-
-                resource::ResourceManager::getInstance()->remove(bitmap);
-
-                return texture;
-            }
-
-            return nullptr;
-        };
-
-    //load model
-    static auto loadModel = [this](renderer::CmdListRender* cmdList, const std::string& file) ->  scene::Model*
-        {
-            resource::ModelResource* modelRes = resource::ResourceManager::getInstance()->load<resource::ModelResource, resource::ModelFileLoader>(file);
-
-            scene::Model* model = scene::ModelHelper::createModel(m_device, cmdList, modelRes);
-            m_device->submit(cmdList, true);
-
-            resource::ResourceManager::getInstance()->remove(modelRes);
-
-            return model;
         };
 
     ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
@@ -445,48 +500,50 @@ void EditorScene::test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaq
     ASSERT(uv_h.isValid(), "must be valid");
     renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
 
-    std::string models[2] = { "cube.dae", "sphere.dae" };
-    scene::MaterialState material[2];
+    static auto loadTexture2D = [](renderer::Device* device, const std::string& name, bool generateMips) -> renderer::Texture2D*
+        {
+            resource::ImageDecoder::TexturePolicy policy;
+            policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
 
-    material[0]._baseColor = loadTexture2D(cmdList, "Bricks054/Bricks054_1K-PNG_Color.png", true);
-    material[0]._normals = loadTexture2D(cmdList, "Bricks054/Bricks054_1K-PNG_Normal.png", true);
-    material[0]._roughness = loadTexture2D(cmdList, "Bricks054/Bricks054_1K-PNG_Roughness.png", true);
-    material[0]._metalness = default_metalness;
-    material[0]._sampler = sampler;
-    material[0]._tint = { 1.0, 1.0, 1.0, 1.0 };
+            resource::ImageLoaderFlags flags = 0;
+            if (generateMips)
+            {
+                flags |= resource::ImageLoaderFlag::ImageLoader_GenerateMipmaps;
+            }
 
-    material[1]._baseColor = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_Color.png", true);
-    material[1]._normals = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_NormalDX.png", true);
-    material[1]._roughness = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_Roughness.png", true);
-    material[1]._metalness = loadTexture2D(cmdList, "Metal053C/Metal053C_1K-PNG_Metalness.png", true);
-    material[1]._sampler = sampler;
-    material[1]._tint = { 1.0, 1.0, 1.0, 1.0 };
+            return resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(device, name, policy, flags);
+        };
 
-    for (u32 i = 0; i < countOpaque; ++i)
     {
-        u32 rd = math::random<u32>(0, 10) % 2;
-        math::float3 pos = rendomVector() * 1.0f;
-        math::float3 scale = rendomVector() * 10.f;
+        resource::ModelFileLoader::ModelPolicy policy;
+        scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        m_sceneData.m_nodes.push_back(nodeCube);
 
-        scene::Model* model = loadModel(cmdList, models[rd]);
-        ASSERT(model, "nullptr");
-        scene::Mesh* mesh = model->m_geometry[0]._LODs[0];
-        ASSERT(mesh, "nullptr");
-        mesh->setPosition({ pos._x, pos._y, pos._z });
-        mesh->setScale({ scale._x, scale._x, scale._x });
+        scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
+        material->setProperty("BaseColor", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Color.png", true));
+        material->setProperty("Normals", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_NormalGL.png", true));
+        material->setProperty("Roughness", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Roughness.png", true));
+        material->setProperty("Metalness", default_metalness);
+        material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+        nodeCube->addComponent(material);
+    }
 
-        scene::DrawNode* node = new scene::DrawNode;
-        node->_type = scene::MaterialType::Opaque;
-        node->_object = mesh;
-        node->_title = model->m_geometry[0]._LODs[0]->m_name;
-        node->_material = material[rd];
-        node->_objectID = g_objectIDCounter++;
-        node->_pipelineID = 0;
-        m_sceneData.m_generalList.push_back(node);
+    {
+        resource::ModelFileLoader::ModelPolicy policy;
+        scene::Model* nodePlane = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "plane.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        m_sceneData.m_nodes.push_back(nodePlane);
+
+        scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
+        material->setProperty("BaseColor", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Color.png", true));
+        material->setProperty("Normals", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_NormalGL.png", true));
+        material->setProperty("Roughness", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Roughness.png", true));
+        material->setProperty("Metalness", default_metalness);
+        material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+        nodePlane->addComponent(material);
     }
 }
 
-void EditorScene::test_loadLights(renderer::CmdListRender* cmdList, u32 pointCount, u32 spotCount)
+void EditorScene::test_loadLights()
 {
     ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
     ASSERT(linear_sampler_h.isValid(), "must be valid");
@@ -500,82 +557,49 @@ void EditorScene::test_loadLights(renderer::CmdListRender* cmdList, u32 pointCou
     ASSERT(uv_h.isValid(), "must be valid");
     renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
 
+
+    scene::SceneNode* lightNode = new scene::SceneNode();
+    lightNode->m_name = "DirectionLight";
+    lightNode->setPosition(scene::TransformMode::Local, { 0.f, 2.f, -2.f });
+    lightNode->setRotation(scene::TransformMode::Local, { 20.f, 0.0f, 0.0f });
+    m_sceneData.m_nodes.push_back(lightNode);
+
+    scene::DirectionalLight* directionalLight = new scene::DirectionalLight(m_device);
+    directionalLight->setColor({ 1.f, 1.f, 1.f, 1.f });
+    directionalLight->setIntensity(30.f);
+    directionalLight->setTemperature(4000.0);
+    lightNode->addComponent(directionalLight);
+
+    if (m_editorMode)
     {
-        scene::DirectionalLight* directionalLight = new scene::DirectionalLight();
-        directionalLight->setColor({ 1.f, 1.f, 1.f });
-        directionalLight->setIntensity(1.f);
-        directionalLight->setTemperature(100.0);
-        directionalLight->setPosition({ 0.f, 0.f, 0.f });
+        scene::Billboard* icon = new scene::Billboard(m_device);
+        lightNode->addComponent(icon);
 
-        scene::Billboard* directionalLightIndicator = new scene::Billboard();
-        directionalLightIndicator->setPosition({ 0.f, 1.f, -1.f });
+        scene::Material* material = new scene::Material(m_device);
+        material->setProperty("Color", math::float4{ 1.0, 1.0, 0.0, 1.0 });
+        material->setProperty("BaseColor", uvGrid);
+        lightNode->addComponent(material);
 
-        scene::DrawNode* indicator = new scene::DrawNode;
-        indicator->_type = scene::MaterialType::Billboard;
-        indicator->_object = directionalLightIndicator;
-        indicator->_title = "DirectionLight";
-        indicator->_material._sampler = sampler;
-        indicator->_material._baseColor = uvGrid;
-        indicator->_material._normals = defaultBlack;
-        indicator->_material._metalness = defaultBlack;
-        indicator->_material._roughness = defaultBlack;
-        indicator->_material._tint = { 1.0, 1.0, 1.f, 1.0 };
-        indicator->_objectID = g_objectIDCounter++;
-        indicator->_pipelineID = 0;
-        m_sceneData.m_generalList.push_back(indicator);
+        {
+            scene::SceneNode* debugNode = new scene::SceneNode();
+            debugNode->m_name = "LightDebug";
+            debugNode->setRotation(scene::TransformMode::Local, { 90.f, 0.0f, 0.0f });
+            debugNode->setPosition(scene::TransformMode::Local, { 0.0f, 0.0f, 0.25f });
+            lightNode->addChild(debugNode);
 
-        scene::Mesh* directionalLightLine = scene::MeshHelper::createLine(m_device, cmdList, { { 0.f, 0.f, 0.f }, { 0.f, 0.f, 0.5f } });
-        directionalLightLine->setPosition({ 0.f, 0.f, 0.f });
-
-        scene::DrawNode* line = new scene::DrawNode;
-        line->_type = scene::MaterialType::Debug;
-        line->_parent = indicator;
-        line->_object = directionalLightLine;
-        line->_material._tint = { 1.0, 1.0, 0.f, 1.0 };
-        line->_objectID = g_objectIDCounter++;
-        line->_pipelineID = 1;
-        m_sceneData.m_generalList.push_back(line);
-
-        m_sceneData.m_lightingState._directionalLight = directionalLight;
-        m_sceneData.m_lightingState._parent = indicator;
+            scene::Mesh* cylinder = scene::MeshHelper::createCylinder(m_device, 0.01f, 0.5f, 32, "lightDirection");
+            debugNode->addComponent(cylinder);
+         
+            scene::Material* material = new scene::Material(m_device);
+            material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+            material->setProperty("pipelineID", 0U);
+            material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 0.0, 1.0 });
+            debugNode->addComponent(material);
+        }
     }
-
-
-
-    for (u32 i = 0; i < pointCount; ++i)
-    {
-        scene::PointLight* light = scene::LightHelper::createPointLight(m_device, cmdList, 1.f, "PointLight");
-        light->setColor({ 1.f, 1.f, 1.f });
-        light->setPosition({ 0.f, 0.f, 0.f });
-        light->setScale({ 1.f, 1.f, 1.f });
-
-        scene::DrawNode* point = new scene::DrawNode;
-        point->_type = scene::MaterialType::Lights;
-        point->_object = light;
-        point->_title = "PointLight";
-        point->_objectID = g_objectIDCounter++;
-        point->_pipelineID = 0;
-        m_sceneData.m_generalList.push_back(point);
-
-
-        scene::DrawNode* icon = new scene::DrawNode;
-        icon->_type = scene::MaterialType::Billboard;
-        icon->_object = light;
-        icon->_title = "PointLight";
-        icon->_material._sampler = sampler;
-        icon->_material._baseColor = uvGrid;
-        icon->_material._normals = defaultBlack;
-        icon->_material._metalness = defaultBlack;
-        icon->_material._roughness = defaultBlack;
-        icon->_material._tint = { 1.0, 1.0, 1.f, 1.0 };
-        icon->_objectID = g_objectIDCounter++;
-        icon->_pipelineID = 0;
-        m_sceneData.m_generalList.push_back(icon);
-    }
-
 }
 
-void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
+void EditorScene::editor_loadDebug()
 {
     ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
     ASSERT(linear_sampler_h.isValid(), "must be valid");
@@ -589,17 +613,67 @@ void EditorScene::editor_loadDebug(renderer::CmdListRender* cmdList)
     ASSERT(uv_h.isValid(), "must be valid");
     renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
 
-    {
-        scene::Mesh* prim = scene::MeshHelper::createGrid(m_device, cmdList, 10.0f, 64, 64);
-        prim->setPosition({ 0.f, 0.f, 0.f });
-        prim->setScale({ 1.f, 1.f, 1.f });
+    scene::SceneNode* editorNode = new scene::SceneNode();
+    editorNode->m_name = "Editor";
+    m_sceneData.m_nodes.push_back(editorNode);
 
-        scene::DrawNode* grid = new scene::DrawNode;
-        grid->_type = scene::MaterialType::Debug;
-        grid->_object = prim;
-        grid->_material._tint = { 0.5, 0.5, 0.5, 1.0 };
-        grid->_objectID = g_objectIDCounter++;
-        grid->_pipelineID = 1;
-        m_sceneData.m_generalList.push_back(grid);
+    {
+        scene::SceneNode* node = new scene::SceneNode();
+        node->m_name = "Grid";
+        editorNode->addChild(node);
+
+        scene::Mesh* grid = scene::MeshHelper::createGrid(m_device, 100.0f, 100, 100);
+        node->addComponent(grid);
+
+        scene::Material* material = new scene::Material(m_device);
+        material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+        material->setProperty("pipelineID", 1U);
+        material->setProperty("DiffuseColor", math::float4{ 0.7, 0.7, 0.7, 1.0 });
+        node->addComponent(material);
+    }
+
+    {
+        scene::SceneNode* node = new scene::SceneNode();
+        node->m_name = "LineX";
+        editorNode->addChild(node);
+
+        scene::Mesh* line = scene::MeshHelper::createLineSegment(m_device, { math::float3{-100, 0.0, 0}, math::float3{100, 0.0, 0} });
+        node->addComponent(line);
+
+        scene::Material* material = new scene::Material(m_device);
+        material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+        material->setProperty("pipelineID", 1U);
+        material->setProperty("DiffuseColor", math::float4{ 1.0, 0.0, 0.0, 1.0 });
+        node->addComponent(material);
+    }
+
+    {
+        scene::SceneNode* node = new scene::SceneNode();
+        node->m_name = "LineY";
+        editorNode->addChild(node);
+
+        scene::Mesh* line = scene::MeshHelper::createLineSegment(m_device, { math::float3{0, -100, 0}, math::float3{0, 100, 0} });
+        node->addComponent(line);
+
+        scene::Material* material = new scene::Material(m_device);
+        material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+        material->setProperty("pipelineID", 1U);
+        material->setProperty("DiffuseColor", math::float4{ 0.0, 1.0, 0.0, 1.0 });
+        node->addComponent(material);
+    }
+
+    {
+        scene::SceneNode* node = new scene::SceneNode();
+        node->m_name = "LineZ";
+        editorNode->addChild(node);
+
+        scene::Mesh* line = scene::MeshHelper::createLineSegment(m_device, { math::float3{0, 0.0, -100}, math::float3{0, 0.0, 100} });
+        node->addComponent(line);
+
+        scene::Material* material = new scene::Material(m_device);
+        material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+        material->setProperty("pipelineID", 1U);
+        material->setProperty("DiffuseColor", math::float4{ 0.0, 0.0, 1.0, 1.0 });
+        node->addComponent(material);
     }
 }

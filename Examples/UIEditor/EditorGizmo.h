@@ -35,8 +35,9 @@ public:
 private:
 
     ui::WidgetGizmo* m_gizmo;
+    event::GameEventReceiver* m_gameEventRecevier;
 
     scene::SceneData* m_sceneData;
-    scene::DrawNode* m_selectedObject;
+    scene::SceneNode* m_selectedNode;
     s32 m_currentOp;
 };

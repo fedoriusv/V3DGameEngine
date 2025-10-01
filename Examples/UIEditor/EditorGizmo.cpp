@@ -7,9 +7,10 @@
 
 EditorGizmo::EditorGizmo(event::GameEventReceiver* gameEventRecevier) noexcept
     : m_gizmo(nullptr)
+    , m_gameEventRecevier(gameEventRecevier)
 
     , m_sceneData(nullptr)
-    , m_selectedObject(nullptr)
+    , m_selectedNode(nullptr)
 
     , m_currentOp(-1)
 {
@@ -26,12 +27,18 @@ void EditorGizmo::registerWiget(ui::WidgetGizmo* widget, scene::SceneData& scene
     m_sceneData = &sceneData;
 }
 
-void EditorGizmo::modify(const math::Matrix4D& transform)
+void EditorGizmo::modify(const math::Matrix4D& matrix)
 {
-    LOG_DEBUG("position [%f, %f, %f]", transform.getTranslation().getX(), transform.getTranslation().getY(), transform.getTranslation().getZ());
-    LOG_DEBUG("rotation [%f, %f, %f]", transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
-    LOG_DEBUG("scale [%f, %f, %f]", transform.getScale().getX(), transform.getScale().getY(), transform.getScale().getZ());
-    m_gizmo->setTransform(transform);
+    //LOG_DEBUG("position [%f, %f, %f]", transform.getTranslation().getX(), transform.getTranslation().getY(), transform.getTranslation().getZ());
+    //LOG_DEBUG("rotation [%f, %f, %f]", transform.getRotation().getX(), transform.getRotation().getY(), transform.getRotation().getZ());
+    //LOG_DEBUG("scale [%f, %f, %f]", transform.getScale().getX(), transform.getScale().getY(), transform.getScale().getZ());
+    //m_gizmo->setTransform(transform);
+    if (m_selectedNode)
+    {
+        scene::Transform transform;
+        transform.setMatrix(matrix);
+        m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, scene::TransformMode::Local, transform));
+    }
 }
 
 void EditorGizmo::select()
@@ -43,7 +50,7 @@ void EditorGizmo::setEnable(bool enable)
     if (m_gizmo)
     {
         m_currentOp = -1;
-        m_gizmo->setActive(enable && m_selectedObject != nullptr);
+        m_gizmo->setActive(enable && m_selectedNode != nullptr);
     }
 }
 
@@ -60,33 +67,46 @@ void EditorGizmo::setOperation(u32 index)
         m_currentOp = index;
         m_gizmo->setOperation(op[index]);
     }
+
+    if (m_selectedNode && m_currentOp > -1)
+    {
+        modify(m_selectedNode->getTransform(scene::TransformMode::Local).getMatrix());
+    }
 }
 
 void EditorGizmo::update(f32 dt)
 {
-    if (m_selectedObject && m_currentOp > -1)
-    {
-        modify(m_selectedObject->_object->getTransform());
-    }
 }
 
 bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
+    if (!m_gizmo)
+    {
+        return true;
+    }
+
     if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
     {
         const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
-        m_selectedObject = (selectionEvent->_selectedIndex != k_emptyIndex) ? m_sceneData->m_generalList[selectionEvent->_selectedIndex] : nullptr;
-        if (m_gizmo)
+        m_selectedNode = selectionEvent->_node;
+        if (m_selectedNode && m_currentOp > -1)
         {
-            if (m_selectedObject && m_currentOp > -1)
-            {
-                m_gizmo->setActive(true);
-                modify(m_sceneData->m_generalList[selectionEvent->_selectedIndex]->_object->getTransform());
-            }
-            else
-            {
-                m_gizmo->setActive(false);
-            }
+            m_gizmo->setActive(true);
+            m_gizmo->setTransform(m_selectedNode->getTransform(scene::TransformMode::Local).getMatrix());
+
+            return true;
+        }
+
+        m_gizmo->setActive(false);
+    }
+    else if (event->_eventType == event::GameEvent::GameEventType::TransformObject)
+    {
+        const EditorTrasformEvent* transformEvent = static_cast<const EditorTrasformEvent*>(event);
+        if (m_selectedNode && m_currentOp > -1)
+        {
+            m_gizmo->setTransform(transformEvent->_transform.getMatrix());
+
+            return true;
         }
     }
 

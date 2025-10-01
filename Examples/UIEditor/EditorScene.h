@@ -13,6 +13,8 @@
 #include "Scene/Scene.h"
 #include "Scene/Camera/CameraEditorHandler.h"
 #include "Scene/Camera/Camera.h"
+#include "Scene/Material.h"
+#include "Scene/Geometry/Mesh.h"
 #include "Scene/ModelHandler.h"
 
 #include "UI/WidgetHandler.h"
@@ -22,25 +24,42 @@ using namespace v3d;
 
 struct EditorSelectionEvent : event::GameEvent
 {
-    EditorSelectionEvent(u32 selectedIndex) noexcept
+    EditorSelectionEvent(scene::SceneNode* node) noexcept
         : event::GameEvent(GameEvent::GameEventType::SelectObject)
-        , _selectedIndex(selectedIndex)
+        , _node(node)
     {
     }
 
     virtual ~EditorSelectionEvent() = default;
 
-    u32 _selectedIndex;
+    scene::SceneNode* _node;
+};
+
+struct EditorTrasformEvent : event::GameEvent
+{
+    EditorTrasformEvent(scene::SceneNode* node, scene::TransformMode mode, const scene::Transform& transform) noexcept
+        : event::GameEvent(GameEvent::GameEventType::TransformObject)
+        , _node(node)
+        , _mode(mode)
+        , _transform(transform)
+    {
+    }
+
+    virtual ~EditorTrasformEvent() = default;
+
+    scene::SceneNode* _node;
+    scene::TransformMode _mode;
+    scene::Transform _transform;
 };
 
 constexpr u32 k_emptyIndex = -1;
 
 
-class EditorScene final
+class EditorScene : public scene::Scene
 {
 public:
 
-    class RenderPipelineScene : public renderer::RenderTechnique
+    class RenderPipelineScene : public scene::RenderTechnique
     {
     public:
 
@@ -57,14 +76,13 @@ public:
     void endFrame();
 
     void preRender(f32 dt);
-    void postRender();
+    void postRender(f32 dt);
 
     void submitRender();
 
 public:
 
     void modifyObject(const math::Matrix4D& transform);
-    void selectObject(u32 i);
 
 public:
 
@@ -112,15 +130,18 @@ public:
     u32                             m_activeIndex;
     u64                             m_frameCounter;
 
-    scene::SceneData m_sceneData;
-    std::vector<scene::FrameData> m_frameState;
+    scene::SceneData                m_sceneData;
+    std::vector<scene::FrameData>   m_frameState;
     u32 m_stateIndex;
 
 private:
 
-    void editor_loadDebug(renderer::CmdListRender* cmdList);
+    void finalize();
 
-    void test_loadCubes(renderer::CmdListRender* cmdList, u32 countOpaque, u32 countTransparency);
-    void test_loadLights(renderer::CmdListRender* cmdList, u32 pointCount, u32 spotCount);
+    void editor_loadDebug();
+
+    void test_loadLights();
+    void test_loadScene(const std::string& name);
+    void test_loadTestScene();
 
 };

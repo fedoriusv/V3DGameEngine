@@ -25,11 +25,14 @@
 #include "EditorPropertyScreen.h"
 #include "EditorAssetBrowser.h"
 
+#include "FrameProfiler.h"
+
 using namespace v3d;
 using namespace v3d::platform;
 using namespace v3d::renderer;
 using namespace v3d::utils;
 using namespace v3d::event;
+using namespace v3d::color;
 
 constexpr math::Dimension2D k_editorResolution = { 1920, 1080 };
 
@@ -90,7 +93,10 @@ public:
                     break;
                 }
 
+                TRACE_PROFILER_FRAME_BEGIN;
                 Run();
+                TRACE_PROFILER_FRAME_END;
+
                 inputEventReceiver->resetInputHandlers();
             }
         }
@@ -192,6 +198,7 @@ private:
 
         Swapchain::SwapchainParams params;
         params._size = m_Window->getSize();
+        params._vSync = false;
 
         m_Swapchain = m_Device->createSwapchain(m_Window, params);
         m_Backbuffer = createBackbufferRT(m_Device, m_Swapchain);
@@ -281,6 +288,7 @@ private:
             .addWidget(ui::WidgetLayout(ui::WidgetLayout::Border)
                 .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentFill)
                 .setVAlignment(ui::WidgetLayout::VerticalAlignment::AlignmentFill)
+                .addWidget(ui::WidgetText("Text"))
                 .addWidget(ui::WidgetImage(nullptr, {})
                     .setOnUpdate([this](ui::Widget* w, f32 dt) -> void
                         {
@@ -331,6 +339,8 @@ private:
             }));
 
         //editor::UI::constuctTestUIWindow(m_UI, m_EditorScene);
+
+        m_cmdListUI = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
     }
     
     void Run()
@@ -345,33 +355,34 @@ private:
 
         //Scene
         {
+            TRACE_PROFILER_SCOPE("Update", rgba8::WHITE);
             m_EditorGizmo->update(deltaTime);
             m_EditorContentScreen->update(deltaTime);
             m_EditorPropertyScreen->update(deltaTime);
             m_EditorAssetBrowser->update(deltaTime);
-
+        }
+        {
+            TRACE_PROFILER_SCOPE("Render", rgba8::WHITE);
             m_EditorScene->preRender(deltaTime);
-            m_EditorScene->postRender();
+            m_EditorScene->postRender(deltaTime);
             m_EditorScene->submitRender();
         }
         //Scene
 
         //Editor UI
         {
-            renderer::CmdListRender* cmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
-
+            TRACE_PROFILER_SCOPE("Editor UI", rgba8::WHITE);
             m_UI->update(m_Window, this, deltaTime);
             m_Swapchain->beginFrame();
 
-            cmdList->beginRenderTarget(*m_Backbuffer);
-            if (!m_UI->render(cmdList))
+            m_cmdListUI->beginRenderTarget(*m_Backbuffer);
+            if (!m_UI->render(m_cmdListUI))
             {
-                cmdList->clear(m_Swapchain->getBackbuffer(), { 0, 0, 0, 0 });
+                m_cmdListUI->clear(m_Swapchain->getBackbuffer(), { 0, 0, 0, 0 });
             }
-            cmdList->endRenderTarget();
+            m_cmdListUI->endRenderTarget();
 
-            m_Device->submit(cmdList, true);
-            m_Device->destroyCommandList(cmdList);
+            m_Device->submit(m_cmdListUI, true);
 
             m_Swapchain->endFrame();
             m_Swapchain->presentFrame();
@@ -394,6 +405,7 @@ private:
         {
             m_Device->destroySwapchain(m_Swapchain);
 
+            m_Device->destroyCommandList(m_cmdListUI);
             renderer::Device::destroyDevice(m_Device);
             m_Device = nullptr;
         }
@@ -403,9 +415,9 @@ private:
     v3d::renderer::Device* m_Device = nullptr;
     v3d::renderer::Swapchain* m_Swapchain = nullptr;
     v3d::renderer::RenderTargetState* m_Backbuffer = nullptr;
+    v3d::renderer::CmdListRender* m_cmdListUI = nullptr;
 
     ui::ImGuiWidgetHandler*  m_UI;
-
     EditorScene*            m_EditorScene;
 
     EditorGizmo*            m_EditorGizmo;

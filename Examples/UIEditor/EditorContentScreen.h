@@ -32,7 +32,8 @@ private:
     ui::WidgetWindow* m_window;
 
     scene::SceneData* m_sceneData;
-    std::vector<ui::WidgetTreeNode*> m_widgetItems;
+    ui::WidgetTreeNode* m_selectedWidget;
+    std::map<scene::SceneNode*, ui::WidgetTreeNode*> m_widgetItems;
 
 
     bool m_loaded;
