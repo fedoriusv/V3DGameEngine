@@ -94,18 +94,37 @@ namespace math
     }
 
     template <class T>
-    void TMinMaxAABB<T>::expand(T value)
-    {
-        TVector3D<T> offset(value);
-        _min -= offset;
-        _max += offset;
-    }
-
-    template <class T>
     void TMinMaxAABB<T>::expand(const TVector3D<T>& value)
     {
-        _min -= value;
-        _max += value;
+        if (value._x < _min._x)
+        {
+            _min._x = value._x;
+        }
+
+        if (value._x > _max._x)
+        {
+            _max._x = value._x;
+        }
+
+        if (value._y < _min._y)
+        {
+            _min._y = value._y;
+        }
+
+        if (value._y > _max._y)
+        {
+            _max._y = value._y;
+        }
+
+        if (value._z < _min._z)
+        {
+            _min._z = value._z;
+        }
+
+        if (value._z > _max._z)
+        {
+            _max._z = value._z;
+        }
     }
 
     template <class T>

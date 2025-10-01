@@ -44,12 +44,15 @@ namespace math
         bool operator>(const TDimension3D<T>& other) const;
         bool operator<(const TDimension3D<T>& other) const;
 
+        operator TDimension2D<T>() const;
+
         TDimension3D<T>& set(T width, T height, T depth);
 
         [[nodiscard]] T getArea() const;
 
         [[nodiscard]] bool isNull() const;
         [[nodiscard]] bool isValid() const;
+
 
         T _width;
         T _height;

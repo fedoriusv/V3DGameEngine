@@ -38,7 +38,6 @@ namespace math
         [[nodiscard]] TVector3D<T> getExtent() const;
         [[nodiscard]] TVector3D<T> getSize() const;
 
-        void expand(T value);
         void expand(const TVector3D<T>& value);
 
         [[nodiscard]] bool isInside(const TVector3D<T>& point) const;

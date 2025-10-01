@@ -94,6 +94,12 @@ namespace math
         return _width < other._width && _height < other._height && _depth < other._depth;
     }
 
+    template<DimensionType3D T>
+    inline TDimension3D<T>::operator TDimension2D<T>() const
+    {
+        return TDimension2D<T>(_width, _height);
+    }
+
     template <DimensionType3D T>
     inline TDimension3D<T>& TDimension3D<T>::set(T width, T height, T depth)
     {
