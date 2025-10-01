@@ -314,28 +314,28 @@ VkCompareOp VulkanGraphicPipeline::convertCompareOperationToVk(CompareOperation 
 {
     switch (compareOp)
     {
-    case CompareOperation::CompareOp_Never:
+    case CompareOperation::Never:
         return VK_COMPARE_OP_NEVER;
 
-    case CompareOperation::CompareOp_Less:
+    case CompareOperation::Less:
         return VK_COMPARE_OP_LESS;
 
-    case CompareOperation::CompareOp_Equal:
+    case CompareOperation::Equal:
         return VK_COMPARE_OP_EQUAL;
 
-    case CompareOperation::CompareOp_LessOrEqual:
+    case CompareOperation::LessOrEqual:
         return VK_COMPARE_OP_LESS_OR_EQUAL;
 
-    case CompareOperation::CompareOp_Greater:
+    case CompareOperation::Greater:
         return VK_COMPARE_OP_GREATER;
 
-    case CompareOperation::CompareOp_NotEqual:
+    case CompareOperation::NotEqual:
         return VK_COMPARE_OP_NOT_EQUAL;
 
-    case CompareOperation::CompareOp_GreaterOrEqual:
+    case CompareOperation::GreaterOrEqual:
         return VK_COMPARE_OP_GREATER_OR_EQUAL;
 
-    case CompareOperation::CompareOp_Always:
+    case CompareOperation::Always:
         return VK_COMPARE_OP_ALWAYS;
 
     default:
@@ -344,6 +344,42 @@ VkCompareOp VulkanGraphicPipeline::convertCompareOperationToVk(CompareOperation 
 
     ASSERT(false, "compare Op not found");
     return VK_COMPARE_OP_GREATER;
+}
+
+VkStencilOp VulkanGraphicPipeline::convertStencilOperationToVk(StencilOperation stencilOp)
+{
+    switch (stencilOp)
+    {
+    case StencilOperation::Keep:
+        return VK_STENCIL_OP_KEEP;
+
+    case StencilOperation::Zero:
+        return VK_STENCIL_OP_ZERO;
+
+    case StencilOperation::Replace:
+        return VK_STENCIL_OP_REPLACE;
+
+    case StencilOperation::Increment_Clamp:
+        return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+
+    case StencilOperation::Decrement_Clamp:
+        return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+
+    case StencilOperation::Invert:
+        return VK_STENCIL_OP_INVERT;
+
+    case StencilOperation::Increment_Wrap:
+        return VK_STENCIL_OP_INCREMENT_AND_WRAP;
+
+    case StencilOperation::Decrement_Wrap:
+        return VK_STENCIL_OP_DECREMENT_AND_WRAP;
+
+    default:
+        break;
+    }
+
+    ASSERT(false, "stencil Op not found");
+    return VK_STENCIL_OP_KEEP;
 }
 
 VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(InputRate rate)
@@ -626,7 +662,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     pipelineDepthStencilStateCreateInfo.flags = 0;
     pipelineDepthStencilStateCreateInfo.depthTestEnable = depthBlendState._depthTestEnable;
     pipelineDepthStencilStateCreateInfo.depthWriteEnable = depthBlendState._depthWriteEnable;
-    pipelineDepthStencilStateCreateInfo.depthCompareOp = VulkanGraphicPipeline::convertCompareOperationToVk(depthBlendState._compareOp);
+    pipelineDepthStencilStateCreateInfo.depthCompareOp = VulkanGraphicPipeline::convertCompareOperationToVk(depthBlendState._depthCompareOp);
     if (m_device.getVulkanDeviceCaps().getPhysicalDeviceFeatures().depthBounds)
     {
         pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = depthBlendState._depthBoundsTestEnable;
@@ -642,10 +678,26 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
         ASSERT(depthBlendState._depthBoundsTestEnable == VK_FALSE, "feature depthBounds not supported");
     }
 
-    VkStencilOpState stencilOpState = {}; //TODO
+    pipelineDepthStencilStateCreateInfo.front.writeMask = depthBlendState._stencilFront._writeMask;
+    pipelineDepthStencilStateCreateInfo.back.writeMask = depthBlendState._stencilBack._writeMask;
+    ASSERT(VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_STENCIL_REFERENCE), "must be enabled");
+
     pipelineDepthStencilStateCreateInfo.stencilTestEnable = depthBlendState._stencilTestEnable;
-    pipelineDepthStencilStateCreateInfo.front = stencilOpState;
-    pipelineDepthStencilStateCreateInfo.back = stencilOpState;
+    if (pipelineDepthStencilStateCreateInfo.stencilTestEnable)
+    {
+        pipelineDepthStencilStateCreateInfo.front.failOp = VulkanGraphicPipeline::convertStencilOperationToVk(depthBlendState._stencilFront._failOp);
+        pipelineDepthStencilStateCreateInfo.front.depthFailOp = VulkanGraphicPipeline::convertStencilOperationToVk(depthBlendState._stencilFront._depthFailOp);
+        pipelineDepthStencilStateCreateInfo.front.passOp = VulkanGraphicPipeline::convertStencilOperationToVk(depthBlendState._stencilFront._passOp);
+        pipelineDepthStencilStateCreateInfo.front.compareOp = VulkanGraphicPipeline::convertCompareOperationToVk(depthBlendState._stencilFront._compareOp);
+        pipelineDepthStencilStateCreateInfo.front.compareMask = depthBlendState._stencilFront._compareMask;
+
+        pipelineDepthStencilStateCreateInfo.back.failOp = VulkanGraphicPipeline::convertStencilOperationToVk(depthBlendState._stencilBack._failOp);
+        pipelineDepthStencilStateCreateInfo.back.depthFailOp = VulkanGraphicPipeline::convertStencilOperationToVk(depthBlendState._stencilBack._depthFailOp);
+        pipelineDepthStencilStateCreateInfo.back.passOp = VulkanGraphicPipeline::convertStencilOperationToVk(depthBlendState._stencilBack._passOp);
+        pipelineDepthStencilStateCreateInfo.back.compareOp = VulkanGraphicPipeline::convertCompareOperationToVk(depthBlendState._stencilBack._compareOp);
+        pipelineDepthStencilStateCreateInfo.back.compareMask = depthBlendState._stencilBack._compareMask;
+    }
+
     graphicsPipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 
     std::vector<VkDynamicState> dynamicStates = VulkanDevice::getDynamicStates();

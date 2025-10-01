@@ -42,12 +42,10 @@ namespace renderer
     /**
     * @brief TextureTarget enum. Contains a texture target
     */
-    enum class TextureTarget : u16
+    enum class TextureTarget : u32
     {
         Texture1D,
-        Texture1DArray,
         Texture2D,
-        Texture2DArray,
         Texture3D,
         TextureCubeMap,
     };
@@ -96,6 +94,7 @@ namespace renderer
         TransitionOp_ShaderRead,
         TransitionOp_ColorAttachment,
         TransitionOp_DepthStencilAttachment,
+        TransitionOp_DepthStencilReadOnly,
 
         TransitionOp_GeneralGraphic,
         TransitionOp_GeneralCompute,
@@ -248,14 +247,29 @@ namespace renderer
     */
     enum class CompareOperation : u32
     {
-        CompareOp_Never = 0,
-        CompareOp_Less = 1,
-        CompareOp_Equal = 2,
-        CompareOp_LessOrEqual = 3,
-        CompareOp_Greater = 4,
-        CompareOp_NotEqual = 5,
-        CompareOp_GreaterOrEqual = 6,
-        CompareOp_Always = 7,
+        Never = 0,
+        Less = 1,
+        Equal = 2,
+        LessOrEqual = 3,
+        Greater = 4,
+        NotEqual = 5,
+        GreaterOrEqual = 6,
+        Always = 7,
+    };
+
+    /**
+* @brief enum class StencilOperation
+*/
+    enum class StencilOperation : u32
+    {
+        Keep = 0,
+        Zero = 1,
+        Replace = 2,
+        Increment_Clamp = 3,
+        Decrement_Clamp = 4,
+        Invert = 5,
+        Increment_Wrap = 6,
+        Decrement_Wrap = 7,
     };
 
     /**

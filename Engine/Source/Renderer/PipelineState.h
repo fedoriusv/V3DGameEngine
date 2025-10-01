@@ -220,37 +220,77 @@ namespace renderer
         struct DepthStencilState
         {
             DepthStencilState() noexcept
-                : _compareOp(CompareOperation::CompareOp_Greater)
+                : _depthCompareOp(CompareOperation::Always)
                 , _depthTestEnable(false)
                 , _depthWriteEnable(false)
-                , _stencilTestEnable(false)
                 , _depthBoundsTestEnable(false)
+                , _stencilTestEnable(false)
                 , _unused(0)
                 , _depthBounds({ 0.0f })
             {
-                static_assert(sizeof(DepthStencilState) == sizeof(math::float2) + 4, "wrong size");
+                static_assert(sizeof(DepthStencilState) == sizeof(math::float2) + sizeof(Stencil) + sizeof(Stencil) + 4, "wrong size");
             }
 
             bool operator==(const DepthStencilState& other) const
             {
                 if (this != &other)
                 {
-                    return _compareOp == other._compareOp
+                    return _stencilFront == other._stencilFront
+                        && _stencilBack == other._stencilBack
+                        && _depthCompareOp == other._depthCompareOp
                         && _depthTestEnable == other._depthTestEnable
                         && _depthWriteEnable == other._depthWriteEnable
-                        && _stencilTestEnable == other._stencilTestEnable
                         && _depthBoundsTestEnable == other._depthBoundsTestEnable
+                        && _stencilTestEnable == other._stencilTestEnable
                         && _depthBounds == other._depthBounds;
                 }
 
                 return true;
             }
 
-            CompareOperation     _compareOp               : 4;
+            struct Stencil
+            {
+                Stencil() noexcept
+                    : _compareOp(CompareOperation::Always)
+                    , _passOp(StencilOperation::Keep)
+                    , _failOp(StencilOperation::Keep)
+                    , _depthFailOp(StencilOperation::Keep)
+                    , _writeMask(0xFF)
+                    , _compareMask(0xFF)
+                {
+                    static_assert(sizeof(Stencil) == 4, "wrong size");
+                }
+
+                bool operator==(const Stencil& other) const
+                {
+                    if (this != &other)
+                    {
+                        return _compareOp == other._compareOp
+                            && _passOp == other._passOp
+                            && _failOp == other._failOp
+                            && _depthFailOp == other._depthFailOp
+                            && _writeMask == other._writeMask
+                            && _compareMask == other._compareMask;
+                    }
+
+                    return true;
+                }
+
+                CompareOperation     _compareOp     : 4;
+                StencilOperation     _passOp        : 4;
+                StencilOperation     _failOp        : 4;
+                StencilOperation     _depthFailOp   : 4;
+                u32                  _writeMask     : 8;
+                u32                  _compareMask   : 8;
+            };
+
+            Stencil              _stencilFront;
+            Stencil              _stencilBack;
+            CompareOperation     _depthCompareOp          : 4;
             u32                  _depthTestEnable         : 1;
             u32                  _depthWriteEnable        : 1;
-            u32                  _stencilTestEnable       : 1;
             u32                  _depthBoundsTestEnable   : 1;
+            u32                  _stencilTestEnable       : 1;
             u32                  _unused                  : 24;
             math::float2         _depthBounds;
         };
@@ -308,8 +348,7 @@ namespace renderer
             };
 
             BlendState() noexcept
-                : _constant({ 0.f })
-                , _logicalOp(LogicalOperation::LogicalOp_And)
+                : _logicalOp(LogicalOperation::LogicalOp_And)
                 , _logicalOpEnable(false)
                 , _unused(0)
             {
@@ -339,7 +378,7 @@ namespace renderer
 #else
             std::array<ColorBlendAttachmentState, 1>                        _colorBlendAttachments;
 #endif
-            f32                                                             _constant[4];
+            f32                                                             _constant[4] = { 0.f, 0.f, 0.f, 0.f };
             LogicalOperation                                                _logicalOp          : 5;
             u32                                                             _logicalOpEnable    : 1;
             u32                                                             _unused             : 26;
@@ -491,6 +530,33 @@ namespace renderer
         void setDepthWrite(bool enable);
 
         /**
+        * @brief setStencilTest method. Depth-Stencil state
+        * @param bool enable [required]
+        */
+        void setStencilTest(bool enable);
+
+        /**
+        * @brief setStencilMask method. Depth-Stencil state
+        * @param u8 writeMask [required]
+        */
+        void setStencilWriteMask(u8 writeMask);
+
+        /**
+        * @brief setStencilCompareOp method. Depth-Stencil state
+        * @param CompareOperation op [required]
+        * @param u32 compareMask [required]
+        */
+        void setStencilCompareOp(CompareOperation op, u32 compareMask);
+
+        /**
+        * @brief setStencilOp method. Depth-Stencil state
+        * @param StencilOperation pass [required]
+        * @param StencilOperation fail [required]
+        * @param StencilOperation depthFail [required]
+        */
+        void setStencilOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail);
+
+        /**
         * @brief getDepthCompareOp method. Depth-Stencil state
         * @return CompareOperation
         */
@@ -507,6 +573,12 @@ namespace renderer
         * @return bool
         */
         bool isDepthWriteEnable() const;
+
+        /**
+        * @brief isStencilTestEnable method. Depth-Stencil state
+        * @return bool
+        */
+        bool isStencilTestEnable() const;
 
         void setBlendEnable(u32 index, bool enable);
         void setColorBlendFactor(u32 index, BlendFactor src, BlendFactor dst);
@@ -630,7 +702,7 @@ namespace renderer
 
     inline void GraphicsPipelineState::setDepthCompareOp(CompareOperation op)
     {
-        m_pipelineStateDesc._depthStencilState._compareOp = op;
+        m_pipelineStateDesc._depthStencilState._depthCompareOp = op;
     }
 
     inline void GraphicsPipelineState::setDepthTest(bool enable)
@@ -643,9 +715,38 @@ namespace renderer
         m_pipelineStateDesc._depthStencilState._depthWriteEnable = enable;
     }
 
+    inline void GraphicsPipelineState::setStencilTest(bool enable)
+    {
+        m_pipelineStateDesc._depthStencilState._stencilTestEnable = enable;
+    }
+
+    inline void GraphicsPipelineState::setStencilWriteMask(u8 writeMask)
+    {
+        m_pipelineStateDesc._depthStencilState._stencilFront._writeMask = writeMask;
+        m_pipelineStateDesc._depthStencilState._stencilBack._writeMask = writeMask;
+    }
+
+    inline void GraphicsPipelineState::setStencilCompareOp(CompareOperation op, u32 compareMask)
+    {
+        m_pipelineStateDesc._depthStencilState._stencilFront._compareOp = op;
+        m_pipelineStateDesc._depthStencilState._stencilFront._compareMask = compareMask;
+        m_pipelineStateDesc._depthStencilState._stencilBack._compareOp = op;
+        m_pipelineStateDesc._depthStencilState._stencilBack._compareMask = compareMask;
+    }
+
+    inline void GraphicsPipelineState::setStencilOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail)
+    {
+        m_pipelineStateDesc._depthStencilState._stencilFront._passOp = pass;
+        m_pipelineStateDesc._depthStencilState._stencilFront._failOp = fail;
+        m_pipelineStateDesc._depthStencilState._stencilFront._depthFailOp = depthFail;
+        m_pipelineStateDesc._depthStencilState._stencilBack._passOp = pass;
+        m_pipelineStateDesc._depthStencilState._stencilBack._failOp = fail;
+        m_pipelineStateDesc._depthStencilState._stencilBack._depthFailOp = depthFail;
+    }
+
     inline CompareOperation GraphicsPipelineState::getDepthCompareOp() const
     {
-        return m_pipelineStateDesc._depthStencilState._compareOp;
+        return m_pipelineStateDesc._depthStencilState._depthCompareOp;
     }
 
     inline bool GraphicsPipelineState::isDepthTestEnable() const
@@ -656,6 +757,11 @@ namespace renderer
     inline bool GraphicsPipelineState::isDepthWriteEnable() const
     {
         return m_pipelineStateDesc._depthStencilState._depthWriteEnable;
+    }
+
+    inline bool GraphicsPipelineState::isStencilTestEnable() const
+    {
+        return m_pipelineStateDesc._depthStencilState._stencilTestEnable;
     }
 
     inline void GraphicsPipelineState::setBlendEnable(u32 index, bool enable)
