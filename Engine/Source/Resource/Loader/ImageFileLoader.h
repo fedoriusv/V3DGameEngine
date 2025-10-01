@@ -7,36 +7,38 @@
 
 namespace v3d
 {
+namespace renderer
+{
+    class Device;
+    class Texture;
+} //namespace scene
 namespace resource
 {
     class Bitmap;
-} //namespace scene
 
-namespace resource
-{
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief ImageFileLoader class. Loader from file
+    * @brief BitmapFileLoader class. Loader from file
     * 
     * @see ImageStbDecoder
     * @see ImageGLiDecoder
     */
-    class ImageFileLoader : public ResourceLoader<resource::Bitmap*>, public ResourceDecoderRegistration
+    class BitmapFileLoader : public ResourceLoader<resource::Bitmap*>, public ResourceDecoderRegistration
     {
     public:
 
         /**
-        * @brief ImageFileLoader constructor
+        * @brief BitmapFileLoader constructor
         * @param ImageLoaderFlags flags [required]
         * @see ImageLoaderFlag
         */
-        explicit ImageFileLoader(ImageLoaderFlags flags = 0) noexcept;
+        explicit BitmapFileLoader(ImageLoaderFlags flags = 0) noexcept;
 
         /**
-        * @brief ImageFileLoader destructor
+        * @brief BitmapFileLoader destructor
         */
-        ~ImageFileLoader() = default;
+        ~BitmapFileLoader() = default;
 
         /**
         * @brief Load image resource by name from file
@@ -48,11 +50,55 @@ namespace resource
 
     private:
 
-        ImageFileLoader() = delete;
-        ImageFileLoader(const ImageFileLoader&) = delete;
-        ImageFileLoader& operator=(const ImageFileLoader&) = delete;
+        BitmapFileLoader() = delete;
+        BitmapFileLoader(const BitmapFileLoader&) = delete;
+        BitmapFileLoader& operator=(const BitmapFileLoader&) = delete;
 
-        ImageDecoder::ImagePolicy   m_policy;
+        ResourceDecoder::Policy m_policy;
+        ImageLoaderFlags        m_flags;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief TextureFileLoader class. Loader from file
+    *
+    * @see ImageStbDecoder
+    * @see ImageGLiDecoder
+    */
+    class TextureFileLoader : public ResourceLoader<renderer::Texture*>, public ResourceDecoderRegistration
+    {
+    public:
+
+        using PolicyType = ImageDecoder::TexturePolicy;
+
+        /**
+        * @brief BitmapFileLoader constructor
+        * @param ImageLoaderFlags flags [required]
+        * @see ImageLoaderFlag
+        */
+        explicit TextureFileLoader(renderer::Device* device, const ImageDecoder::TexturePolicy& policy, ImageLoaderFlags flags = 0) noexcept;
+
+        /**
+        * @brief BitmapFileLoader destructor
+        */
+        ~TextureFileLoader() = default;
+
+        /**
+        * @brief Load image resource by name from file
+        * @param const std::string& name [required]
+        * @param const std::string& alias [optional]
+        * @return Image pointer
+        */
+        [[nodiscard]] renderer::Texture* load(const std::string& name, const std::string& alias = "") override;
+
+    private:
+
+        TextureFileLoader() = delete;
+        TextureFileLoader(const TextureFileLoader&) = delete;
+        TextureFileLoader& operator=(const TextureFileLoader&) = delete;
+
+        ImageDecoder::TexturePolicy m_policy;
         ImageLoaderFlags            m_flags;
     };
 

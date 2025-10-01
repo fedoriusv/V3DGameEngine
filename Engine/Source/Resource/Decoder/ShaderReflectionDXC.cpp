@@ -457,10 +457,8 @@ void reflectSampledImages(ID3D12ShaderReflection* reflector, const std::vector<D
         switch (dim)
         {
         case D3D_SRV_DIMENSION_TEXTURE1D:
-            return renderer::TextureTarget::Texture1D;
-
         case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
-            return renderer::TextureTarget::Texture1DArray;
+            return renderer::TextureTarget::Texture1D;
 
         case D3D_SRV_DIMENSION_TEXTURE2D:
         case D3D_SRV_DIMENSION_TEXTURE2DMS:
@@ -470,7 +468,7 @@ void reflectSampledImages(ID3D12ShaderReflection* reflector, const std::vector<D
         case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
         case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
             ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
-            return renderer::TextureTarget::Texture2DArray;
+            return renderer::TextureTarget::Texture2D;
 
         case D3D_SRV_DIMENSION_TEXTURE3D:
             return renderer::TextureTarget::Texture3D;
@@ -550,10 +548,8 @@ void reflectUAVs(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHAD
         switch (dim)
         {
         case D3D_SRV_DIMENSION_TEXTURE1D:
-            return renderer::TextureTarget::Texture1D;
-
         case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
-            return renderer::TextureTarget::Texture1DArray;
+            return renderer::TextureTarget::Texture1D;
 
         case D3D_SRV_DIMENSION_TEXTURE2D:
         case D3D_SRV_DIMENSION_TEXTURE2DMS:
@@ -563,7 +559,7 @@ void reflectUAVs(ID3D12ShaderReflection* reflector, const std::vector<D3D12_SHAD
         case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
         case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
             ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
-            return renderer::TextureTarget::Texture2DArray;
+            return renderer::TextureTarget::Texture2D;
 
         case D3D_SRV_DIMENSION_TEXTURE3D:
             return renderer::TextureTarget::Texture3D;

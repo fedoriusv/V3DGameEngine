@@ -642,11 +642,9 @@ VkImageType VulkanImage::convertTextureTargetToVkImageType(TextureTarget target)
     switch (target)
     {
     case TextureTarget::Texture1D:
-    case TextureTarget::Texture1DArray:
         return VK_IMAGE_TYPE_1D;
 
     case TextureTarget::Texture2D:
-    case TextureTarget::Texture2DArray:
     case TextureTarget::TextureCubeMap:
         return VK_IMAGE_TYPE_2D;
 

@@ -135,7 +135,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const Policy* p
         }
         binaryShader->Release();
 
-        renderer::Shader::ShaderHeader shaderHeader;
+        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy->_type);
         resource::ResourceHeader::fill(&shaderHeader, name, resourceBinary->size(), 0);
 
         Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);

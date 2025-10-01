@@ -413,7 +413,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             }
         }
 
-        renderer::Shader::ShaderHeader shaderHeader;
+        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy->_type);
         resource::ResourceHeader::fill(&shaderHeader, name, resourceSpirvBinary->size(), 0);
 
         Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
@@ -467,7 +467,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             }
         }
 
-        renderer::Shader::ShaderHeader shaderHeader;
+        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy->_type);
         resource::ResourceHeader::fill(&shaderHeader, name, resourceSpirvBinary->size(), 0);
 
         Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);

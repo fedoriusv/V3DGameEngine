@@ -7,6 +7,10 @@
 #ifdef USE_STB
 namespace v3d
 {
+namespace renderer
+{
+    class Device;
+} // namespace renderer
 namespace resource
 {
     class Resource;
@@ -14,23 +18,41 @@ namespace resource
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief ImageStbDecoder decoder.
+    * @brief BitmapStbDecoder decoder.
     * Support formats: "jpeg", "png", "bmp", "tga"
     * @see: https://github.com/nothings/stb.git
     */
-    class ImageStbDecoder final : public ImageDecoder
+    class BitmapStbDecoder final : public ImageDecoder
     {
     public:
 
-        explicit ImageStbDecoder(const std::vector<std::string>& supportedExtensions) noexcept;
-        explicit ImageStbDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
-        ~ImageStbDecoder();
+        explicit BitmapStbDecoder(const std::vector<std::string>& supportedExtensions) noexcept;
+        explicit BitmapStbDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
+        ~BitmapStbDecoder();
+
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief TextureStbDecoder decoder.
+    * Support formats: "jpeg", "png", "bmp", "tga"
+    * @see: https://github.com/nothings/stb.git
+    */
+    class TextureStbDecoder final : public ImageDecoder
+    {
+    public:
+
+        explicit TextureStbDecoder(renderer::Device* device, const std::vector<std::string>& supportedExtensions) noexcept;
+        explicit TextureStbDecoder(renderer::Device* device, std::vector<std::string>&& supportedExtensions) noexcept;
+        ~TextureStbDecoder();
 
         [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
 
     private:
 
-        stream::Stream* generateMipMaps(void* baseMipmap, u32 width, u32 height, u32 componentsCount, u32 componentSize, u32 componentType, u32& mipmapsCount) const;
+        renderer::Device* const m_device;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -3,42 +3,43 @@
 #include "Renderer/Device.h"
 #include "Stream/FileLoader.h"
 
+#include "Scene/Model.h"
 #include "Resource/ResourceManager.h"
-#include "Resource/Model.h"
 #include "Resource/Decoder/AssimpDecoder.h"
 
 #define MODEL_FORMAT_DAE "dae"
 #define MODEL_FORMAT_FBX "fbx"
 #define MODEL_FORMAT_GLTF "gltf"
+#define MODEL_FORMAT_GLB "glb"
 
 namespace v3d
 {
 namespace resource
 {
 
-ModelFileLoader::ModelFileLoader(ModelLoaderFlags flags) noexcept
+ModelFileLoader::ModelFileLoader(renderer::Device* device, ModelLoaderFlags flags) noexcept
     : m_policy()
     , m_flags(flags)
 {
 #ifdef USE_ASSIMP
-    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF }));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)(device, { MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF, MODEL_FORMAT_GLB }));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-ModelFileLoader::ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept
+ModelFileLoader::ModelFileLoader(renderer::Device* device, const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept
     : m_policy(policy)
     , m_flags(flags)
 {
 #ifdef USE_ASSIMP
-    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)({ MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF }));
+    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)(device, { MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF, MODEL_FORMAT_GLB }));
 #endif //USE_ASSIMP
 
     ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-ModelResource* ModelFileLoader::load(const std::string& name, const std::string& alias)
+scene::Model* ModelFileLoader::load(const std::string& name, const std::string& alias)
 {
     for (std::string& root : m_roots)
     {
@@ -71,7 +72,7 @@ ModelResource* ModelFileLoader::load(const std::string& name, const std::string&
             }
 
             LOG_INFO("ModelFileLoader::load: [%s] is loaded", name.c_str());
-            return static_cast<ModelResource*>(resource);
+            return static_cast<scene::Model*>(resource);
         }
     }
 

@@ -84,17 +84,17 @@ Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* polic
 
     case ResourceType::Shader:
     {
-        renderer::Shader::ShaderHeader shaderHeader;
-        shaderHeader<<(stream);
+        //renderer::Shader::ShaderHeader shaderHeader;
+        //shaderHeader<<(stream);
 
-        resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
+        //resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
     }
     break;
 
     default:
         ASSERT(false, "resource is not found");
     };
-    static_assert(toEnumType(ResourceType::Count) == 5, "handle all resources and increment the value if is needed");
+    static_assert(toEnumType(ResourceType::Count) == 11, "handle all resources and increment the value if is needed");
 
     ASSERT(resource, "nullptr");
     if (!resource->load(stream))

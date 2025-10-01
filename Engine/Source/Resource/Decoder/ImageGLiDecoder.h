@@ -1,12 +1,16 @@
 #pragma once
 
 #include "ResourceDecoder.h"
-#include "Resource/Bitmap.h"
 #include "ImageDecoder.h"
 
 #ifdef USE_GLI
 namespace v3d
 {
+namespace renderer
+{
+    class Device;
+    class Texture;
+} // namespace renderer
 namespace resource
 {
     class Resource;
@@ -14,23 +18,47 @@ namespace resource
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief ImageGLiDecoder decoder.
+    * @brief BitmapGLiDecoder decoder.
     * Support formats: "ktx", "kmg", "dds"
     * @see: https://github.com/g-truc/gli.git
     */
-    class ImageGLiDecoder final : public ImageDecoder
+    class BitmapGLiDecoder final : public ImageDecoder
     {
     public:
 
-        explicit ImageGLiDecoder(const std::vector<std::string>& supportedExtensions) noexcept;
-        explicit ImageGLiDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
-        ~ImageGLiDecoder();
+        explicit BitmapGLiDecoder(const std::vector<std::string>& supportedExtensions) noexcept;
+        explicit BitmapGLiDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
+        ~BitmapGLiDecoder();
 
         [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+
+    private:
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace decoders
-} //namespace v3d
+    /**
+    * @brief TextureGLiDecoder decoder.
+    * Support formats: "ktx", "kmg", "dds"
+    * @see: https://github.com/g-truc/gli.git
+    */
+    class TextureGLiDecoder final : public ImageDecoder
+    {
+    public:
+
+        explicit TextureGLiDecoder(renderer::Device* device, const std::vector<std::string>& supportedExtensions) noexcept;
+        explicit TextureGLiDecoder(renderer::Device* device, std::vector<std::string>&& supportedExtensions) noexcept;
+        ~TextureGLiDecoder();
+
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+
+    private:
+
+        renderer::Device* const m_device;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+} // namespace decoders
+} // namespace v3d
 #endif //USE_GLI

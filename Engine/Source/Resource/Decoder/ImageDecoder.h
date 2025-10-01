@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Resource/Resource.h"
+#include "Renderer/Texture.h"
 #include "ResourceDecoder.h"
 
 namespace v3d
@@ -30,9 +31,11 @@ namespace resource
 
     public:
 
-        struct ImagePolicy : ResourceDecoder::Policy
+        struct TexturePolicy : ResourceDecoder::Policy
         {
+            renderer::TextureUsageFlags usage = 0;
         };
+        typedef TexturePolicy PolicyType;
 
         explicit ImageDecoder() noexcept
             : ResourceDecoder()

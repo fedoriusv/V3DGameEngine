@@ -3,9 +3,18 @@
 #include "ResourceLoader.h"
 #include "Resource/Decoder/ShaderDecoder.h"
 #include "Resource/Decoder/ResourceDecoderRegistration.h"
+#include "Scene/Material.h"
 
 namespace v3d
 {
+namespace renderer
+{
+    class Device;
+} //namespace scene
+namespace scene
+{
+    class Model;
+} //namespace scene
 namespace resource
 {
     struct ResourceHeader;
@@ -18,7 +27,7 @@ namespace resource
     * 
     * @see MeshAssimpDecoder
     */
-    class ModelFileLoader : public ResourceLoader<ModelResource*>, public ResourceDecoderRegistration
+    class ModelFileLoader : public ResourceLoader<scene::Model*>, public ResourceDecoderRegistration
     {
     public:
 
@@ -38,43 +47,47 @@ namespace resource
             FlipYTextureCoord       = 1 << 6,   //Flip Y texture coordinage
 
             LocalTransform          = 1 << 7,   //Ignore all releative transforms
-            SplitLargeMeshes        = 1 << 8,   //Optimization
+            Optimization            = 1 << 8,
+            OverridedShadingModel   = 1 << 9
 
         };
         typedef u32 ModelLoaderFlags;
 
-    /**
-    * @brief VertexProperies enum
-    */
-    enum class VertexProperies : u32
-    {
-        VertexProperies_Empty = 0,
-        VertexProperies_Position = 1 << 0,
-        VertexProperies_Normals = 1 << 1,
-        VertexProperies_Tangent = 1 << 2,
-        VertexProperies_Bitangent = 1 << 3,
-        VertexProperies_TextCoord0 = 1 << 4,
-        VertexProperies_TextCoord1 = 1 << 5,
-        VertexProperies_TextCoord2 = 1 << 6,
-        VertexProperies_TextCoord3 = 1 << 7,
-        VertexProperies_Color0 = 1 << 8,
-        VertexProperies_Color1 = 1 << 9,
-        VertexProperies_Color2 = 1 << 10,
-        VertexProperies_Color3 = 1 << 11,
-    };
-    typedef u32 VertexProperiesFlags;
+        /**
+        * @brief VertexProperies enum
+        */
+        enum class VertexProperies : u32
+        {
+            VertexProperies_Empty = 0,
+            VertexProperies_Position = 1 << 0,
+            VertexProperies_Normals = 1 << 1,
+            VertexProperies_Tangent = 1 << 2,
+            VertexProperies_Bitangent = 1 << 3,
+            VertexProperies_TextCoord0 = 1 << 4,
+            VertexProperies_TextCoord1 = 1 << 5,
+            VertexProperies_TextCoord2 = 1 << 6,
+            VertexProperies_TextCoord3 = 1 << 7,
+            VertexProperies_Color0 = 1 << 8,
+            VertexProperies_Color1 = 1 << 9,
+            VertexProperies_Color2 = 1 << 10,
+            VertexProperies_Color3 = 1 << 11,
+        };
+        typedef u32 VertexProperiesFlags;
 
         struct ModelPolicy : ResourceDecoder::Policy
         {
-            VertexProperiesFlags vertexProperies;
+            VertexProperiesFlags        vertexProperies = 0;
+            f32                         scaleFactor = 1.f;
+            scene::MaterialShadingModel overridedShadingModel = scene::MaterialShadingModel::Custom;
         };
+        using PolicyType = ModelPolicy;
 
         /**
         * @brief ModelFileLoader constructor
         * @param ModelLoaderFlags flags [required]
         * @see ModelLoaderFlags
         */
-        explicit ModelFileLoader(ModelLoaderFlags flags) noexcept;
+        explicit ModelFileLoader(renderer::Device* device, ModelLoaderFlags flags) noexcept;
 
         /**
         * @brief ModelFileLoader constructor. Create a Model by Header
@@ -82,7 +95,7 @@ namespace resource
         * @param ModelLoaderFlags flags [required]
         * @see ModelLoaderFlags
         */
-        explicit ModelFileLoader(const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept;
+        explicit ModelFileLoader(renderer::Device* device, const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept;
 
         /**
         * @brief ModelFileLoader destructor
@@ -96,7 +109,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return Model pointer
         */
-        [[nodiscard]] ModelResource* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] scene::Model* load(const std::string& name, const std::string& alias = "") override;
 
     private:
 
