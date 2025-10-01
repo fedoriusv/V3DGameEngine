@@ -31,6 +31,7 @@ namespace ui
     using OnWidgetEventFloat3Param = std::function<void(Widget*, const math::float3&)>;
     using OnWidgetEventColorParam = std::function<void(Widget*, const color::ColorRGBAF&)>;
     using OnWidgetEventStringParam = std::function<void(Widget*, const std::string&)>;
+    using OnWidgetEventVoidParam = std::function<void(Widget*, void*)>;
 
     using OnWidgetEventDimention2DParam = std::function<void(Widget*, Widget*, const math::Dimension2D&)>;
     using OnWidgetEventPoint2DParam = std::function<void(Widget*, Widget*, const math::Point2D&)>;

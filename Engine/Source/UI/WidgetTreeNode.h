@@ -38,11 +38,13 @@ namespace ui
         WidgetTreeNode& setText(const std::string& text);
 
         WidgetTreeNode& setIndex(u32 index);
+        WidgetTreeNode& setUserData(void* userdata);
 
         WidgetTreeNode& setSelected(bool selected);
         WidgetTreeNode& setOnSelectChanged(const OnWidgetEventNode& event);
 
         WidgetTreeNode& setOnClickEvent(const OnWidgetEventIntParam& event);
+        WidgetTreeNode& setOnClickEvent(const OnWidgetEventVoidParam& event);
 
         template<class TWidget>
         WidgetTreeNode& addWidget(const TWidget& wiget);
@@ -61,6 +63,8 @@ namespace ui
             TreeNodeFlags            _createFlags = 0;
             OnWidgetEventNode        _onSelectedChanged;
             OnWidgetEventIntParam    _onClickEvent;
+            OnWidgetEventVoidParam   _onClickEventUserData;
+            void*                    _userdata = nullptr;
             u32                      _index = ~1;
             bool                     _isSelected;
         };
@@ -92,6 +96,12 @@ namespace ui
         return *this;
     }
 
+    inline WidgetTreeNode& WidgetTreeNode::setUserData(void* userdata)
+    {
+        Widget::cast_data<StateType>(m_data)._userdata = userdata;
+        return *this;
+    }
+
     inline WidgetTreeNode& WidgetTreeNode::setSelected(bool selected)
     {
         if (cast_data<StateType>(m_data)._isSelected != selected)
@@ -111,6 +121,12 @@ namespace ui
     inline WidgetTreeNode& WidgetTreeNode::setOnClickEvent(const OnWidgetEventIntParam& event)
     {
         Widget::cast_data<StateType>(m_data)._onClickEvent = event;
+        return *this;
+    }
+
+    inline WidgetTreeNode& WidgetTreeNode::setOnClickEvent(const OnWidgetEventVoidParam& event)
+    {
+        Widget::cast_data<StateType>(m_data)._onClickEventUserData = event;
         return *this;
     }
 

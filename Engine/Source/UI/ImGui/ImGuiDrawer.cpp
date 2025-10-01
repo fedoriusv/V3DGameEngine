@@ -495,6 +495,7 @@ math::float2 ImGuiWidgetDrawer::calculate_RadioButtonGroupSize(Widget* wiget, Wi
     {
         ImVec2 alignmentStr = ImGui::CalcTextSize(item.c_str());
         alignmentSize.x += alignmentStr.x;
+        alignmentSize.y = alignmentStr.y;
     }
     ImGui::PopFont();
 
@@ -1057,6 +1058,11 @@ bool ImGuiWidgetDrawer::draw_TreeNode(Widget* widget, Widget* base, Widget::Stat
         {
             std::invoke(tn->_onClickEvent, widget, tn->_index);
         }
+
+        if (tn->_onClickEventUserData)
+        {
+            std::invoke(tn->_onClickEventUserData, widget, tn->_userdata);
+        }
     }
 
     return true;
@@ -1465,12 +1471,13 @@ void ImGuiWidgetDrawer::draw_Gizmo(Widget* wiget, Widget* base, Widget::State* l
 
         f32 rawViewMatrix[16] = {};
         f32 rawProjectionMatrix[16] = {};
-        f32 rawTransformMatrix[16] = {};
+        f32 rawOutTransformMatrix[16] = {};
+        f32 rawOutTransformDeltaMatrix[16] = {};
         camera.getViewMatrix().get(rawViewMatrix);
         camera.getProjectionMatrix().get(rawProjectionMatrix);
-        transform.get(rawTransformMatrix);
+        transform.get(rawOutTransformMatrix);
 
-        ImGuizmo::Manipulate(rawViewMatrix, rawProjectionMatrix, gizmoOp, gizmoMode, rawTransformMatrix, nullptr, nullptr);
+        ImGuizmo::Manipulate(rawViewMatrix, rawProjectionMatrix, gizmoOp, gizmoMode, rawOutTransformMatrix, rawOutTransformDeltaMatrix, nullptr);
 
         if (ImGuizmo::IsOver() && gizmoCtx->_onHoveredEvent)
         {
@@ -1480,7 +1487,7 @@ void ImGuiWidgetDrawer::draw_Gizmo(Widget* wiget, Widget* base, Widget::State* l
         if (ImGuizmo::IsUsing() && gizmoCtx->_onTransformChangedEvent)
         {
             math::Matrix4D matrix;
-            matrix.set(rawTransformMatrix);
+            matrix.set(rawOutTransformMatrix);
 
             std::invoke(gizmoCtx->_onTransformChangedEvent, wiget, base, matrix);
         }

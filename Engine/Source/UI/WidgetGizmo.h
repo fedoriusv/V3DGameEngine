@@ -31,7 +31,7 @@ namespace ui
         enum class Mode
         {
             Local,
-            Word
+            World
         };
 
         explicit WidgetGizmo(const scene::Camera* camera) noexcept;
@@ -54,7 +54,7 @@ namespace ui
             OnWidgetEvent               _onHoveredEvent;
             OnWidgetEventMatrix4x4Param _onTransformChangedEvent;
             Operation                   _operation  = Operation::Translate;
-            Mode                        _mode       = Mode::Local;
+            Mode                        _mode       = Mode::World;
             math::Matrix4D              _transform;
             const scene::Camera*        _camera     = nullptr;
         };

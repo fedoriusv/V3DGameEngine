@@ -647,7 +647,7 @@ bool ImGuiWidgetHandler::createFontTexture(renderer::CmdListRender* cmdList, ImF
     }
     imguiIO.Fonts->SetTexID(0); //reserve for m_fontAtlas
 
-    cmdList->uploadData(m_fontAtlas, width * height * pixelSize, pixels);
+    cmdList->upload(m_fontAtlas, width * height * pixelSize, pixels);
     m_device->submit(cmdList, true);
 
     return true;
