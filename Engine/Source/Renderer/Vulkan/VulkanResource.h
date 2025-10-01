@@ -137,7 +137,7 @@ namespace vk
 
     private:
 
-        mutable std::map<VulkanImage*, std::tuple<std::vector<VkImageLayout>, std::vector<VkImageLayout>>> m_states;
+        mutable std::unordered_map<VulkanImage*, std::tuple<std::vector<VkImageLayout>, std::vector<VkImageLayout>>> m_states;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
