@@ -35,6 +35,9 @@ VkImageLayout VulkanTransitionState::convertTransitionStateToImageLayout(Transit
     case TransitionOp::TransitionOp_DepthStencilAttachment:
         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+    case TransitionOp::TransitionOp_DepthStencilReadOnly:
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
     case TransitionOp::TransitionOp_GeneralGraphic:
     case TransitionOp::TransitionOp_GeneralCompute:
         return VK_IMAGE_LAYOUT_GENERAL;
@@ -124,12 +127,16 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanTransitionState::getAccessFlagsFr
         srcFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
         break;
 
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+        srcFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        break;
+
     case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
         srcFlag = VK_ACCESS_SHADER_READ_BIT;
         break;
 
     case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
-        dstFlag = VK_ACCESS_MEMORY_READ_BIT;
+        srcFlag = VK_ACCESS_MEMORY_READ_BIT;
         break;
 
     default:
@@ -171,6 +178,10 @@ std::tuple<VkAccessFlags, VkAccessFlags> VulkanTransitionState::getAccessFlagsFr
         dstFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
         break;
 
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+        dstFlag = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        break;
+
     case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
         dstFlag = VK_ACCESS_SHADER_READ_BIT;
         break;
@@ -203,7 +214,7 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
         {
             srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
         {
             srcStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
         }
@@ -222,7 +233,7 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
             srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
         {
             srcStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
             dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -243,7 +254,7 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
     }
 
     //to depth attachment
-    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
     {
         ASSERT(!VulkanImage::isColorFormat(vulkanImage->getFormat()), "wrong layout");
         srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
