@@ -75,9 +75,8 @@ namespace vk
         void clear(Texture* texture, f32 depth, u32 stencil) override;
         void clear(Buffer* buffer, u32 value) override;
 
-        bool uploadData(Texture2D* texture, u32 size, const void* data) override;
-        bool uploadData(Texture3D* texture, u32 size, const void* data) override;
-        bool uploadData(Buffer* buffer, u32 offset, u32 size, const void* data) override;
+        bool upload(Texture* texture, u32 size, const void* data) override;
+        bool upload(Buffer* buffer, u32 offset, u32 size, const void* data) override;
 
         void copy(Texture* src, Texture* dst, const math::Dimension3D& size) override;
         void copy(const TextureView& src, const TextureView& dst, const math::Dimension3D& size) override;

@@ -1961,7 +1961,7 @@ void VulkanCmdList::clear(Buffer* buffer, u32 value)
     vkBuffer->clear(cmdBuffer, value);
 }
 
-bool VulkanCmdList::uploadData(Texture2D* texture, u32 size, const void* data)
+bool VulkanCmdList::upload(Texture* texture, u32 size, const void* data)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList::uploadData");
@@ -1981,27 +1981,7 @@ bool VulkanCmdList::uploadData(Texture2D* texture, u32 size, const void* data)
     return result;
 }
 
-bool VulkanCmdList::uploadData(Texture3D* texture, u32 size, const void* data)
-{
-#if VULKAN_DEBUG
-    LOG_DEBUG("VulkanCmdList::uploadData");
-#endif
-
-    VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
-    ASSERT(texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
-    VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
-    bool result = vkImage->upload(cmdBuffer, size, data);
-
-    u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
-    if (result && immediateResourceSubmit > 0)
-    {
-        m_device.submit(this, immediateResourceSubmit == 2 ? true : false);
-    }
-
-    return result;
-}
-
-bool VulkanCmdList::uploadData(Buffer* buffer, u32 offset, u32 size, const void* data)
+bool VulkanCmdList::upload(Buffer* buffer, u32 offset, u32 size, const void* data)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList::uploadData");
@@ -2041,7 +2021,9 @@ void VulkanCmdList::copy(Texture* src, Texture* dst, const math::Dimension3D& si
             return layer;
         };
 
-    std::vector<VkImageCopy> regions;
+    //StackBasedAllocator<VkImageCopy>(src->getMipmapsCount()) alloc;
+    static thread_local std::vector<VkImageCopy> regions;
+    regions.clear();
     for (u32 mip = 0; mip < src->getMipmapsCount(); ++mip)
     {
         VkImageCopy region = {};

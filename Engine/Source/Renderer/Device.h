@@ -175,15 +175,14 @@ namespace renderer
         virtual void clear(Buffer* buffer, u32 value) = 0;
 
         /**
-         * @brief upload command
+         * @brief upload Texture command
         */
-        virtual bool uploadData(Texture2D* texture, u32 size, const void* data) = 0;
-        virtual bool uploadData(Texture3D* texture, u32 size, const void* data) = 0;
+        virtual bool upload(Texture* texture, u32 sizeInBytes, const void* data) = 0;
 
         /**
-         * @brief upload command
+         * @brief upload Buffer command
         */
-        virtual bool uploadData(Buffer* buffer, u32 offset, u32 size, const void* data) = 0;
+        virtual bool upload(Buffer* buffer, u32 offset, u32 sizeInBytes, const void* data) = 0;
 
     protected:
 
