@@ -1,17 +1,22 @@
 #include "RenderPipelineMBOIT.h"
 
 #include "Resource/ResourceManager.h"
-
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
+
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/Material.h"
+
+#include "FrameProfiler.h"
 
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineMBOITStage::RenderPipelineMBOITStage(RenderTechnique* technique) noexcept
@@ -23,7 +28,7 @@ RenderPipelineMBOITStage::~RenderPipelineMBOITStage()
 {
 }
 
-void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineMBOITStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -41,9 +46,9 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
 #if ENABLE_REVERSED_Z
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::Less);
 #endif
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(false);
@@ -79,9 +84,9 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
 #if ENABLE_REVERSED_Z
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Less);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::Less);
 #endif
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(false);
@@ -97,9 +102,9 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
     }
 
     {
-        RenderPassDesc desc{};
+        renderer::RenderPassDesc desc{};
         desc._countColorAttachments = 1;
-        desc._attachmentsDesc[0]._format = Format_R16G16B16A16_SFloat;
+        desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
             "offscreen.hlsl", "offscreen_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);
@@ -112,7 +117,7 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
         pipeline->setDepthWrite(false);
         pipeline->setDepthTest(false);
         pipeline->setBlendEnable(0, false);
@@ -122,7 +127,7 @@ void RenderPipelineMBOITStage::create(Device* device, scene::SceneData& scene, s
     }
 }
 
-void RenderPipelineMBOITStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineMBOITStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -136,7 +141,7 @@ void RenderPipelineMBOITStage::destroy(Device* device, scene::SceneData& scene, 
     }
 }
 
-void RenderPipelineMBOITStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineMBOITStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_rt[Pass::MBOIT_Pass1])
     {
@@ -149,12 +154,16 @@ void RenderPipelineMBOITStage::prepare(Device* device, scene::SceneData& scene, 
     }
 }
 
-void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
     DEBUG_MARKER_SCOPE(cmdList, "Transparency", color::rgbaf::GREEN);
+
+    ObjectHandle hLinearSampler = scene.m_globalResources.get("linear_sampler_repeat");
+    ASSERT(hLinearSampler.isValid(), "must be valid");
+    renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(hLinearSampler);
 
     //pass 1
     {
@@ -169,9 +178,28 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
+        for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Transparency)])
         {
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
+            const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+            const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
+            struct MaterialState
+            {
+                renderer::SamplerState* sampler = nullptr;
+                renderer::Texture2D* baseColor = nullptr;
+                renderer::Texture2D* normals = nullptr;
+                renderer::Texture2D* roughness = nullptr;
+                renderer::Texture2D* metalness = nullptr;
+                math::float4            tint;
+            } materialState;
+
+            materialState.sampler = sampler;
+            materialState.baseColor = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"));
+            materialState.normals = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"));
+            materialState.roughness = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Roughness"));
+            materialState.metalness = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Metalness"));
+            materialState.tint = material.getProperty<math::float4>("Color");
 
             struct ModelBuffer
             {
@@ -184,25 +212,27 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = item->_object->getTransform();
-            constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
-            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tint = item->_material._tint;
-            constantBuffer.objectID = item->_objectID;
+            constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+            constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
+            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
+            constantBuffer.normalMatrix.makeTransposed();
+            constantBuffer.tint = materialState.tint;
+            constantBuffer.objectID = itemMesh.object->ID();
 
-            scene.m_renderState.m_cmdList->bindDescriptorSet(1,
+            cmdList->bindDescriptorSet(1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(item->_material._sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
-                    renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
-                    renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
-                    renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
+                    renderer::Descriptor(materialState.sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(materialState.baseColor), 3),
+                    renderer::Descriptor(renderer::TextureView(materialState.normals), 4),
+                    renderer::Descriptor(renderer::TextureView(materialState.metalness), 5),
+                    renderer::Descriptor(renderer::TextureView(materialState.roughness), 6),
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
-            renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
-            cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+            ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
+            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
         }
         cmdList->endRenderTarget();
     }
@@ -220,9 +250,28 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Transparency)])
+        for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Transparency)])
         {
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
+            const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+            const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
+            struct MaterialState
+            {
+                renderer::SamplerState* sampler = nullptr;
+                renderer::Texture2D* baseColor = nullptr;
+                renderer::Texture2D* normals = nullptr;
+                renderer::Texture2D* roughness = nullptr;
+                renderer::Texture2D* metalness = nullptr;
+                math::float4            tint;
+            } materialState;
+
+            materialState.sampler = sampler;
+            materialState.baseColor = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"));
+            materialState.normals = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"));
+            materialState.roughness = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Roughness"));
+            materialState.metalness = objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Metalness"));
+            materialState.tint = material.getProperty<math::float4>("Color");
 
             struct ModelBuffer
             {
@@ -231,31 +280,33 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
                 math::Matrix4D normalMatrix;
                 math::float4   tint;
                 u64            objectID;
-                u64            _pad = 0;
+                u64           _pad = 0;
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = item->_object->getTransform();
-            constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
-            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tint = item->_material._tint;
-            constantBuffer.objectID = item->_objectID;
+            constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+            constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
+            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
+            constantBuffer.normalMatrix.makeTransposed();
+            constantBuffer.tint = materialState.tint;
+            constantBuffer.objectID = itemMesh.object->ID();
 
             cmdList->bindDescriptorSet(1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(item->_material._sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
-                    renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
-                    renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
-                    renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
+                    renderer::Descriptor(materialState.sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(materialState.baseColor), 3),
+                    renderer::Descriptor(renderer::TextureView(materialState.normals), 4),
+                    renderer::Descriptor(renderer::TextureView(materialState.metalness), 5),
+                    renderer::Descriptor(renderer::TextureView(materialState.roughness), 6),
                     renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(0), 0, 0), 7),
                     renderer::Descriptor(renderer::TextureView(m_rt[Pass::MBOIT_Pass1]->getColorTexture<renderer::Texture2D>(1), 0, 0), 8),
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
-            renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
-            cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+            ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
+            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
         }
         cmdList->endRenderTarget();
     }
@@ -295,7 +346,7 @@ void RenderPipelineMBOITStage::execute(Device* device, scene::SceneData& scene, 
     scene.m_globalResources.bind("render_target", m_rt[Pass::CompositionPass]->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineMBOITStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ObjectHandle depth_stencil = data.m_globalResources.get("depth_stencil");
     ASSERT(depth_stencil.isValid(), "must be valid");
@@ -392,11 +443,10 @@ void RenderPipelineMBOITStage::createRenderTarget(Device* device, scene::SceneDa
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
+        });
 }
 
-void RenderPipelineMBOITStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineMBOITStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     {
         ASSERT(m_rt[Pass::MBOIT_Pass1], "must be valid");

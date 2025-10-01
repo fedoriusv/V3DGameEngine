@@ -2,12 +2,17 @@
 
 #include "Common.h"
 #include "RenderPipelineStage.h"
-#include "Renderer/ShaderProgram.h"
-#include "Renderer/Buffer.h"
 
 namespace v3d
 {
 namespace renderer
+{
+    class Device;
+    class RenderTargetState;
+    class GraphicsPipelineState;
+    class UnorderedAccessBuffer;
+} // namespace renderer
+namespace scene
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -23,16 +28,16 @@ namespace renderer
         explicit RenderPipelineOutlineStage(RenderTechnique* technique) noexcept;
         ~RenderPipelineOutlineStage();
 
-        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
     private:
 
-        void createRenderTarget(Device* device, scene::SceneData& data);
-        void destroyRenderTarget(Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_renderTarget;
         renderer::GraphicsPipelineState* m_pipeline;
@@ -43,12 +48,12 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace renderer
+} //namespace scene
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<>
-    struct TypeOf<renderer::RenderPipelineOutlineStage::MappedData>
+    struct TypeOf<scene::RenderPipelineOutlineStage::MappedData>
     {
         static TypePtr get()
         {

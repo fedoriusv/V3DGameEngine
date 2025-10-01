@@ -3,17 +3,20 @@
 #include "Common.h"
 #include "RenderPipelineStage.h"
 
-#include "Renderer/PipelineState.h"
-#include "Renderer/ShaderProgram.h"
-
 namespace v3d
 {
-namespace scene
-{
-    class ModelHandler;
-} // namespace scene
 namespace renderer
 {
+    class Device;
+    class RenderTargetState;
+    class GraphicsPipelineState;
+} // namespace renderer
+namespace scene
+{
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class ModelHandler;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class RenderPipelineZPrepassStage : public RenderPipelineStage
@@ -23,24 +26,24 @@ namespace renderer
         explicit  RenderPipelineZPrepassStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
         ~RenderPipelineZPrepassStage();
 
-        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
     private:
 
-        void createRenderTarget(Device* device, scene::SceneData& scene);
-        void destroyRenderTarget(Device* device, scene::SceneData& scene);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
 
-        scene::ModelHandler* m_modelHandler;
+        scene::ModelHandler* const m_modelHandler;
 
         renderer::RenderTargetState* m_depthRenderTarget;
-        v3d::renderer::GraphicsPipelineState* m_depthPipeline;
+        renderer::GraphicsPipelineState* m_depthPipeline;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace renderer
+} // namespace scene
 } // namespace v3d

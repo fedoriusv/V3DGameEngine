@@ -1,17 +1,22 @@
 #include "RenderPipelineGBuffer.h"
 
 #include "Resource/ResourceManager.h"
-
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
+
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/Material.h"
+
+#include "FrameProfiler.h"
 
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineGBufferStage::RenderPipelineGBufferStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
@@ -27,19 +32,24 @@ RenderPipelineGBufferStage::~RenderPipelineGBufferStage()
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
 }
 
-void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
     //TODO json material
     //resource::Resource* material = resource::ResourceManager::getInstance()->load<resource::Resource, resource::AssetSourceFileLoader>("materials/gbuffer_standard.material.json");
 
-    //Material 0
+    //PBR_MetallicRoughness
     {
+        const renderer::Shader::DefineList defines =
+        { 
+            { "SEPARATE_MATERIALS", "1" } 
+        };
+
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device, 
-            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "gbuffer.hlsl", "gbuffer_standard_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device, 
-            "gbuffer.hlsl", "gbuffer_standard_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "gbuffer.hlsl", "gbuffer_standard_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_GBufferRenderTarget->getRenderPassDesc(),
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gbuffer_pipeline");
@@ -48,9 +58,9 @@ void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& scene,
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
 #if ENABLE_REVERSED_Z
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(false);
@@ -62,12 +72,50 @@ void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& scene,
         m_pipeline.emplace_back(pipeline);
     }
 
-    //Material 1
+    //PBR_Specular
     {
+        const renderer::Shader::DefineList defines =
+        {
+            { "SEPARATE_MATERIALS", "0" }
+        };
+
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "gbuffer.hlsl", "gbuffer_standard_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "gbuffer.hlsl", "gbuffer_masked_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "gbuffer.hlsl", "gbuffer_standard_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_GBufferRenderTarget->getRenderPassDesc(),
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gbuffer_pipeline");
+
+        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        pipeline->setCullMode(renderer::CullMode::CullMode_None);
+#if ENABLE_REVERSED_Z
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        pipeline->setDepthTest(true);
+        pipeline->setDepthWrite(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(1, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(2, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(3, renderer::ColorMask::ColorMask_All);
+
+        m_pipeline.emplace_back(pipeline);
+    }
+
+    //PBR_MetallicRoughness alpha
+    {
+        const renderer::Shader::DefineList defines =
+        {
+            { "SEPARATE_MATERIALS", "1" }
+        };
+
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_standard_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_masked_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_GBufferRenderTarget->getRenderPassDesc(),
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gbuffer_masked_pipeline");
@@ -76,9 +124,42 @@ void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& scene,
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
 #if ENABLE_REVERSED_Z
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        pipeline->setDepthTest(true);
+        pipeline->setDepthWrite(true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(1, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(2, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorMask(3, renderer::ColorMask::ColorMask_All);
+
+        m_pipeline.emplace_back(pipeline);
+    }
+
+    //PBR_Specular alpha
+    {
+        const renderer::Shader::DefineList defines =
+        {
+            { "SEPARATE_MATERIALS", "0" }
+        };
+
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_standard_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_masked_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_GBufferRenderTarget->getRenderPassDesc(),
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gbuffer_masked_pipeline");
+
+        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        pipeline->setCullMode(renderer::CullMode::CullMode_None);
+#if ENABLE_REVERSED_Z
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
         pipeline->setDepthTest(true);
         pipeline->setDepthWrite(true);
@@ -91,7 +172,7 @@ void RenderPipelineGBufferStage::create(Device* device, scene::SceneData& scene,
     }
 }
 
-void RenderPipelineGBufferStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGBufferStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -106,7 +187,7 @@ void RenderPipelineGBufferStage::destroy(Device* device, scene::SceneData& scene
     m_pipeline.clear();
 }
 
-void RenderPipelineGBufferStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGBufferStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_GBufferRenderTarget)
     {
@@ -119,22 +200,29 @@ void RenderPipelineGBufferStage::prepare(Device* device, scene::SceneData& scene
     }
 }
 
-void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
+    TRACE_PROFILER_SCOPE("GBuffer", color::rgba8::GREEN);
     DEBUG_MARKER_SCOPE(cmdList, "GBuffer", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_GBufferRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
 
-    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
-    {
-        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
+    ObjectHandle hLinearSampler = scene.m_globalResources.get("linear_sampler_repeat");
+    ASSERT(hLinearSampler.isValid(), "must be valid");
+    renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(hLinearSampler);
 
-        cmdList->setPipelineState(*m_pipeline[item->_pipelineID]);
+    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
+    {
+        const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+        const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
+        cmdList->setPipelineState(*m_pipeline[itemMesh.pipelineID]);
 
         cmdList->bindDescriptorSet(0,
             {
@@ -146,39 +234,60 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& scene
             math::Matrix4D modelMatrix;
             math::Matrix4D prevModelMatrix;
             math::Matrix4D normalMatrix;
-            math::float4   tint;
+            math::float4   tintColour;
             u64            objectID;
             u64           _pad = 0;
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = mesh.getTransform();
-        constantBuffer.prevModelMatrix = mesh.getPrevTransform();
+        constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+        constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
         constantBuffer.normalMatrix.makeTransposed();
-        constantBuffer.tint = item->_material._tint;
-        constantBuffer.objectID = item->_objectID;
+        constantBuffer.tintColour = material.getProperty<math::float4>("DiffuseColor");
+        constantBuffer.objectID = itemMesh.object->ID();
 
-        cmdList->bindDescriptorSet(1,
-            {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                renderer::Descriptor(item->_material._sampler, 2),
-                renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
-                renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
-                renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
-                renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
-            });
+        if (material.getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness)
+        {
+            cmdList->bindDescriptorSet(1,
+                {
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                    renderer::Descriptor(sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), 3),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), 4),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Roughness"))), 5),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Metalness"))), 6),
+                });
+        }
+        else if (material.getShadingModel() == scene::MaterialShadingModel::PBR_Specular)
+        {
+            cmdList->bindDescriptorSet(1,
+                {
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                    renderer::Descriptor(sampler, 2),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Diffuse"))), 3),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), 4),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Specular"))), 5),
+                });
+        }
+        else
+        {
+            ASSERT(false, "");
+        }
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
-        renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
-        cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+        ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
+        renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
+        cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
     }
 
-    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::MaskedOpaque)])
+    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::MaskedOpaque)])
     {
-        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
+        const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+        const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
 
-        cmdList->setPipelineState(*m_pipeline[item->_pipelineID]);
+        cmdList->setPipelineState(*m_pipeline[itemMesh.pipelineID]);
 
         ObjectHandle noise = scene.m_globalResources.get("tiling_noise");
         ASSERT(noise.isValid(), "must be valid");
@@ -194,38 +303,40 @@ void RenderPipelineGBufferStage::execute(Device* device, scene::SceneData& scene
             math::Matrix4D modelMatrix;
             math::Matrix4D prevModelMatrix;
             math::Matrix4D normalMatrix;
-            math::float4   tint;
+            math::float4   tintColour;
             u64            objectID;
             u64           _pad = 0;
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = mesh.getTransform();
-        constantBuffer.prevModelMatrix = mesh.getPrevTransform();
-        constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = item->_material._tint;
-        constantBuffer.objectID = item->_objectID;
+        constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+        constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
+        constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
+        constantBuffer.normalMatrix.makeTransposed();
+        constantBuffer.tintColour = material.getProperty<math::float4>("DiffuseColor");
+        constantBuffer.objectID = itemMesh.object->ID();
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                renderer::Descriptor(item->_material._sampler, 2),
-                renderer::Descriptor(renderer::TextureView(item->_material._baseColor), 3),
-                renderer::Descriptor(renderer::TextureView(item->_material._normals), 4),
-                renderer::Descriptor(renderer::TextureView(item->_material._metalness), 5),
-                renderer::Descriptor(renderer::TextureView(item->_material._roughness), 6),
+                renderer::Descriptor(sampler, 2),
+                renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), 3),
+                renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), 4),
+                renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Roughness"))), 5),
+                renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Metalness"))), 6),
                 renderer::Descriptor(renderer::TextureView(noiseTexture, 0, 0), 7),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
-        renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
-        cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+        ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
+        renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
+        cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
     }
 
     cmdList->endRenderTarget();
 }
 
-void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::SceneData& state)
+void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, scene::SceneData& state)
 {
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
     m_GBufferRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, state.m_viewportState._viewpotSize, 4, 0, "gbuffer_pass");
@@ -295,7 +406,7 @@ void RenderPipelineGBufferStage::createRenderTarget(Device* device, scene::Scene
     );
 }
 
-void RenderPipelineGBufferStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineGBufferStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_GBufferRenderTarget, "must be valid");
     renderer::Texture2D* albedoAttachment = m_GBufferRenderTarget->getColorTexture<renderer::Texture2D>(0);
@@ -314,5 +425,5 @@ void RenderPipelineGBufferStage::destroyRenderTarget(Device* device, scene::Scen
     m_GBufferRenderTarget = nullptr;
 }
 
-} //namespace renderer
+} //namespace scene
 } //namespace v3d

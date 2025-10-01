@@ -1,14 +1,17 @@
 #include "RenderPipelineGammaCorrection.h"
 
 #include "Resource/ResourceManager.h"
-
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Renderer/ShaderProgram.h"
+
+#include "FrameProfiler.h"
+
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineGammaCorrectionStage::RenderPipelineGammaCorrectionStage(RenderTechnique* technique) noexcept
@@ -21,7 +24,7 @@ RenderPipelineGammaCorrectionStage::~RenderPipelineGammaCorrectionStage()
 {
 }
 
-void RenderPipelineGammaCorrectionStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGammaCorrectionStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -36,7 +39,7 @@ void RenderPipelineGammaCorrectionStage::create(Device* device, scene::SceneData
     pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-    pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+    pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
     pipeline->setDepthWrite(false);
     pipeline->setDepthTest(false);
     pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
@@ -44,7 +47,7 @@ void RenderPipelineGammaCorrectionStage::create(Device* device, scene::SceneData
     m_pipeline.push_back(pipeline);
 }
 
-void RenderPipelineGammaCorrectionStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGammaCorrectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -59,7 +62,7 @@ void RenderPipelineGammaCorrectionStage::destroy(Device* device, scene::SceneDat
     m_pipeline.clear();
 }
 
-void RenderPipelineGammaCorrectionStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGammaCorrectionStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_gammaRenderTarget)
     {
@@ -72,11 +75,12 @@ void RenderPipelineGammaCorrectionStage::prepare(Device* device, scene::SceneDat
     }
 }
 
-void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
+    TRACE_PROFILER_SCOPE("Gamma", color::rgba8::GREEN);
     DEBUG_MARKER_SCOPE(cmdList, "Gamma", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_gammaRenderTarget);
@@ -107,7 +111,7 @@ void RenderPipelineGammaCorrectionStage::execute(Device* device, scene::SceneDat
     cmdList->endRenderTarget();
 }
 
-void RenderPipelineGammaCorrectionStage::createRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineGammaCorrectionStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_gammaRenderTarget == nullptr, "must be nullptr");
     m_gammaRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0, "gamma_pass");
@@ -121,13 +125,12 @@ void RenderPipelineGammaCorrectionStage::createRenderTarget(Device* device, scen
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
+        });
 
     data.m_globalResources.bind("final", gamma);
 }
 
-void RenderPipelineGammaCorrectionStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineGammaCorrectionStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_gammaRenderTarget, "must be valid");
     renderer::Texture2D* gamma = m_gammaRenderTarget->getColorTexture<renderer::Texture2D>(0);
@@ -137,5 +140,5 @@ void RenderPipelineGammaCorrectionStage::destroyRenderTarget(Device* device, sce
     m_gammaRenderTarget = nullptr;
 }
 
-} //namespace renderer
+} //namespace scene
 } //namespace v3d

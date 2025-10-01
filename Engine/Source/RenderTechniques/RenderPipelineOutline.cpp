@@ -2,17 +2,21 @@
 #include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
-
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Renderer/ShaderProgram.h"
+#include "Renderer/Buffer.h"
+
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
 
+#include "FrameProfiler.h"
+
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineOutlineStage::RenderPipelineOutlineStage(RenderTechnique* technique) noexcept
@@ -27,7 +31,7 @@ RenderPipelineOutlineStage::~RenderPipelineOutlineStage()
 {
 }
 
-void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineOutlineStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -42,7 +46,7 @@ void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& scene,
    m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
    m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-   m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+   m_pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
    m_pipeline->setDepthWrite(false);
    m_pipeline->setDepthTest(false);
    m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
@@ -52,7 +56,7 @@ void RenderPipelineOutlineStage::create(Device* device, scene::SceneData& scene,
     scene.m_globalResources.bind("readback_objectIDData", &m_mappedData);
 }
 
-void RenderPipelineOutlineStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineOutlineStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -67,7 +71,7 @@ void RenderPipelineOutlineStage::destroy(Device* device, scene::SceneData& scene
     m_pipeline = nullptr;
 }
 
-void RenderPipelineOutlineStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineOutlineStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_renderTarget)
     {
@@ -80,11 +84,12 @@ void RenderPipelineOutlineStage::prepare(Device* device, scene::SceneData& scene
     }
 }
 
-void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
+    TRACE_PROFILER_SCOPE("Outline", color::rgba8::GREEN);
     DEBUG_MARKER_SCOPE(cmdList, "Outline", color::rgbaf::GREEN);
 
     cmdList->beginRenderTarget(*m_renderTarget);
@@ -118,6 +123,7 @@ void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& scene
         math::float4 lineColor;
         f32          lineThickness;
     };
+
     OutlineBuffer constantBuffer;
     constantBuffer.lineColor = { 1.f, 1.f, 0.f, 1.f };
     constantBuffer.lineThickness = 2.f;
@@ -138,7 +144,7 @@ void RenderPipelineOutlineStage::execute(Device* device, scene::SceneData& scene
     scene.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineOutlineStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
     m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0, "outline_pass");
@@ -150,11 +156,10 @@ void RenderPipelineOutlineStage::createRenderTarget(Device* device, scene::Scene
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
+        });
 }
 
-void RenderPipelineOutlineStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineOutlineStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* outline = m_renderTarget->getColorTexture<renderer::Texture2D>(0);

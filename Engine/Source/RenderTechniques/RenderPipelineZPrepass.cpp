@@ -1,20 +1,30 @@
 #include "RenderPipelineZPrepass.h"
 
 #include "Resource/ResourceManager.h"
-
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
+
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
 
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
 
 #include "Task/RenderTask/RenderTask.h"
 
+#include "FrameProfiler.h"
+
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
+
+#if ENABLE_REVERSED_Z
+    f32 k_clearValue = 0.0f;
+#else
+    f32 k_clearValue = 1.0f;
+#endif
 
 RenderPipelineZPrepassStage::RenderPipelineZPrepassStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
     : RenderPipelineStage(technique, "ZPrepass")
@@ -29,7 +39,7 @@ RenderPipelineZPrepassStage::~RenderPipelineZPrepassStage()
 {
 }
 
-void RenderPipelineZPrepassStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineZPrepassStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -38,23 +48,26 @@ void RenderPipelineZPrepassStage::create(Device* device, scene::SceneData& scene
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "gbuffer.hlsl", "gbuffer_depth_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_depthPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_depthRenderTarget->getRenderPassDesc(),
+    m_depthPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, scene::VertexFormatStandardDesc, m_depthRenderTarget->getRenderPassDesc(),
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "zprepass_pipeline");
 
    m_depthPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_depthPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
    m_depthPipeline->setCullMode(renderer::CullMode::CullMode_None);
 #if ENABLE_REVERSED_Z
-   m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+   m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-   m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+   m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
     m_depthPipeline->setDepthWrite(true);
     m_depthPipeline->setDepthTest(true);
     m_depthPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+    m_depthPipeline->setStencilTest(true);
+    m_depthPipeline->setStencilCompareOp(renderer::CompareOperation::Always, 0xFF);
+    m_depthPipeline->setStencilOp(renderer::StencilOperation::Replace, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
 }
 
-void RenderPipelineZPrepassStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineZPrepassStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -65,7 +78,7 @@ void RenderPipelineZPrepassStage::destroy(Device* device, scene::SceneData& scen
     m_depthPipeline = nullptr;
 }
 
-void RenderPipelineZPrepassStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineZPrepassStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_depthRenderTarget)
     {
@@ -78,87 +91,92 @@ void RenderPipelineZPrepassStage::prepare(Device* device, scene::SceneData& scen
     }
 }
 
-void RenderPipelineZPrepassStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
+    TRACE_PROFILER_SCOPE("ZPrepass", color::rgba8::GREEN);
     DEBUG_MARKER_SCOPE(cmdList, "ZPrepass", color::rgbaf::GREEN);
 
-    cmdList->beginRenderTarget(*m_depthRenderTarget);
-    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setPipelineState(*m_depthPipeline);
-
-    cmdList->bindDescriptorSet(0,
-        {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
-        });
-
-    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Opaque)])
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)].empty())
     {
-        cmdList->setStencilRef(0x01);
-        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
+        cmdList->clear(m_depthRenderTarget->getDepthStencilTexture<renderer::Texture2D>(), k_clearValue, 0U);
+    }
+    else
+    {
+        cmdList->beginRenderTarget(*m_depthRenderTarget);
+        cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+        cmdList->setPipelineState(*m_depthPipeline);
 
-        struct ModelBuffer
-        {
-            math::Matrix4D modelMatrix;
-            math::Matrix4D prevModelMatrix;
-            math::Matrix4D normalMatrix;
-            math::float4   tint;
-            u64            objectID;
-            u64           _pad = 0;
-        };
-
-        ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = mesh.getTransform();
-        constantBuffer.prevModelMatrix = mesh.getPrevTransform();
-        constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = item->_material._tint;
-        constantBuffer.objectID = item->_objectID;
-
-        cmdList->bindDescriptorSet(1,
+        cmdList->bindDescriptorSet(0,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, 1),
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_depthPipeline->getName()), color::rgbaf::LTGREY);
-        renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
-        cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
-    }
+        for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
+        {
+            cmdList->setStencilRef(0x1);
+            const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
 
-    cmdList->endRenderTarget();
+            struct ModelBuffer
+            {
+                math::Matrix4D modelMatrix;
+                math::Matrix4D prevModelMatrix;
+                math::Matrix4D normalMatrix;
+                math::float4   tintColour;
+                u64            objectID;
+                u64           _pad = 0;
+            };
+
+            ModelBuffer constantBuffer;
+            constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+            constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
+            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
+            constantBuffer.normalMatrix.makeTransposed();
+            constantBuffer.tintColour = math::float4{ 1.0, 1.0, 1.0, 1.0 };
+            constantBuffer.objectID = itemMesh.object->ID();
+
+            cmdList->bindDescriptorSet(1,
+                {
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, 1),
+                });
+
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_depthPipeline->getName()), color::rgbaf::LTGREY);
+
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+            ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(scene::VertexFormatStandard), "must be same");
+            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(scene::VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+        }
+
+        cmdList->endRenderTarget();
+    }
 }
 
-void RenderPipelineZPrepassStage::createRenderTarget(Device* device, scene::SceneData& scene)
+void RenderPipelineZPrepassStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene)
 {
-#if ENABLE_REVERSED_Z
-    f32 clearValue = 0.0f;
-#else
-    f32 clearValue = 1.0f;
-#endif
-
     ASSERT(m_depthRenderTarget == nullptr, "must be nullptr");
     m_depthRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportState._viewpotSize, 0, 0, "zprepass");
 
     renderer::Texture2D* depthStencilAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_D32_SFloat, scene.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
+        scene.m_settings._depthFormat, scene.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");
     m_depthRenderTarget->setDepthStencilTexture(depthStencilAttachment,
         {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, clearValue
+            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, k_clearValue
         },
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-        }
-    );
+        });
 
     scene.m_globalResources.bind("depth_stencil", depthStencilAttachment);
 }
 
-void RenderPipelineZPrepassStage::destroyRenderTarget(Device* device, scene::SceneData& scene)
+void RenderPipelineZPrepassStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& scene)
 {
     ASSERT(m_depthRenderTarget, "must be valid");
     renderer::Texture2D* depthStencilAttachment = m_depthRenderTarget->getDepthStencilTexture<renderer::Texture2D>();

@@ -5,12 +5,19 @@
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
+
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/Billboard.h"
+#include "Scene/Material.h"
+
+#include "FrameProfiler.h"
 
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineSelectionStage::RenderPipelineSelectionStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
@@ -26,7 +33,7 @@ RenderPipelineSelectionStage::~RenderPipelineSelectionStage()
 {
 }
 
-void RenderPipelineSelectionStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineSelectionStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -42,16 +49,16 @@ void RenderPipelineSelectionStage::create(Device* device, scene::SceneData& scen
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
 #if ENABLE_REVERSED_Z
-    m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+    m_pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-    m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+    m_pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 }
 
-void RenderPipelineSelectionStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineSelectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -62,7 +69,7 @@ void RenderPipelineSelectionStage::destroy(Device* device, scene::SceneData& sce
     m_pipeline = nullptr;
 }
 
-void RenderPipelineSelectionStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineSelectionStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_renderTarget)
     {
@@ -75,14 +82,15 @@ void RenderPipelineSelectionStage::prepare(Device* device, scene::SceneData& sce
     }
 }
 
-void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
+    TRACE_PROFILER_SCOPE("Selection", color::rgba8::GREEN);
     DEBUG_MARKER_SCOPE(cmdList, "Selection", color::rgbaf::GREEN);
 
-    if (scene.m_lists[toEnumType(scene::MaterialType::Selected)].empty())
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].empty())
     {
         cmdList->clear(m_renderTarget->getColorTexture<renderer::Texture2D>(0), { 0.f, 0.f,  0.f,  0.f });
         return;
@@ -99,47 +107,50 @@ void RenderPipelineSelectionStage::execute(Device* device, scene::SceneData& sce
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
         });
 
-    for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Selected)])
+    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)])
     {
+        const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+        const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
         struct ModelBuffer
         {
             math::Matrix4D modelMatrix;
             math::Matrix4D prevModelMatrix;
             math::Matrix4D normalMatrix;
-            math::float4   tint;
+            math::float4   tintColour;
             u64            objectID;
             u64           _pad = 0;
         };
 
         ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = item->_object->getTransform();
-        constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
+        constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+        constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
         constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tint = item->_material._tint;
-        constantBuffer.objectID = item->_objectID;
+        constantBuffer.tintColour = material.getProperty<math::float4>("ColorDiffuse");
+        constantBuffer.objectID = itemMesh.object->ID();
 
         cmdList->bindDescriptorSet(1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipeline->getName()), color::rgbaf::LTGREY);
-        if (item->_type == scene::MaterialType::Billboard)
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline->getName()), color::rgbaf::LTGREY);
+        if (itemMesh.geometry)
         {
-            cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
+            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
+            cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
         }
         else
         {
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(item->_object);
-            renderer::GeometryBufferDesc desc(mesh.m_indexBuffer, 0, mesh.m_vertexBuffer[0], 0, sizeof(VertexFormatStandard), 0);
-            cmdList->drawIndexed(desc, 0, mesh.m_indexBuffer->getIndicesCount(), 0, 0, 1);
+            cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
         }
     }
 
     cmdList->endRenderTarget();
 }
 
-void RenderPipelineSelectionStage::createRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineSelectionStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
     m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
@@ -151,13 +162,12 @@ void RenderPipelineSelectionStage::createRenderTarget(Device* device, scene::Sce
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
-        }
-    );
+        });
 
     data.m_globalResources.bind("selected_objects", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineSelectionStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineSelectionStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* texture = m_renderTarget->getColorTexture<renderer::Texture2D>(0);
@@ -167,5 +177,5 @@ void RenderPipelineSelectionStage::destroyRenderTarget(Device* device, scene::Sc
     m_renderTarget = nullptr;
 }
 
-} // namespace renderer
+} // namespace scene
 } // namespace v3d

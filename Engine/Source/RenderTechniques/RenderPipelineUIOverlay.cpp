@@ -2,7 +2,7 @@
 
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineUIOverlayStage::RenderPipelineUIOverlayStage(RenderTechnique* technique, ui::WidgetHandler* uiHandler) noexcept
@@ -14,21 +14,21 @@ RenderPipelineUIOverlayStage::~RenderPipelineUIOverlayStage()
 {
 }
 
-void RenderPipelineUIOverlayStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineUIOverlayStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
 }
 
-void RenderPipelineUIOverlayStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineUIOverlayStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
 }
 
-void RenderPipelineUIOverlayStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineUIOverlayStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
 }
 
-void RenderPipelineUIOverlayStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineUIOverlayStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
 }
 
-} //namespace renderer
+} //namespace scene
 } //namespace v3d

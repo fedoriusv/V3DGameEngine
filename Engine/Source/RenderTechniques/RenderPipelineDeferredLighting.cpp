@@ -1,14 +1,18 @@
 #include "RenderPipelineDeferredLighting.h"
 
 #include "Resource/ResourceManager.h"
-
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
+
+#include "FrameProfiler.h"
+
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineDeferredLightingStage::RenderPipelineDeferredLightingStage(RenderTechnique* technique) noexcept
@@ -22,7 +26,7 @@ RenderPipelineDeferredLightingStage::~RenderPipelineDeferredLightingStage()
 {
 }
 
-void RenderPipelineDeferredLightingStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -37,13 +41,16 @@ void RenderPipelineDeferredLightingStage::create(Device* device, scene::SceneDat
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-    m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+    m_pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+    m_pipeline->setStencilTest(true);
+    m_pipeline->setStencilCompareOp(renderer::CompareOperation::NotEqual, 0x0);
+    m_pipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
 }
 
-void RenderPipelineDeferredLightingStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineDeferredLightingStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -54,7 +61,7 @@ void RenderPipelineDeferredLightingStage::destroy(Device* device, scene::SceneDa
     m_pipeline = nullptr;
 }
 
-void RenderPipelineDeferredLightingStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineDeferredLightingStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_deferredRenderTarget)
     {
@@ -67,11 +74,12 @@ void RenderPipelineDeferredLightingStage::prepare(Device* device, scene::SceneDa
     }
 }
 
-void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
+    TRACE_PROFILER_SCOPE("DeferredLighting", color::rgba8::GREEN);
     DEBUG_MARKER_SCOPE(cmdList, "DeferredLighting", color::rgbaf::GREEN);
 
     ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
@@ -82,8 +90,8 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
     cmdList->beginRenderTarget(*m_deferredRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
+    cmdList->setStencilRef(0x0);
     cmdList->setPipelineState(*m_pipeline);
-
     cmdList->bindDescriptorSet(0,
         {
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
@@ -105,7 +113,10 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
     ASSERT(sampler_state_h.isValid(), "must be valid");
     renderer::SamplerState* samplerState = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 
-    const scene::DirectionalLight& dirLight = *scene.m_lightingState._directionalLight;
+    ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].empty(), "must be presented");
+    const scene::NodeEntry* entry = scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0];
+    const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
+    const scene::DirectionalLight& dirLight = *static_cast<const scene::DirectionalLight*>(itemLight.light);
 
     struct LightBuffer
     {
@@ -119,9 +130,9 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
     };
 
     LightBuffer lightBuffer;
-    lightBuffer.position = dirLight.getTransform().getTranslation();
-    lightBuffer.direction = dirLight.getDirection();
-    lightBuffer.color = { dirLight.getColor()._x, dirLight.getColor()._y, dirLight.getColor()._z, 1.f };
+    lightBuffer.position = entry->object->getTransform().getPosition();
+    lightBuffer.direction = entry->object->getDirection();
+    lightBuffer.color = dirLight.getColor();
     lightBuffer.type = 0;
     lightBuffer.attenuation = 1.f;
     lightBuffer.intensity = dirLight.getIntensity();
@@ -129,23 +140,22 @@ void RenderPipelineDeferredLightingStage::execute(Device* device, scene::SceneDa
 
     cmdList->bindDescriptorSet(1,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, 1),
-            renderer::Descriptor(samplerState, 2),
-            renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), 3),
-            renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), 4),
-            renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), 5),
-            renderer::Descriptor(renderer::TextureView(depthStencilTexture), 6),
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, 2),
+            renderer::Descriptor(samplerState, 3),
+            renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), 4),
+            renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), 5),
+            renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), 6),
+            renderer::Descriptor(renderer::TextureView(depthStencilTexture), 7),
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
     cmdList->endRenderTarget();
-
     cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_DepthStencilAttachment);
 
     scene.m_globalResources.bind("render_target", m_deferredRenderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineDeferredLightingStage::createRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineDeferredLightingStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_deferredRenderTarget == nullptr, "must be nullptr");
     m_deferredRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
@@ -157,11 +167,24 @@ void RenderPipelineDeferredLightingStage::createRenderTarget(Device* device, sce
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
+        });
+
+    //ObjectHandle depth_stencil = data.m_globalResources.get("depth_stencil");
+    //ASSERT(depth_stencil.isValid(), "must be valid");
+    //renderer::Texture2D* depthAttachment = objectFromHandle<renderer::Texture2D>(depth_stencil);
+    //m_deferredRenderTarget->setDepthStencilTexture(depthAttachment,
+    //    {
+    //        renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
+    //    },
+    //{
+    //    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
+    //},
+    //{
+    //    renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+    //});
 }
 
-void RenderPipelineDeferredLightingStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineDeferredLightingStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_deferredRenderTarget, "must be valid");
     renderer::Texture2D* textrue = m_deferredRenderTarget->getColorTexture<renderer::Texture2D>(0);
@@ -171,5 +194,5 @@ void RenderPipelineDeferredLightingStage::destroyRenderTarget(Device* device, sc
     m_deferredRenderTarget = nullptr;
 }
 
-} //namespace renderer
+} //namespace scene
 } //namespace v3d

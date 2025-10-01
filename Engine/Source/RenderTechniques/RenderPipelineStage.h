@@ -8,9 +8,14 @@ namespace v3d
 {
 namespace renderer
 {
+    class Device;
+    class RenderTargetState;
+    class GraphicsPipelineState;
+} // namespace renderer
+namespace scene
+{
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Device;
     class RenderTechnique;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,11 +27,11 @@ namespace renderer
         explicit RenderPipelineStage(RenderTechnique* technique, const std::string& id) noexcept;
         virtual ~RenderPipelineStage();
 
-        virtual void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
-        virtual void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
+        virtual void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
+        virtual void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
 
-        virtual void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
-        virtual void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
+        virtual void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
+        virtual void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
 
     protected:
 
@@ -39,11 +44,11 @@ namespace renderer
     {
     public:
 
-        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame);
-        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
-        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame);
-        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
     protected:
 
@@ -65,5 +70,5 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace renderer
+} //namespace scene
 } //namespace v3d

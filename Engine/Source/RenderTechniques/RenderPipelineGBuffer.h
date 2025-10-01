@@ -3,17 +3,20 @@
 #include "Common.h"
 #include "RenderPipelineStage.h"
 
-#include "Renderer/PipelineState.h"
-#include "Renderer/ShaderProgram.h"
-
 namespace v3d
 {
-namespace scene
-{
-    class ModelHandler;
-} // namespace scene
 namespace renderer
 {
+    class Device;
+    class RenderTargetState;
+    class GraphicsPipelineState;
+} // namespace renderer
+namespace scene
+{
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class ModelHandler;
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class RenderPipelineGBufferStage : public RenderPipelineStage
@@ -23,16 +26,16 @@ namespace renderer
         explicit  RenderPipelineGBufferStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
         ~RenderPipelineGBufferStage();
 
-        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
     private:
 
-        void createRenderTarget(Device* device, scene::SceneData& data);
-        void destroyRenderTarget(Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
         scene::ModelHandler* m_modelHandler;
 
@@ -43,5 +46,5 @@ namespace renderer
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace renderer
+} // namespace scene
 } // namespace v3d

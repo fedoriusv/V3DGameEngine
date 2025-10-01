@@ -1,14 +1,17 @@
 #include "RenderTechniques/RenderPipelineFXAA.h"
 
 #include "Resource/ResourceManager.h"
-
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 
+#include "Renderer/ShaderProgram.h"
+
+#include "FrameProfiler.h"
+
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineFXAAStage::RenderPipelineFXAAStage(RenderTechnique* technique) noexcept
@@ -22,7 +25,7 @@ RenderPipelineFXAAStage::~RenderPipelineFXAAStage()
 {
 }
 
-void RenderPipelineFXAAStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineFXAAStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -37,13 +40,13 @@ void RenderPipelineFXAAStage::create(Device* device, scene::SceneData& scene, sc
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-    m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+    m_pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 }
 
-void RenderPipelineFXAAStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineFXAAStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -54,7 +57,7 @@ void RenderPipelineFXAAStage::destroy(Device* device, scene::SceneData& scene, s
     m_pipeline = nullptr;
 }
 
-void RenderPipelineFXAAStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineFXAAStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_renderTarget)
     {
@@ -67,9 +70,9 @@ void RenderPipelineFXAAStage::prepare(Device* device, scene::SceneData& scene, s
     }
 }
 
-void RenderPipelineFXAAStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineFXAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
     DEBUG_MARKER_SCOPE(cmdList, "FXAA", color::rgbaf::GREEN);
@@ -104,7 +107,7 @@ void RenderPipelineFXAAStage::execute(Device* device, scene::SceneData& scene, s
     scene.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineFXAAStage::createRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineFXAAStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
     m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0, "fxaa_pass");
@@ -118,13 +121,12 @@ void RenderPipelineFXAAStage::createRenderTarget(Device* device, scene::SceneDat
         },
         {
             renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
+        });
 
     data.m_globalResources.bind("fxaa", texture);
 }
 
-void RenderPipelineFXAAStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineFXAAStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* composition = m_renderTarget->getColorTexture<renderer::Texture2D>(0);
@@ -134,5 +136,5 @@ void RenderPipelineFXAAStage::destroyRenderTarget(Device* device, scene::SceneDa
     m_renderTarget = nullptr;
 }
 
-} //namespace renderer
+} //namespace scene
 } //namespace v3d

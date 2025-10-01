@@ -2,7 +2,7 @@
 
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineStage::RenderPipelineStage(RenderTechnique* technique, const std::string& id) noexcept
@@ -30,7 +30,7 @@ RenderTechnique::~RenderTechnique()
     m_stages.clear();
 }
 
-void RenderTechnique::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderTechnique::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
@@ -38,7 +38,7 @@ void RenderTechnique::create(Device* device, scene::SceneData& scene, scene::Fra
     }
 }
 
-void RenderTechnique::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderTechnique::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
@@ -46,7 +46,7 @@ void RenderTechnique::destroy(Device* device, scene::SceneData& scene, scene::Fr
     }
 }
 
-void RenderTechnique::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderTechnique::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
@@ -54,7 +54,7 @@ void RenderTechnique::prepare(Device* device, scene::SceneData& scene, scene::Fr
     }
 }
 
-void RenderTechnique::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderTechnique::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     for (auto& [id, stage] : m_stages)
     {
@@ -67,5 +67,5 @@ void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage
     m_stages.emplace_back(id, stage);
 }
 
-} //namespace renderer
+} //namespace scene
 } //namespace v3d

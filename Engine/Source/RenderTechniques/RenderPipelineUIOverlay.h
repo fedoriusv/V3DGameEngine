@@ -5,11 +5,17 @@
 
 namespace v3d
 {
+namespace renderer
+{
+    class Device;
+    class RenderTargetState;
+    class GraphicsPipelineState;
+} // namespace renderer
 namespace ui
 {
     class WidgetHandler;
 } // namespace ui
-namespace renderer
+namespace scene
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -20,14 +26,14 @@ namespace renderer
         explicit RenderPipelineUIOverlayStage(RenderTechnique* technique, ui::WidgetHandler* uiHandler) noexcept;
         ~RenderPipelineUIOverlayStage();
 
-        void create(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
-        void prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
-        void execute(Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
+        void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace renderer
+} // namespace scene
 } // namespace v3d
