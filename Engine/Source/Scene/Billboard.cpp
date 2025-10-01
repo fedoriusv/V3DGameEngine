@@ -5,7 +5,14 @@ namespace v3d
 namespace scene
 {
 
-Billboard::Billboard() noexcept
+Billboard::Billboard(renderer::Device* device) noexcept
+    : m_device(device)
+{
+}
+
+Billboard::Billboard(renderer::Device* device, const BillboardHeader& header) noexcept
+    : m_device(device)
+    , m_header(header)
 {
 }
 

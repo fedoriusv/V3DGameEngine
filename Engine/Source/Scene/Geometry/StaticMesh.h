@@ -11,22 +11,22 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief StaticMesh class
+    * @brief StaticMesh class.
+    * @see Mesh
     */
-    class StaticMesh : public Mesh
+    class StaticMesh : public ComponentBase<StaticMesh, Mesh>
     {
     public:
 
-        StaticMesh() noexcept;
+        explicit StaticMesh(renderer::Device* device) noexcept;
+        explicit StaticMesh(renderer::Device* device, const MeshHeader& header) noexcept;
         ~StaticMesh();
 
-        TypePtr getType() const final;
-    };
+    private:
 
-    inline TypePtr StaticMesh::getType() const
-    {
-        return typeOf<StaticMesh>();
-    }
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

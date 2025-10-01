@@ -86,11 +86,9 @@ bool Bitmap::save(stream::Stream* stream, u32 offset) const
     stream->write<renderer::Format>(m_format);
     stream->write<u32>(m_layers);
     stream->write<u32>(m_mips);
+    stream->write(Bitmap::getBitmap(), Bitmap::getSize());
 
-    //TODO
-    NOT_IMPL;
-
-    return false;
+    return true;
 }
 
 const void* Bitmap::getBitmap() const

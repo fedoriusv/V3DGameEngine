@@ -122,8 +122,8 @@ namespace renderer
         */
         struct ShaderHeader : resource::ResourceHeader
         {
-            ShaderHeader() noexcept
-                : resource::ResourceHeader(resource::ResourceType::Shader)
+            ShaderHeader(ShaderType type) noexcept
+                : resource::ResourceHeader(resource::ResourceType::Shader, toEnumType(type))
             {
             }
         };

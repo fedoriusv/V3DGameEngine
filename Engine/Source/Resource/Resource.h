@@ -17,15 +17,20 @@ namespace resource
 
     /**
     * @brief ResourceType enum
-    * TODO: static RTTI
     */
-    enum class ResourceType : u16
+    enum class ResourceType : u8
     {
         Empty = 0,
         Technique,
         Shader,
+        Texture,
         Bitmap,
         Model,
+        Mesh,
+        Material,
+        Billboard,
+        Light,
+        Camera,
 
         Count
     };
@@ -43,14 +48,18 @@ namespace resource
         static void fill(ResourceHeader* header, const std::string& name, u32 size, u32 offset, u32 flags = 0);
 
         ResourceHeader() noexcept = default;
-        explicit ResourceHeader(ResourceType type) noexcept;
+        explicit ResourceHeader(ResourceType type, u8 subType = 0) noexcept;
         explicit ResourceHeader(const ResourceHeader& other) noexcept;
 
         ~ResourceHeader() = default;
 
         ResourceType getResourceType() const;
 
+        template<EnumType T>
+        T getResourceSubType() const;
+
         void setName(const std::string& name);
+        const std::string_view getName() const;
 
         u32 operator>>(stream::Stream* stream) const;
         u32 operator<<(const stream::Stream* stream);
@@ -58,7 +67,7 @@ namespace resource
     private:
 
         u16             _head;
-        ResourceType    _type;
+        u16             _type;
         u16             _version;
         u16             _flags;
 
@@ -66,15 +75,25 @@ namespace resource
 
         u32             _size;
         u32             _offset;
-
         u64             _timestamp;
         u64             _uID;
-        u8              _name[k_nameSize];
+        c8              _name[k_nameSize];
     };
+
+    inline const std::string_view ResourceHeader::getName() const
+    {
+        return std::string_view(&_name[0]);
+    }
 
     inline ResourceType ResourceHeader::getResourceType() const
     {
-        return _type;
+        return ResourceType(_type >> 8);
+    }
+
+    template<EnumType T>
+    inline T ResourceHeader::getResourceSubType() const
+    {
+        return static_cast<T>(_type & 0xFF);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

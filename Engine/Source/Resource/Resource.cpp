@@ -31,9 +31,9 @@ void ResourceHeader::fill(ResourceHeader* header, const std::string& name, u32 s
     header->_timestamp = utils::Timer::getCurrentTime();
 }
 
-ResourceHeader::ResourceHeader(ResourceType type) noexcept
+ResourceHeader::ResourceHeader(ResourceType type, u8 subType) noexcept
     : _head(g_resourceHeadMagicNumber)
-    , _type(type)
+    , _type(8 << toEnumType(type) | subType)
     , _version(g_resourceHeadCurrentVersion)
     , _flags(0x0)
 
@@ -62,7 +62,7 @@ ResourceHeader::ResourceHeader(const ResourceHeader& other) noexcept
 
 void ResourceHeader::setName(const std::string& name)
 {
-    ASSERT(name.size() < k_nameSize, "max size is limited");
+    //ASSERT(name.size() < k_nameSize, "max size is limited");
     memcpy(_name, name.c_str(), std::min<u64>(name.size(), k_nameSize));
 }
 
@@ -72,7 +72,7 @@ u32 ResourceHeader::operator>>(stream::Stream* stream) const
     ASSERT(ResourceHeader::validate(this), "wrong header");
     stream->write<u16>(_head);
 
-    stream->write<ResourceType>(_type);
+    stream->write<u16>(_type);
     stream->write<u16>(_version);
     stream->write<u16>(_flags);
 
@@ -94,7 +94,7 @@ u32 ResourceHeader::operator<<(const stream::Stream* stream)
     stream->read<u16>(_head);
     ASSERT(ResourceHeader::validate(this), "wrong header");
 
-    stream->read<ResourceType>(_type);
+    stream->read<u16>(_type);
     stream->read<u16>(_version);
     stream->read<u16>(_flags);
 

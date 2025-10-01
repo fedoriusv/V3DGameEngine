@@ -37,7 +37,7 @@ void Transform::setScale(const math::Vector3D& scale)
     m_transformFlag |= TransformState::TransformState_Scale;
 }
 
-void Transform::setTransform(const math::Matrix4D& transform)
+void Transform::setMatrix(const math::Matrix4D& transform)
 {
     m_modelMatrix = transform;
 
@@ -45,27 +45,6 @@ void Transform::setTransform(const math::Matrix4D& transform)
     m_rotation = m_modelMatrix.getRotation();
     m_scale = m_modelMatrix.getScale();
     m_transformFlag &= ~TransformState::TransformState_All;
-}
-
-const math::Vector3D& Transform::getPosition() const
-{
-    return m_position;
-}
-
-const math::Vector3D& Transform::getRotation() const
-{
-    return m_rotation;
-}
-
-const math::Vector3D& Transform::getScale() const
-{
-    return m_scale;
-}
-
-const math::Matrix4D& Transform::getTransform() const
-{
-    Transform::claculateTransform();
-    return m_modelMatrix;
 }
 
 void Transform::claculateTransform() const

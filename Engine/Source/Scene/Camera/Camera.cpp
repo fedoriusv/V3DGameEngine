@@ -1,5 +1,6 @@
 #include "Camera.h"
 #include "Utils/Logger.h"
+#include "Stream/Stream.h"
 
 namespace v3d
 {
@@ -7,8 +8,9 @@ namespace scene
 {
 
 Camera::Camera(const math::Vector3D& position, const math::Vector3D& target, bool orthogonal) noexcept
-    : m_zNear(0.1f)
-    , m_zFar(256.0f)
+    : m_header()
+    , m_clipNear(0.1f)
+    , m_clipFar(256.0f)
     , m_fieldOfView(60.0f)
     , m_aspectRatio(1.f)
     , m_orthogonal(orthogonal)
@@ -20,7 +22,22 @@ Camera::Camera(const math::Vector3D& position, const math::Vector3D& target, boo
     LOG_DEBUG("Camera constructor %llx", this);
     math::Matrix4D view = math::SMatrix::lookAtMatrix(position, m_target, m_up);
     view.makeInverse();
-    m_transform.setTransform(view);
+    m_transform.setMatrix(view);
+}
+
+Camera::Camera(const CameraHeader& header) noexcept
+    : m_header(header)
+    , m_clipNear(0.0f)
+    , m_clipFar(0.0f)
+    , m_fieldOfView(0.0f)
+    , m_aspectRatio(1.f)
+    , m_orthogonal(false)
+
+    , m_target({0.f, 0.f, 0.f })
+    , m_up({ 0.0f, 1.0f, 0.0f })
+    , m_matricesFlags(CameraState::CameraState_Projection | CameraState::CameraState_View)
+{
+    LOG_DEBUG("Camera constructor %llx", this);
 }
 
 Camera::~Camera()
@@ -31,8 +48,8 @@ Camera::~Camera()
 void Camera::setPerspective(f32 FOV, const math::Dimension2D& size, f32 zNear, f32 zFar)
 {
     m_fieldOfView = FOV;
-    m_zNear = zNear;
-    m_zFar = zFar;
+    m_clipNear = zNear;
+    m_clipFar = zFar;
     m_orthogonal = false;
     m_aspectRatio = static_cast<f32>(size._width) / static_cast<f32>(size._height);
 
@@ -42,8 +59,8 @@ void Camera::setPerspective(f32 FOV, const math::Dimension2D& size, f32 zNear, f
 
 void Camera::setOrtho(const math::Rect& area, f32 zNear, f32 zFar)
 {
-    m_zNear = zNear;
-    m_zFar = zFar;
+    m_clipNear = zNear;
+    m_clipFar = zFar;
     m_orthogonal = true;
     m_aspectRatio = m_area.getWidth() / m_area.getHeight();
 
@@ -77,7 +94,7 @@ void Camera::setScale(const math::Vector3D& scale)
 
 void Camera::setTransform(const math::Matrix4D& transform)
 {
-    m_transform.setTransform(transform);
+    m_transform.setMatrix(transform);
     m_matricesFlags |= CameraState::CameraState_View;
 }
 
@@ -88,7 +105,7 @@ const math::Vector3D& Camera::getTarget() const
 
 const math::Vector3D Camera::getForwardVector() const
 {
-    return math::Vector3D(m_transform.getTransform()[8], m_transform.getTransform()[9], m_transform.getTransform()[10]).normalize();
+    return math::Vector3D(m_transform.getMatrix()[8], m_transform.getMatrix()[9], m_transform.getMatrix()[10]).normalize();
 }
 
 const math::Vector3D Camera::getUpVector() const
@@ -122,13 +139,13 @@ const math::Matrix4D& Camera::getProjectionMatrixInverse() const
 
 void Camera::setNear(f32 value)
 {
-    m_zNear = value;
+    m_clipNear = value;
     m_matricesFlags |= CameraState::CameraState_Projection;
 }
 
 void Camera::setFar(f32 value)
 {
-    m_zFar = value;
+    m_clipFar = value;
     m_matricesFlags |= CameraState::CameraState_Projection;
 }
 
@@ -144,11 +161,11 @@ void Camera::recalculateProjectionMatrix() const
     {
         if (Camera::isOrthogonal())
         {
-            m_matrices[Matrix::Matrix_ProjectionMatrix] = math::SMatrix::projectionMatrixOrtho(m_area.getLeftX(), m_area.getRightX(), m_area.getBottomY(), m_area.getTopY(), m_zNear, m_zFar);
+            m_matrices[Matrix::Matrix_ProjectionMatrix] = math::SMatrix::projectionMatrixOrtho(m_area.getLeftX(), m_area.getRightX(), m_area.getBottomY(), m_area.getTopY(), m_clipNear, m_clipFar);
         }
         else
         {
-            m_matrices[Matrix::Matrix_ProjectionMatrix] = math::SMatrix::projectionMatrixPerspective(m_fieldOfView, m_area.getWidth() / m_area.getHeight(), m_zNear, m_zFar);
+            m_matrices[Matrix::Matrix_ProjectionMatrix] = math::SMatrix::projectionMatrixPerspective(m_fieldOfView, m_area.getWidth() / m_area.getHeight(), m_clipNear, m_clipFar);
         }
         m_matrices[Matrix::Matrix_ProjectionMatrixInverse] = m_matrices[Matrix::Matrix_ProjectionMatrix].getInversed();
         m_matricesFlags &= ~CameraState::CameraState_Projection;
@@ -167,8 +184,23 @@ void Camera::recalculateViewMatrix() const
 
 bool Camera::load(const stream::Stream* stream, u32 offset)
 {
-    ASSERT(false, "not impl");
-    return false;
+    if (m_loaded)
+    {
+        LOG_WARNING("Camera::load: the camera %llx is already loaded", this);
+        return true;
+    }
+
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+    ASSERT(offset == m_header._offset, "wrong offset");
+
+    stream->read<f32>(m_clipNear);
+    stream->read<f32>(m_clipFar);
+    stream->read<f32>(m_fieldOfView);
+    stream->read<bool>(m_orthogonal);
+
+    m_loaded = true;
+    return true;
 }
 
 bool Camera::save(stream::Stream* stream, u32 offset) const

@@ -3,6 +3,7 @@
 #include "Object.h"
 #include "Render.h"
 #include "Swapchain.h"
+#include "Resource/Resource.h"
 
 namespace v3d
 {
@@ -20,9 +21,20 @@ namespace renderer
     /**
     * @brief Texture base class. Wrapper on RenderTexture object
     */
-    class Texture : public Object
+    class Texture : public Object, public resource::Resource
     {
     public:
+
+        /**
+        * @brief ShaderHeader struct.
+        */
+        struct TextureHeader : resource::ResourceHeader
+        {
+            TextureHeader(TextureTarget target) noexcept
+                : resource::ResourceHeader(resource::ResourceType::Texture, toEnumType(target))
+            {
+            }
+        };
 
         struct SharedData
         {
@@ -65,23 +77,28 @@ namespace renderer
         TextureHandle getTextureHandle() const;
 
         /**
+        * @brief getWidth method.
+        * @return width of texture
+        */
+        virtual u32 getWidth() const;
+
+        /**
+        * @brief getHeight method.
+        * @return height of texture
+        */
+        virtual u32 getHeight() const;
+
+        /**
+        * @brief getDepth method.
+        * @return depth of texture
+        */
+        virtual u32 getDepth() const;
+
+        /**
         * @brief hasUsageFlag method
         * @return true if flag contains
         */
         bool hasUsageFlag(TextureUsage usage) const;
-
-    protected:
-
-        /**
-        * @brief Texture constructor. parent class
-        * @param CommandList& cmdList [required]
-        * @param TextureTarget target [required]
-        * @param Format format [required]
-        * @param TextureSamples samples [required]
-        * @param u32 layers [required]
-        * @param cu32 mipmaps [required]
-        */
-        explicit Texture(TextureTarget target, Format format, TextureSamples samples, u32 layers, u32 mipmaps, TextureUsageFlags usage) noexcept;
 
         /**
         * @brief Texture destructor
@@ -90,15 +107,23 @@ namespace renderer
 
     protected:
 
+        explicit Texture(Device* device, TextureTarget target, Format format, const math::Dimension3D& size, TextureSamples samples, u32 layers, u32 mipmaps, TextureUsageFlags usage) noexcept;
+
         Texture(const Texture&) = delete;
         Texture& operator=(const Texture&) = delete;
 
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
+
+        TextureHeader           m_header;
+        Device* const           m_device;
         TextureHandle           m_texture;
-        const TextureTarget     m_target;
-        const Format            m_format;
-        const TextureSamples    m_samples;
-        const u32               m_layers;
-        const u32               m_mipmaps;
+        TextureTarget           m_target;
+        math::Dimension3D       m_dimension;
+        Format                  m_format;
+        TextureSamples          m_samples;
+        u32                     m_layers;
+        u32                     m_mipmaps;
         TextureUsageFlags       m_usage;
         SharedData              m_sharedData;
 
@@ -136,10 +161,66 @@ namespace renderer
         return m_texture;
     }
 
+    inline u32 Texture::getWidth() const
+    {
+        return m_dimension._width;
+    }
+
+    inline u32 Texture::getHeight() const
+    {
+        return m_dimension._height;
+    }
+
+    inline u32 Texture::getDepth() const
+    {
+        return m_dimension._depth;
+    }
+
     inline bool Texture::hasUsageFlag(TextureUsage usage) const
     {
         return m_usage & usage;
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief Texture1D class. Game side
+    */
+    class Texture1D final : public Texture
+    {
+    public:
+
+        /**
+        * @brief Texture1D constructor. Used for creating resource from stream
+        *
+        * @param Device* device [required]
+        * @param const TextureHeader& header [required]
+        */
+        explicit Texture1D(Device* device, const TextureHeader& header) noexcept;
+
+        /**
+        * @brief Texture1D constructor. Used for creating textures with mipmaps and layers.
+        *
+        * @param Device* device [required]
+        * @param TextureUsageFlags usage [required]
+        * @param Format format [required]
+        * @param u32 width [required]
+        * @param u32 array [optional]
+        * @param u32 mipmaps [optional]
+        * @param const std::string& name [optional]
+        */
+        explicit Texture1D(Device* device, TextureUsageFlags usage, Format format, u32 width, u32 array = 1, u32 mipmaps = 1, const std::string& name = "") noexcept;
+
+        /**
+        * @brief Texture1D destructor
+        */
+        ~Texture1D();
+
+    private:
+
+        Texture1D(const Texture1D&) = delete;
+        Texture1D& operator=(const Texture1D&) = delete;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -151,16 +232,17 @@ namespace renderer
     public:
 
         /**
-        * @brief getDimension method.
-        * @return const math::Dimension2D& dimention of texture
+        * @brief Texture2D constructor. Used for creating resource from stream
+        * 
+        * @param Device* device [required]
+        * @param const TextureHeader& header [required]
         */
-        const math::Dimension2D& getDimension() const;
-
-    public:
+        explicit Texture2D(Device* device, const TextureHeader& header) noexcept;
 
         /**
         * @brief Texture2D constructor. Used for creating textures with mipmaps and layers.
-        *
+        * 
+        * @param Device* device [required]
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
@@ -173,10 +255,11 @@ namespace renderer
         /**
         * @brief Texture2D constructor. Used for creating attachments
         *
+        * @param Device* device [required]
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
-        * @param u32 mipmaps [optional]
+        * @param TextureSamples samples [required]
         * @param const std::string& name [optional]
         */
         explicit Texture2D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, const std::string& name = "") noexcept;
@@ -190,15 +273,7 @@ namespace renderer
 
         Texture2D(const Texture2D&) = delete;
         Texture2D& operator=(const Texture2D&) = delete;
-
-        Device* const           m_device;
-        const math::Dimension2D m_dimension;
     };
-
-    inline const math::Dimension2D& Texture2D::getDimension() const
-    {
-        return m_dimension;
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -210,17 +285,17 @@ namespace renderer
     public:
 
         /**
-        * @brief getDimension method.
-        * @return const math::Dimension2D& dimention of texture
+        * @brief TextureCube constructor. Used for creating resource from stream
+        *
+        * @param Device* device [required]
+        * @param const TextureHeader& header [required]
         */
-        const math::Dimension2D& getDimension() const;
-
-    public:
+        explicit TextureCube(Device* device, const TextureHeader& header) noexcept;
 
         /**
         * @brief TextureCube constructor. Used for creating a cubemap texture
-        * Private method. Use createObject interface inside CommandList class to call.
         *
+        * @param Device* device [required]
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
@@ -228,18 +303,6 @@ namespace renderer
         * @param const std::string& name [optional]
         */
         explicit TextureCube(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, u32 mipmaps = 1, const std::string& name = "") noexcept;
-
-        /**
-        * @brief TextureCube constructor. Used for creating a cubemap attachments
-        * Private method. Use createObject interface inside CommandList class to call.
-        *
-        * @param TextureUsageFlags usage [required]
-        * @param Format format [required]
-        * @param const math::Dimension2D& dimension [required]
-        * @param TextureSamples samples [optional]
-        * @param const std::string& name [optional]
-        */
-        explicit TextureCube(Device* device, TextureUsageFlags usage, Format format, const math::Dimension2D& dimension, TextureSamples samples, const std::string& name = "") noexcept;
 
         /**
         * @brief TextureCube destructor
@@ -250,15 +313,7 @@ namespace renderer
 
         TextureCube(const TextureCube&) = delete;
         TextureCube& operator=(const TextureCube&) = delete;
-
-        Device* const           m_device;
-        const math::Dimension2D m_dimension;
     };
-
-    inline const math::Dimension2D& TextureCube::getDimension() const
-    {
-        return m_dimension;
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -270,17 +325,18 @@ namespace renderer
     public:
 
         /**
-        * @brief getDimension method.
-        * @return const math::Dimension3D& dimention of texture
+        * @brief Texture3D constructor. Used for creating resource from stream
+        *
+        * @param Device* device [required]
+        * @param const TextureHeader& header [required]
         */
-        const math::Dimension3D& getDimension() const;
-
-    public:
+        explicit Texture3D(Device* device, const TextureHeader& header) noexcept;
 
         /**
         * @brief Texture3D constructor. Used for creating a cubemap texture
         * Private method. Use createObject interface inside CommandList class to call.
         *
+        * @param Device* device [required]
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
         * @param const math::Dimension2D& dimension [required]
@@ -288,18 +344,6 @@ namespace renderer
         * @param const std::string& name [optional]
         */
         explicit Texture3D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension3D& dimension, u32 mipmaps = 1, const std::string& name = "") noexcept;
-
-        /**
-        * @brief Texture3D constructor. Used for creating a cubemap attachments
-        * Private method. Use createObject interface inside CommandList class to call.
-        *
-        * @param TextureUsageFlags usage [required]
-        * @param Format format [required]
-        * @param const math::Dimension2D& dimension [required]
-        * @param TextureSamples samples [optional]
-        * @param const std::string& name [optional]
-        */
-        explicit Texture3D(Device* device, TextureUsageFlags usage, Format format, const math::Dimension3D& dimension, TextureSamples samples, const std::string& name = "") noexcept;
 
         /**
         * @brief Texture3D destructor
@@ -310,15 +354,7 @@ namespace renderer
 
         Texture3D(const Texture3D&) = delete;
         Texture3D& operator=(const Texture3D&) = delete;
-
-        Device* const           m_device;
-        const math::Dimension3D m_dimension;
     };
-
-    inline const math::Dimension3D& Texture3D::getDimension() const
-    {
-        return m_dimension;
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -330,16 +366,9 @@ namespace renderer
     public:
 
         /**
-        * @brief getDimension method.
-        * @return const math::Dimension2D& dimention of texture
-        */
-        const math::Dimension2D& getDimension() const;
-
-    public:
-
-        /**
         * @brief UnorderedAccessTexture2D constructor. Used for creating UAV
         *
+        * @param Device* device [required]
         * @param TextureUsageFlags usage [required]
         * @param Format format [required]
         * @param u32 array [required]
@@ -357,15 +386,7 @@ namespace renderer
 
         UnorderedAccessTexture2D(const UnorderedAccessTexture2D&) = delete;
         UnorderedAccessTexture2D& operator=(const UnorderedAccessTexture2D&) = delete;
-
-        Device* const           m_device;
-        const math::Dimension2D m_dimension;
     };
-
-    inline const math::Dimension2D& UnorderedAccessTexture2D::getDimension() const
-    {
-        return m_dimension;
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -377,10 +398,16 @@ namespace renderer
     public:
 
         /**
-        * @brief getDimension method.
-        * @return const math::Dimension2D& dimention of backbuffer
+        * @brief getWidth method.
+        * @return width of texture
         */
-        const math::Dimension2D& getDimension() const;
+        u32 getWidth() const override;
+
+        /**
+        * @brief getHeight method.
+        * @return height of texture
+        */
+        u32 getHeight() const override;
 
     private:
 
@@ -408,11 +435,6 @@ namespace renderer
         template<class T>
         friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
     };
-
-    inline const math::Dimension2D& SwapchainTexture::getDimension() const
-    {
-        return m_swapchain->getBackbufferSize();
-    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -455,6 +477,26 @@ namespace renderer
 } //namespace renderer
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<renderer::Texture>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<renderer::Texture1D>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
 
     template<>
     struct TypeOf<renderer::Texture2D>

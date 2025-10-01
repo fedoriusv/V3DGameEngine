@@ -14,56 +14,11 @@ namespace renderer
 {
     class Device;
     class CmdListRender;
+    class Texture;
 } //namespace renderer
 namespace scene
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    class Mesh;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-    * @brief Model class
-    */
-    class Model : public Object
-    {
-    public:
-
-        Model() noexcept;
-        ~Model();
-
-        struct Geometry
-        {
-            std::vector<Mesh*> _LODs;
-        };
-
-        std::vector<Geometry> m_geometry;
-    };
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-    * @brief ModelHelper class
-    */
-    class ModelHelper
-    {
-    public:
-
-        [[nodisard]] static Model* createModel(renderer::Device* device, renderer::CmdListRender* cmdList, resource::ModelResource* resource);
-    };
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    struct InstanceDraw
-    {
-        renderer::GeometryBufferDesc _desc;
-        f32 _offset;
-        f32 _count;
-        f32 _instanceOffest;
-        f32 _instancesCount;
-    };
-
 
     class ModelHandler
     {
@@ -74,14 +29,11 @@ namespace scene
 
         static ModelHandler* createModelHandler();
 
-        void update(scene::SceneData& scene, f32 dt);
-
-        void drawStaticGeometry(renderer::CmdListRender* cmdList, InstanceDraw* instance);
-        void drawAnimatedGeometry(renderer::CmdListRender* cmdList);
+        void preUpdate(f32 dt, scene::SceneData& scene);
+        void postUpdate(f32 dt, scene::SceneData& scene);
+        //void drawInstance(renderer::CmdListRender* cmdList, Model* model);
 
     private:
-
-        void visibilityTest(scene::SceneData& scene);
 
         renderer::Device* m_device;
     };

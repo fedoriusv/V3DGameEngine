@@ -11,9 +11,13 @@ namespace scene
 
 CameraFreeFlyHandler::CameraFreeFlyHandler(std::unique_ptr<Camera> camera, const math::Vector3D& position) noexcept
     : CameraHandler(std::move(camera))
-    , m_moveSpeed(0.f)
+    , m_distanceLimits({ -10, 10 })
 
-    , m_direction({ false, false, false, false })
+    , m_moveSpeed(1.f)
+    , m_accelerationSpeed(1.f)
+    , m_rotationSpeed(1.0f)
+
+    , m_deltaDistance(0.f)
 {
 }
 
@@ -25,110 +29,84 @@ void CameraFreeFlyHandler::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
+        math::Vector3D rotation;
+        rotation.setX(m_camera->getRotation().getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
+        rotation.setY(m_camera->getRotation().getY() + m_deltaRotation._y * m_rotationSpeed * deltaTime);
+        m_deltaRotation = { 0.f, 0.f };
+
+        math::Matrix4D rotate;
+        rotate.setRotation(rotation);
+
+        m_accelerationSpeed = std::clamp(m_accelerationSpeed, 0.1f, 1.f);
+        math::Vector4D forward = rotate * (m_direction * m_moveSpeed * m_accelerationSpeed * deltaTime);
+        m_direction = { 0.f, 0.f, 0.f, 0.f };
+
+        m_camera->setRotation(rotation);
+        m_camera->setPosition(m_camera->getPosition() + math::Vector3D{ forward.getX(), forward.getY(), forward.getZ() });
+
         math::Matrix4D transform = m_camera->getTransform();
+        m_camera->setTarget(m_camera->getPosition() + m_camera->getForwardVector() * 2.f);
 
-
-        //math::Vector3D frontDirection;
-        //frontDirection.m_x = cos(CameraFreeFlyHandler::getRotation().m_x * math::k_degToRad) * sin(CameraFreeFlyHandler::getRotation().m_y * math::k_degToRad);
-        //frontDirection.m_y = sin(CameraFreeFlyHandler::getRotation().m_x * math::k_degToRad);
-        //frontDirection.m_z = cos(CameraFreeFlyHandler::getRotation().m_x * math::k_degToRad) * cos(CameraFreeFlyHandler::getRotation().m_y * math::k_degToRad);
-        //frontDirection.normalize();
-
-        //if (CameraFreeFlyHandler::isDirectionChange())
-        //{
-        //    math::Vector3D position = getPosition();
-        //    f32 moveSpeed = deltaTime * m_moveSpeed;
-
-        //    if (m_direction._forward)
-        //    {
-        //        position += frontDirection * moveSpeed;
-        //    }
-
-        //    if (m_direction._back)
-        //    {
-        //        position -= frontDirection * moveSpeed;
-        //    }
-
-        //    //if (m_direction._left)
-        //    //{
-        //    //    math::Vector3D camRight = math::crossProduct(frontDirection, getCamera().getUpVector());
-        //    //    camRight.normalize();
-
-        //    //    position += camRight * moveSpeed;
-        //    //}
-
-        //    //if (m_direction._right)
-        //    //{
-        //    //    math::Vector3D camRight = math::crossProduct(frontDirection, getCamera().getUpVector());
-        //    //    camRight.normalize();
-
-        //    //    position -= camRight * moveSpeed;
-        //    //}
-
-        //    setPosition(position);
-        //}
-        //getCamera().setTarget(getPosition() + frontDirection);
+        transform.makeInverse();
+        CameraHandler::setViewMatrix(transform);
 
         CameraHandler::update(deltaTime);
         m_needUpdate = false;
     }
 }
 
-void CameraFreeFlyHandler::setRotation(const math::Vector3D& rotation)
+void CameraFreeFlyHandler::handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event)
 {
-    //setRotation(rotation);
-    //m_needUpdate = true;
-}
+    static math::Point2D prevCursorPosition = {};
+    math::Point2D positionDelta = prevCursorPosition - handler->getRelativeCursorPosition();
 
-const math::Vector3D& CameraFreeFlyHandler::getRotation() const
-{
-    return  math::Vector3D();
-}
+    m_deltaRotation._x = -positionDelta._y;
+    m_deltaRotation._y = -positionDelta._x;
 
-bool CameraFreeFlyHandler::isDirectionChange() const
-{
-    return m_direction._forward || m_direction._back || m_direction._left || m_direction._right;
-}
-
-void CameraFreeFlyHandler::rotateHandleCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event, bool mouseCapture)
-{
-    static math::Point2D position = handler->getRelativeCursorPosition();
-
-    if (handler->isLeftMousePressed() || mouseCapture)
+    f32 directionFwd = 0.f;
+    if (handler->isKeyPressed(event::KeyCode::KeyKey_W))
     {
-        math::Point2D positionDelta = position - handler->getRelativeCursorPosition();
-        if (positionDelta._x != 0 && positionDelta._y != 0)
-        {
-            //math::Vector3D rotation = CameraFreeFlyHandler::getRotation();
-            //rotation.m_x += positionDelta._y * k_rotationSpeed;
-            //rotation.m_y -= positionDelta._x * k_rotationSpeed;
-
-            //rotation.m_x = std::clamp(rotation.m_x, -k_constrainPitch, k_constrainPitch);
-            //CameraFreeFlyHandler::setRotation(rotation);
-        }
+        directionFwd = 1.0f;
+    }
+    else if (handler->isKeyPressed(event::KeyCode::KeyKey_S))
+    {
+        directionFwd = -1.0f;
     }
 
-    position = handler->getRelativeCursorPosition();
+    f32 directionSide = 0.f;
+    if (handler->isKeyPressed(event::KeyCode::KeyKey_A))
+    {
+        directionSide = -1.0f;
+    }
+    else if (handler->isKeyPressed(event::KeyCode::KeyKey_D))
+    {
+        directionSide = 1.0f;
+    }
+    m_direction = { directionSide, 0.f, directionFwd, 0.f };
+
+    m_needUpdate = true;
+
+    prevCursorPosition = handler->getRelativeCursorPosition();
 }
 
-void CameraFreeFlyHandler::moveHandleCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event)
+void CameraFreeFlyHandler::setMoveSpeed(f32 speed)
 {
-    m_direction._forward = handler->isKeyPressed(event::KeyCode::KeyKey_W);
-    m_direction._back = handler->isKeyPressed(event::KeyCode::KeyKey_S);
-    m_direction._left = handler->isKeyPressed(event::KeyCode::KeyKey_A);
-    m_direction._right = handler->isKeyPressed(event::KeyCode::KeyKey_D);
+    m_moveSpeed = speed;
+}
 
-    f32 accelerationSpeed = 1.0f;
-    if (handler->isKeyPressed(event::KeyCode::KeyShift))
-    {
-        accelerationSpeed = k_accelerationSpeed;
-    }
+f32 CameraFreeFlyHandler::getMoveSpeed() const
+{
+    return m_moveSpeed;
+}
 
-    if (CameraFreeFlyHandler::isDirectionChange())
-    {
-        m_moveSpeed = k_movementSpeed * accelerationSpeed;
-        m_needUpdate = true;
-    }
+void CameraFreeFlyHandler::setRotationSpeed(f32 speed)
+{
+    m_rotationSpeed = speed;
+}
+
+f32 CameraFreeFlyHandler::getRotationSpeed() const
+{
+    return m_rotationSpeed;
 }
 
 } //namespace scene

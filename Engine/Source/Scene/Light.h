@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "Renderable.h"
+#include "Component.h"
 #include "Resource/Resource.h"
 #include "Transform.h"
 
@@ -17,6 +17,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Mesh;
+    class Model;
     class LightHelper;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,21 +25,9 @@ namespace scene
     /**
     * @brief Light interface
     */
-    class Light : public Object, public resource::Resource, public Renderable
+    class Light : public Object, public resource::Resource, public ComponentBase<Light, Component>
     {
     public:
-
-        void setColor(const color::ColorRGBF& color);
-        void setIntensity(f32 intensity);
-        void setTemperature(f32 temperature);
-
-        f32 getIntensity() const;
-        f32 getTemperature() const;
-        const color::ColorRGBF& getColor() const;
-
-        const Mesh* getVolumeMesh() const;
-
-    protected:
 
         enum class Type
         {
@@ -47,15 +36,44 @@ namespace scene
             SpotLight
         };
 
-        explicit Light(Type type) noexcept;
+        /**
+        * @brief LightHeader meta info
+        */
+        struct LightHeader : resource::ResourceHeader
+        {
+            LightHeader() noexcept
+                : resource::ResourceHeader(resource::ResourceType::Light)
+            {
+            }
+
+            LightHeader(Type subtype) noexcept
+                : resource::ResourceHeader(resource::ResourceType::Light, toEnumType(subtype))
+            {
+            }
+        };
+
         virtual ~Light();
 
-        color::ColorRGBF  m_color;
-        Type              m_type;
-        f32               m_intensity;
-        f32               m_temperature;
-        Mesh*             m_volume;
-        std::string       m_name;
+        void setIntensity(f32 intensity);
+        void setColor(const color::ColorRGBAF& color);
+        void setTemperature(f32 temperature);
+
+        f32 getIntensity() const;
+        f32 getTemperature() const;
+        f32 getAttenuation() const;
+        const color::ColorRGBAF& getColor() const;
+
+    protected:
+
+        explicit Light(renderer::Device* device, Type type) noexcept;
+        explicit Light(renderer::Device* device, const LightHeader& header) noexcept;
+
+        LightHeader             m_header;
+        renderer::Device* const m_device;
+        color::ColorRGBAF       m_color;
+        f32                     m_intensity;
+        f32                     m_temperature;
+        f32                     m_attenuation;
 
     private:
 
@@ -63,7 +81,7 @@ namespace scene
         bool save(stream::Stream* stream, u32 offset = 0) const override;
     };
 
-    inline void Light::setColor(const color::ColorRGBF& color)
+    inline void Light::setColor(const color::ColorRGBAF& color)
     {
         m_color = color;
     }
@@ -88,14 +106,14 @@ namespace scene
         return m_temperature;
     }
 
-    inline const color::ColorRGBF& Light::getColor() const
+    inline f32 Light::getAttenuation() const
     {
-        return m_color;
+        return m_attenuation;
     }
 
-    inline const Mesh* Light::getVolumeMesh() const
+    inline const color::ColorRGBAF& Light::getColor() const
     {
-        return m_volume;
+        return m_color;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,70 +121,51 @@ namespace scene
     /**
     * @brief DirectionalLight class
     */
-    class DirectionalLight : public Light
+    class DirectionalLight : public ComponentBase<DirectionalLight, Light>
     {
     public:
 
-        DirectionalLight() noexcept;
+        explicit DirectionalLight(renderer::Device* device) noexcept;
+        explicit DirectionalLight(renderer::Device* device, const LightHeader& header) noexcept;
         ~DirectionalLight();
+    private:
 
-        const math::Vector3D getDirection() const;
-
-        TypePtr getType() const final;
+        friend LightHelper;
     };
-
-    inline TypePtr DirectionalLight::getType() const
-    {
-        return typeOf<DirectionalLight>();
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief PointLight class
     */
-    class PointLight : public Light
+    class PointLight : public ComponentBase<PointLight, Light>
     {
     public:
 
-        PointLight() noexcept;
+        explicit PointLight(renderer::Device* device) noexcept;
+        explicit PointLight(renderer::Device* device, const LightHeader& header) noexcept;
         ~PointLight();
-
-        TypePtr getType() const final;
 
     private:
 
         friend LightHelper;
-
-        f32 m_attenuation;
     };
-
-    inline TypePtr PointLight::getType() const
-    {
-        return typeOf<PointLight>();
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
     * @brief SpotLight class
     */
-    class SpotLight : public Light
+    class SpotLight : public ComponentBase<SpotLight, Light>
     {
     public:
 
-        SpotLight() noexcept;
+        explicit SpotLight(renderer::Device* device) noexcept;
+        explicit SpotLight(renderer::Device* device, const LightHeader& header) noexcept;
         ~SpotLight();
-
-        TypePtr getType() const final;
 
     private:
     };
-
-    inline TypePtr SpotLight::getType() const
-    {
-        return typeOf<SpotLight>();
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -183,6 +182,16 @@ namespace scene
 } //namespace scene
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<scene::Light>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
 
     template<>
     struct TypeOf<scene::DirectionalLight>

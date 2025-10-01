@@ -33,12 +33,12 @@ namespace scene
         void setPosition(const math::Vector3D& position);
         void setRotation(const math::Vector3D& rotation);
         void setScale(const math::Vector3D& scale);
-        void setTransform(const math::Matrix4D& transform);
+        void setMatrix(const math::Matrix4D& transform);
 
         const math::Vector3D& getPosition() const;
         const math::Vector3D& getRotation() const;
         const math::Vector3D& getScale() const;
-        const math::Matrix4D& getTransform() const;
+        const math::Matrix4D& getMatrix() const;
 
     private:
 
@@ -51,6 +51,27 @@ namespace scene
         math::Vector3D m_rotation;
         math::Vector3D m_scale;
     };
+
+    inline const math::Vector3D& Transform::getPosition() const
+    {
+        return m_position;
+    }
+
+    inline const math::Vector3D& Transform::getRotation() const
+    {
+        return m_rotation;
+    }
+
+    inline const math::Vector3D& Transform::getScale() const
+    {
+        return m_scale;
+    }
+
+    inline const math::Matrix4D& Transform::getMatrix() const
+    {
+        Transform::claculateTransform();
+        return m_modelMatrix;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

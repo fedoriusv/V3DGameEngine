@@ -28,7 +28,7 @@ std::string ShaderTypeString(ShaderType type)
 }
 
 Shader::Shader(ShaderType type) noexcept
-    : m_header()
+    : m_header(type)
     , m_type(type)
     , m_shaderModel(ShaderModel::Default)
     , m_data({})

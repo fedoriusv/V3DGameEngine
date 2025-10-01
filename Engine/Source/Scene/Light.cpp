@@ -3,6 +3,7 @@
 #include "Renderer/Device.h"
 #include "Renderer/Buffer.h"
 #include "Utils/Logger.h"
+#include "Stream/Stream.h"
 
 namespace v3d
 {
@@ -11,12 +12,23 @@ namespace scene
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Light::Light(Type type) noexcept
-    : m_color({ 1.f, 1.f, 1.f })
-    , m_type(type)
+Light::Light(renderer::Device* device, Type type) noexcept
+    : m_header(type)
+    , m_device(device)
+    , m_color({ 1.f, 1.f, 1.f, 1.f })
     , m_intensity()
     , m_temperature(0)
-    , m_volume(nullptr)
+    , m_attenuation(1.f)
+{
+}
+
+Light::Light(renderer::Device* device, const LightHeader& header) noexcept
+    : m_header(header)
+    , m_device(device)
+    , m_color({ 1.f, 1.f, 1.f, 1.f })
+    , m_intensity()
+    , m_temperature(0)
+    , m_attenuation(1.f)
 {
 }
 
@@ -26,8 +38,23 @@ Light::~Light()
 
 bool Light::load(const stream::Stream* stream, u32 offset)
 {
-    ASSERT(false, "not impl");
-    return false;
+    if (m_loaded)
+    {
+        LOG_WARNING("Light::load: the light %llx is already loaded", this);
+        return true;
+    }
+
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+    ASSERT(offset == m_header._offset, "wrong offset");
+
+    stream->read<color::ColorRGBAF>(m_color);
+    stream->read<f32>(m_intensity);
+    stream->read<f32>(m_temperature);
+    stream->read<f32>(m_attenuation);
+
+    m_loaded = true;
+    return true;
 }
 
 bool Light::save(stream::Stream* stream, u32 offset) const
@@ -38,9 +65,16 @@ bool Light::save(stream::Stream* stream, u32 offset) const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DirectionalLight::DirectionalLight() noexcept
-    : Light(Type::DirectionalLight)
+DirectionalLight::DirectionalLight(renderer::Device* device) noexcept
+    : ComponentBase<DirectionalLight, Light>(device, Type::DirectionalLight)
 {
+    LOG_DEBUG("DirectionalLight::DirectionalLight constructor %llx", this);
+}
+
+DirectionalLight::DirectionalLight(renderer::Device* device, const LightHeader& header) noexcept
+    : ComponentBase<DirectionalLight, Light>(device, header)
+{
+    ASSERT(header.getResourceSubType<Type>() == Type::DirectionalLight, "must be DirectionalLight");
     LOG_DEBUG("DirectionalLight::DirectionalLight constructor %llx", this);
 }
 
@@ -49,17 +83,18 @@ DirectionalLight::~DirectionalLight()
     LOG_DEBUG("DirectionalLight::DirectionalLight destructor %llx", this);
 }
 
-const math::Vector3D DirectionalLight::getDirection() const
-{
-    return math::Vector3D(m_transform.getTransform()[8], m_transform.getTransform()[9], m_transform.getTransform()[10]).normalize();
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PointLight::PointLight() noexcept
-    : Light(Type::PointLight)
-    , m_attenuation(1.f)
+PointLight::PointLight(renderer::Device* device) noexcept
+    : ComponentBase<PointLight, Light>(device, Type::PointLight)
 {
+    LOG_DEBUG("PointLight::PointLight constructor %llx", this);
+}
+
+PointLight::PointLight(renderer::Device* device, const LightHeader& header) noexcept
+    : ComponentBase<PointLight, Light>(device, header)
+{
+    ASSERT(header.getResourceSubType<Type>() == Type::PointLight, "must be PointLight");
     LOG_DEBUG("PointLight::PointLight constructor %llx", this);
 }
 
@@ -70,9 +105,16 @@ PointLight::~PointLight()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SpotLight::SpotLight() noexcept
-    : Light(Type::SpotLight)
+SpotLight::SpotLight(renderer::Device* device) noexcept
+    : ComponentBase<SpotLight, Light>(device, Type::SpotLight)
 {
+    LOG_DEBUG("SpotLight::SpotLight constructor %llx", this);
+}
+
+SpotLight::SpotLight(renderer::Device* device, const LightHeader& header) noexcept
+    : ComponentBase<SpotLight, Light>(device, header)
+{
+    ASSERT(header.getResourceSubType<Type>() == Type::SpotLight, "must be SpotLight");
     LOG_DEBUG("SpotLight::SpotLight constructor %llx", this);
 }
 
@@ -85,9 +127,9 @@ SpotLight::~SpotLight()
 
 PointLight* LightHelper::createPointLight(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, const std::string& name)
 {
-    PointLight* light = V3D_NEW(PointLight, memory::MemoryLabel::MemoryObject)();
-    light->m_volume = scene::MeshHelper::createSphere(device, cmdList, radius, 64, 64, name);
-    light->m_name = name;
+    PointLight* light = V3D_NEW(PointLight, memory::MemoryLabel::MemoryObject)(device);
+    //light->m_volume = scene::MeshHelper::createSphere(device, cmdList, radius, 64, 64, name);
+    light->m_header.setName(name);
 
     return light;
 }

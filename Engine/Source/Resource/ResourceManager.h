@@ -54,38 +54,6 @@ namespace resource
             const std::string& entrypoint = "main", const renderer::Shader::DefineList& defines = {}, const std::vector<std::string>& includes = {}, ShaderCompileFlags flags = 0);
 
         /**
-        * @brief loadShader
-        * Create shader from the file. Suppotrs ShaderSourceFileLoader
-        *
-        * @param renderer::Device* device [required]
-        * @param const std::string& filename [required]
-        * @param renderer::ShaderType type [required]
-        * @param const std::string& entrypoint [optional]
-        * @param const renderer::Shader::DefineList& defines [optional]
-        * @param const std::vector<std::string>& includes [optional]
-        * @param u32 flags [optional]
-        * @return Shader resource, nullptr if failed
-        */
-        template<class TResource = renderer::Shader, class TResourceLoader>
-        [[nodiscard]] const TResource* loadShader(renderer::Device* device, const std::string& filename, renderer::ShaderType type,
-            const std::string& entrypoint = "main", const renderer::Shader::DefineList& defines = {}, const std::vector<std::string>& includes = {}, ShaderCompileFlags flags = 0);
-
-        /**
-        * @brief loadHLSLShaders
-        * Create list of HLSL shaders from file. Supports ShaderSourceFileLoader
-        *
-        * @param renderer::Device* device [required]
-        * @param const std::string filename [required]
-        * @param const std::vector<std::pair<std::string, std::string>>& entryPoint/Type [required]
-        * @param std::vector<std::pair<std::string, std::string>> defines [optional]
-        * @param ShaderSourceBuildFlags flags [optional]
-        * @return list of shader resources
-        */
-        template<class TResource = renderer::Shader, class TResourceLoader>
-        [[nodiscard]] std::vector<const TResource*> loadHLSLShaders(renderer::Device* device, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints,
-            const renderer::Shader::DefineList& defines = {}, const std::vector<std::string>& includes = {}, ShaderCompileFlags flags = 0);
-
-        /**
         * @brief load interface.
         * Create resource from file. Supports: AssetFileLoader, ImageFileLoader, ModelFileLoader, ShaderBinaryFileLoader
         * 
@@ -95,6 +63,19 @@ namespace resource
         */
         template<class TResource, class TResourceLoader>
         [[nodiscard]] TResource* load(const std::string& filename, u32 flags = 0);
+
+        /**
+        * @brief load interface.
+        * Create resource from file and upload data to GPU. Supports: AssetFileLoader, ModelFileLoader, TextureFileLoader
+        *
+        * @param renderer::Device* device [required]
+        * @param sconst std::string& filename [required]
+        * @param const TResourceLoader::PolicyType& policy [required]
+        * @param u32 flags [optional]
+        * @return current resource, nullptr if failed
+        */
+        template<class TResource, class TResourceLoader, typename TPolicy = TResourceLoader::PolicyType>
+        [[nodiscard]] TResource* load(renderer::Device* device, const std::string& filename, const TPolicy& policy, u32 flags = 0);
 
         /**
         * @brief clear
@@ -228,40 +209,15 @@ namespace resource
     }
 
     template<class TResource, class TResourceLoader>
-    inline const TResource* ResourceManager::loadShader(renderer::Device* device, const std::string& filename, renderer::ShaderType type,
-        const std::string& entrypoint, const renderer::Shader::DefineList& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags)
+    inline TResource* ResourceManager::load(const std::string& filename, u32 flags)
     {
-        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
         std::string innerName(filename);
-        std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
+        std::transform(filename.cbegin(), filename.cend(), innerName.begin(), ::tolower);
 
-        renderer::Shader::DefineList innerDefines(defines);
-        std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
-            {
-                return macros1.first < macros2.first;
-            });
-
-        auto composeResourceName = [](const std::string& name, const std::string& entrypoint, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
-            {
-                std::string outString = name;
-                outString.append("#");
-                outString.append(entrypoint);
-
-                for (auto& define : defines)
-                {
-                    outString.append("#");
-                    outString.append(define.first);
-                    outString.append(define.second);
-                }
-
-                return outString;
-            };
-        const std::string resourceName = composeResourceName(innerName, entrypoint, innerDefines);
-
-        auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
+        auto resourceIter = m_resources.emplace(std::make_pair(innerName, nullptr));
         if (resourceIter.second)
         {
-            TResourceLoader loader(device, type, entrypoint, defines, includes, flags);
+            TResourceLoader loader(flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {
@@ -276,61 +232,8 @@ namespace resource
         return static_cast<TResource*>(resourceIter.first->second);
     }
 
-    template<class TResource, class TResourceLoader>
-    inline std::vector<const TResource*> ResourceManager::loadHLSLShaders(renderer::Device* device, std::string filename, const std::vector<std::tuple<std::string, renderer::ShaderType>>& entryPoints,
-        const renderer::Shader::DefineList& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags)
-    {
-        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
-        std::string innerName(filename);
-        std::transform(filename.begin(), filename.end(), innerName.begin(), ::tolower);
-
-        renderer::Shader::DefineList innerDefines(defines);
-        std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
-            {
-                return macros1.first < macros2.first;
-            });
-
-        auto composeResourceName = [](const std::string& name, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
-        {
-            std::string outString = name;
-            for (auto& define : defines)
-            {
-                outString.append("#");
-                outString.append(define.first);
-                outString.append(define.second);
-            }
-
-            return outString;
-        };
-
-        std::vector<const TResource*> resources;
-        for (auto& entryPoint : entryPoints)
-        {
-            const std::string resourceName = composeResourceName(innerName, defines) + "_" + renderer::ShaderTypeString(std::get<1>(entryPoint));
-            auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
-            if (resourceIter.second)
-            {
-                TResourceLoader loader(device, std::get<1>(entryPoint), std::get<0>(entryPoint), defines, includes, flags);
-                Resource* res = loader.load(innerName);
-                if (!res)
-                {
-                    m_resources.erase(resourceIter.first);
-                    resources.push_back(nullptr);
-
-                    continue;
-                }
-
-                resourceIter.first->second = res;
-            }
-
-            resources.push_back(static_cast<TResource*>(resourceIter.first->second));
-        }
-
-        return resources;
-    }
-
-    template<class TResource, class TResourceLoader>
-    inline TResource* ResourceManager::load(const std::string& filename, u32 flags)
+    template<class TResource, class TResourceLoader, typename TPolicy>
+    inline TResource* ResourceManager::load(renderer::Device* device, const std::string& filename, const TPolicy& policy, u32 flags)
     {
         std::string innerName(filename);
         std::transform(filename.cbegin(), filename.cend(), innerName.begin(), ::tolower);
@@ -338,7 +241,7 @@ namespace resource
         auto resourceIter = m_resources.emplace(std::make_pair(innerName, nullptr));
         if (resourceIter.second)
         {
-            TResourceLoader loader(flags);
+            TResourceLoader loader(device, policy, flags);
             Resource* res = loader.load(innerName);
             if (!res)
             {

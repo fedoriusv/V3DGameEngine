@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Common.h"
-#include "Scene/Renderable.h"
+#include "Scene/Component.h"
+#include "Scene/Transform.h"
 #include "Resource/Resource.h"
 
 namespace v3d
@@ -14,9 +15,20 @@ namespace scene
     * @brief Camera class. Component, Resource. Game side.
     * Calculates View and Projection matrices
     */
-    class Camera : public Object, public resource::Resource, public Renderable
+    class Camera : public Object, public resource::Resource, public ComponentBase<Camera, Component>
     {
     public:
+
+        /**
+        * @brief CameraHeader struct.
+        */
+        struct CameraHeader : resource::ResourceHeader
+        {
+            CameraHeader() noexcept
+                : resource::ResourceHeader(resource::ResourceType::Camera)
+            {
+            }
+        };
 
         /**
         * @brief Camera constructor.
@@ -25,6 +37,7 @@ namespace scene
         * @param bool orthogonal [optional]
         */
         explicit Camera(const math::Vector3D& position = { 0.0f, 0.0f, 0.0f }, const math::Vector3D& target = { 0.0f, 0.0f, 1.0f }, bool orthogonal = false) noexcept;
+        explicit Camera(const CameraHeader& header) noexcept;
         virtual ~Camera();
 
         void setPerspective(f32 FOV, const math::Dimension2D& size, f32 zNear, f32 zFar);
@@ -40,7 +53,10 @@ namespace scene
         void setScale(const math::Vector3D& scale);
         void setTransform(const math::Matrix4D& transform);
 
-        TypePtr getType() const final;
+        const math::Vector3D& getPosition() const;
+        const math::Vector3D& getRotation() const;
+        const math::Vector3D& getScale() const;
+        const math::Matrix4D& getTransform() const;
 
         void setNear(f32 value);
         f32 getNear() const;
@@ -85,13 +101,15 @@ namespace scene
         void recalculateProjectionMatrix() const;
         void recalculateViewMatrix() const;
 
+        CameraHeader             m_header;
+        Transform                m_transform;
         mutable math::Matrix4D   m_matrices[Matrix_Count];
         mutable math::Vector3D   m_target;
         mutable math::Vector3D   m_up;
         math::Rect               m_area;
         mutable f32              m_aspectRatio;
-        f32                      m_zNear;
-        f32                      m_zFar;
+        f32                      m_clipNear;
+        f32                      m_clipFar;
         f32                      m_fieldOfView;
         mutable CameraStateFlags m_matricesFlags;
         bool                     m_orthogonal;
@@ -111,12 +129,12 @@ namespace scene
 
     inline f32 Camera::getNear() const
     {
-        return m_zNear;
+        return m_clipNear;
     }
 
     inline f32 Camera::getFar() const
     {
-        return m_zFar;
+        return m_clipFar;
     }
 
     inline f32 Camera::getFOV() const
@@ -129,9 +147,24 @@ namespace scene
         return m_aspectRatio;
     }
 
-    inline TypePtr Camera::getType() const
+    inline const math::Vector3D& Camera::getPosition() const
     {
-        return typeOf<Camera>();
+        return m_transform.getPosition();
+    }
+
+    inline const math::Vector3D& Camera::getRotation() const
+    {
+        return m_transform.getRotation();
+    }
+
+    inline const math::Vector3D& Camera::getScale() const
+    {
+        return m_transform.getScale();
+    }
+
+    inline const math::Matrix4D& Camera::getTransform() const
+    {
+        return m_transform.getMatrix();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

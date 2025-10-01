@@ -1,11 +1,15 @@
 #pragma once
 
 #include "Common.h"
-#include "Renderable.h"
+#include "Scene/Component.h"
 #include "Resource/Resource.h"
 
 namespace v3d
 {
+namespace renderer
+{
+    class Device;
+} //namespace renderer
 namespace scene
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -13,29 +17,33 @@ namespace scene
     /**
     * @brief Billboard class
     */
-    class Billboard : public Object, public resource::Resource, public Renderable
+    class Billboard : public Object, public resource::Resource, public ComponentBase<Billboard, Component>
     {
     public:
 
-        Billboard() noexcept;
+        /**
+        * @brief BillboardHeader meta info
+        */
+        struct BillboardHeader : resource::ResourceHeader
+        {
+            BillboardHeader() noexcept
+                : resource::ResourceHeader(resource::ResourceType::Billboard)
+            {
+            }
+        };
+
+        explicit Billboard(renderer::Device* device) noexcept;
+        explicit Billboard(renderer::Device* device, const BillboardHeader& header) noexcept;
         ~Billboard();
 
-        TypePtr getType() const final;
-
-    public:
-
-        std::string m_name;
-
     private:
+
+        BillboardHeader         m_header;
+        renderer::Device* const m_device;
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
     };
-
-    inline TypePtr Billboard::getType() const
-    {
-        return typeOf<Billboard>();
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

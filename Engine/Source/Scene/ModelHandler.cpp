@@ -1,115 +1,107 @@
 #include "ModelHandler.h"
 
-#include "Resource/Mesh.h"
-#include "Resource/Model.h"
+#include "Resource/Bitmap.h"
 #include "Renderer/Device.h"
 #include "Utils/Logger.h"
 
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/Model.h"
+#include "Scene/Material.h"
+
+#include "RenderTechniques/VertexFormats.h"
 
 namespace v3d
 {
 namespace scene
 {
 
- Model::Model() noexcept
- {
-     LOG_DEBUG("Model::Model constructor %llx", this);
- }
- 
- Model::~Model()
- {
-     LOG_DEBUG("Model::Model destructor %llx", this);
+void ModelHandler::preUpdate(f32 dt, scene::SceneData& scene)
+{
+    for (u32 i = 0; i < toEnumType(RenderPipelinePass::Count); ++i)
+    {
+        scene.m_renderLists[toEnumType(RenderPipelinePass(i))].clear();
+    }
 
-     for (auto& geom : m_geometry)
-     {
-         for (auto& mesh : geom._LODs)
-         {
-             //V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
-         }
-         geom._LODs.clear();
-     }
-     m_geometry.clear();
- }
+    auto callback = [](SceneNode* parent, SceneNode* node)
+        {
+            if (parent)
+            {
+                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(node->m_transform[toEnumType(TransformMode::Local)].getMatrix() * parent->m_transform[toEnumType(TransformMode::Global)].getMatrix());
+            }
+            else
+            {
+                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(node->m_transform[toEnumType(TransformMode::Local)].getMatrix());
+            }
+        };
 
- Model* ModelHelper::createModel(renderer::Device* device, renderer::CmdListRender* cmdList, resource::ModelResource* resource)
- {
-     ASSERT(resource && resource->m_loaded, "must be valid");
-     Model* model = V3D_NEW(Model, memory::MemoryLabel::MemoryObject)();
-     if (resource->m_content && resource::ModelResource::ModelContent_Meshes)
-     {
-         for (auto& geom : resource->m_geometry)
-         {
-             Model::Geometry geometry;
-             for (auto& lod : geom._LODs)
-             {
-                 Mesh* mesh = MeshHelper::createStaticMesh(device, cmdList, lod);
-                 if (mesh)
-                 {
-                     geometry._LODs.push_back(mesh);
-                 }
-             }
+    //group by type
+    for (auto& item : scene.m_generalRenderList)
+    {
+        if (item->object->m_dirty)
+        {
+            SceneNode::forEach(item->object, callback);
+            item->object->m_dirty = false;
+        }
 
-             model->m_geometry.push_back(geometry);
-             
-         }
-     }
-
-     if (resource->m_content && resource::ModelResource::ModelContent_Materials)
-     {
+        //fructum test
         //TODO
-     }
 
-     return model;
- }
+        if (item->object->m_visible)
+        {
+            u32 index = toEnumType(item->passID);
+            ASSERT(index < toEnumType(RenderPipelinePass::Count), "out of range");
+            scene.m_renderLists[index].push_back(item);
+        }
+    }
+}
 
- void ModelHandler::visibilityTest(scene::SceneData& scene)
- {
-     for (u32 i = 0; i < toEnumType(MaterialType::Count); ++i)
-     {
-         scene.m_lists[toEnumType(MaterialType(i))].clear();
-     }
+void ModelHandler::postUpdate(f32 dt, scene::SceneData& scene)
+{
+    for (auto& item : scene.m_generalRenderList)
+    {
+        item->object->m_prevTransform = item->object->m_transform[toEnumType(TransformMode::Global)];
+    }
+}
 
-     //group by type
-     for (auto& item : scene.m_generalList)
-     {
-         scene.m_lists[toEnumType(item->_type)].push_back(item);
-     }
+ //void ModelHandler::drawInstance(renderer::CmdListRender* cmdList, Model* model)
+ //{
+ //    struct ModelBuffer
+ //    {
+ //        math::Matrix4D modelMatrix;
+ //        math::Matrix4D prevModelMatrix;
+ //        math::Matrix4D normalMatrix;
+ //        math::float4   tint;
+ //        u64            objectID;
+ //        u64           _pad = 0;
+ //    };
 
-     //fructum test
-     //TODO
- }
+ //    //ModelBuffer constantBuffer;
+ //    //constantBuffer.modelMatrix = mesh.getTransform();
+ //    //constantBuffer.prevModelMatrix = mesh.getPrevTransform();
+ //    //constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+ //    //constantBuffer.tint = item._material._tint;
+ //    //constantBuffer.objectID = item._objectID;
 
- void ModelHandler::update(scene::SceneData& scene, f32 dt)
- {
-     visibilityTest(scene);
-     for (auto& item : scene.m_generalList)
-     {
-         if (item->_object)
-         {
-             item->_object->m_prevTransform.setTransform(item->_object->getTransform());
-         }
-     }
- }
+ //    //cmdList->bindDescriptorSet(1,
+ //    //    {
+ //    //        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, 1),
+ //    //    });
 
- void ModelHandler::drawStaticGeometry(renderer::CmdListRender* cmdList, InstanceDraw* instance)
- {
-     ASSERT(instance, "must be valid");
+ //    //DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item._objectID, m_depthPipeline->getName()), color::rgbaf::LTGREY);
+ //    //renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
+ //    //cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
 
-     const renderer::GeometryBufferDesc& desc = instance->_desc;
-     if (desc._indexBuffer.isValid())
-     {
-         cmdList->drawIndexed(desc, instance->_offset, instance->_count, 0, instance->_instanceOffest, instance->_instancesCount);
-     }
-     else
-     {
-         cmdList->draw(desc, instance->_offset, instance->_count, instance->_instanceOffest, instance->_instancesCount);
-     }
- }
 
- void ModelHandler::drawAnimatedGeometry(renderer::CmdListRender* cmdList)
- {
- }
+ //    //const renderer::GeometryBufferDesc& desc = instance->_desc;
+ //    //if (desc._indexBuffer.isValid())
+ //    //{
+ //    //    cmdList->drawIndexed(desc, instance->_offset, instance->_count, 0, instance->_instanceOffest, instance->_instancesCount);
+ //    //}
+ //    //else
+ //    //{
+ //    //    cmdList->draw(desc, instance->_offset, instance->_count, instance->_instanceOffest, instance->_instancesCount);
+ //    //}
+ //}
 
 } //namespace scene
 } //namespace v3d

@@ -38,6 +38,7 @@ namespace resource
         u32 getMipmapsCount() const;
 
         const void* getBitmap() const;
+
         u32 getSize() const;
 
     private:
