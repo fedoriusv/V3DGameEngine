@@ -238,7 +238,8 @@ VulkanMemory::VulkanAllocation VulkanMemory::allocateBufferMemory(VulkanMemoryAl
         LOG_DEBUG("VulkanMemory:GetBufferMemoryRequirements: memoryTypeIndex %d, memoryRequirements.memoryTypeBits %d, VkMemoryPropertyFlags %d", memoryTypeIndex, memoryRequirements.memoryTypeBits, flags);
 #endif // VULKAN_DEBUG
 
-        VulkanAllocation memory = allocator.allocate(memoryRequirements.size, memoryRequirements.alignment, memoryTypeIndex);
+        VkDeviceSize size = std::max<VkDeviceSize>(memoryRequirements.size, math::k_defaultAlignment);
+        VulkanAllocation memory = allocator.allocate(size, memoryRequirements.alignment, memoryTypeIndex);
         if (memory._memory == VK_NULL_HANDLE)
         {
             return VulkanMemory::s_invalidMemory;
