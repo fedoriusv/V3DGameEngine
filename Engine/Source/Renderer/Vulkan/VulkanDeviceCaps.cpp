@@ -522,7 +522,7 @@ void VulkanDeviceCaps::initialize()
     LOG_INFO("VulkanDeviceCaps::initialize:  useGlobalDescriptorPool is %s", _useGlobalDescriptorPool ? "enable" : "disable");
 
     //check !!!!
-    _immediateResourceSubmit = 2;
+    _immediateResourceSubmit = 0;
 
 #if defined(PLATFORM_ANDROID)
 #   ifdef VK_QCOM_render_pass_transform
