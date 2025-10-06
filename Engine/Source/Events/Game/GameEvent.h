@@ -20,6 +20,7 @@ namespace event
             UnknownGameEvent,
             SelectObject,
             MultiSelectObjects,
+            TransformObject,
             CustomEvent,
 
             GameEventsCount
