@@ -88,7 +88,7 @@ void EditorPropertyScreen::update(f32 dt)
             m_transformProperty.m_scale[2]->setValue(scl.getZ());
         }
 
-        if (m_lightProperty.m_loadedFlag & 0x7)
+        if (m_lightProperty.m_loadedFlag & 0x31)
         {
             if (scene::DirectionalLight* light = m_selectedNode->getComponentByType<scene::DirectionalLight>(); light)
             {
@@ -100,7 +100,38 @@ void EditorPropertyScreen::update(f32 dt)
 
                 color::ColorRGBAF color = light->getColor();
                 m_lightProperty.m_propertyColor->setColor(color);
+
+                if (!m_selectedNode->m_children.empty())
+                {
+                    if (scene::Material* material = m_selectedNode->m_children.front()->getComponentByType<scene::Material>(); material)
+                    {
+                        material->setProperty<math::float4>("DiffuseColor", { color._x, color._y, color._z, 1.0 });
+                    }
+                }
             }
+            else if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
+            {
+                f32 inten = light->getIntensity();
+                m_lightProperty.m_propertyIntensity->setValue(inten);
+
+                f32 temp = light->getTemperature();
+                m_lightProperty.m_propertyTemperature->setValue(temp);
+
+                f32 radius = light->getRadius();
+                m_lightProperty.m_propertyRadius->setValue(radius);
+
+                color::ColorRGBAF color = light->getColor();
+                m_lightProperty.m_propertyColor->setColor(color);
+
+                if (!m_selectedNode->m_children.empty())
+                {
+                    if (scene::Material* material = m_selectedNode->m_children.front()->getComponentByType<scene::Material>(); material)
+                    {
+                        material->setProperty<math::float4>("DiffuseColor", { color._x, color._y, color._z, 1.0 });
+                    }
+                }
+            }
+
         }
     }
 }
@@ -403,6 +434,7 @@ void EditorPropertyScreen::buildLightProp()
                     .addWidget(ui::WidgetText("Intensity"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setStep(1.f)
+                        .setRange(0.0f, 1000.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyIntensity = static_cast<ui::WidgetInputDragFloat*>(w);
@@ -422,6 +454,7 @@ void EditorPropertyScreen::buildLightProp()
                     .addWidget(ui::WidgetText("Temperature"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setStep(10.f)
+                        .setRange(0.0f, 10000.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyTemperature = static_cast<ui::WidgetInputDragFloat*>(w);
@@ -435,14 +468,62 @@ void EditorPropertyScreen::buildLightProp()
                                     light->setTemperature(val);
                                 }
                             })
-)                )
+                    )
+                )
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("Radius"))
+                    .addWidget(ui::WidgetInputDragFloat(0.f)
+                        .setStep(0.01)
+                        .setRange(0.01f, 1000.f)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertyRadius = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 2;
+                            })
+                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
+                                    {
+                                        light->setRadius(val);
+                                        m_selectedNode->setScale(scene::TransformMode::Local, { val , val, val });
+
+                                        m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    }
+                                }
+                            })
+                    )
+                )
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("Attenuation"))
+                    .addWidget(ui::WidgetInputDragFloat(1.f)
+                        .setStep(0.01)
+                        .setRange(0.f, 1.f)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertyAttenuation = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 3;
+                            })
+                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
+                                    {
+                                        //TODO
+                                    }
+                                }
+                            })
+                    )
+                )
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Color"))
                     .addWidget(ui::WidgetColorPalette()
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyColor = static_cast<ui::WidgetColorPalette*>(w);
-                                m_lightProperty.m_loadedFlag |= 1 << 2;
+                                m_lightProperty.m_loadedFlag |= 1 << 4;
                             })
                         .setOnColorChangedEvent([this](ui::Widget* w, const color::ColorRGBAF& color) -> void
                             {
