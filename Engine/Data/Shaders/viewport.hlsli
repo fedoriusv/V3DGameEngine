@@ -23,16 +23,18 @@ struct Viewport
     uint64_t time;
 };
 
+#define VIEWPORT_SET 0
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 float3 reconstruct_WorldPos(float4x4 invProjection, float4x4 invView, float2 uv, float depth)
 {
-    float4 clipPos;
-    clipPos.xy = uv * 2.0f - 1.0f;
-    clipPos.z = depth;
-    clipPos.w = 1.0f;
+    float4 NDC;
+    NDC.xy = float2(uv.x * 2.0f - 1.0f, -(uv.y * 2.0f - 1.0f));
+    NDC.z = depth;
+    NDC.w = 1.0f;
 
-    float4 viewSpacePos = mul(invProjection, clipPos);
+    float4 viewSpacePos = mul(invProjection, NDC);
     viewSpacePos /= viewSpacePos.w;
     
     float4 worldSpacePos = mul(invView, viewSpacePos);

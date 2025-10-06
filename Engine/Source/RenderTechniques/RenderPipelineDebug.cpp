@@ -1,4 +1,5 @@
 #include "RenderPipelineDebug.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -63,7 +64,37 @@ void RenderPipelineDebugStage::create(renderer::Device* device, scene::SceneData
             pipeline->setDepthWrite(false);
             pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
+            MaterialParameters parameters;
+            BIND_SHADER_PARAMETER(pipeline, parameters, cb_Viewport);
+            BIND_SHADER_PARAMETER(pipeline, parameters, cb_Model);
+
             m_pipelines.push_back(pipeline);
+            m_parameters.push_back(parameters);
+        }
+
+        {
+            renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
+                V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "debug_solid");
+
+            pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+            pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+            pipeline->setCullMode(renderer::CullMode::CullMode_None);
+            pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Line);
+#if ENABLE_REVERSED_Z
+            pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+            pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+            pipeline->setDepthTest(true);
+            pipeline->setDepthWrite(false);
+            pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+
+            MaterialParameters parameters;
+            BIND_SHADER_PARAMETER(pipeline, parameters, cb_Viewport);
+            BIND_SHADER_PARAMETER(pipeline, parameters, cb_Model);
+
+            m_pipelines.push_back(pipeline);
+            m_parameters.push_back(parameters);
         }
 
         {
@@ -84,7 +115,12 @@ void RenderPipelineDebugStage::create(renderer::Device* device, scene::SceneData
             pipeline->setDepthBias(2.0f, 0.0f, 2.0f);
             pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
+            MaterialParameters parameters;
+            BIND_SHADER_PARAMETER(pipeline, parameters, cb_Viewport);
+            BIND_SHADER_PARAMETER(pipeline, parameters, cb_Model);
+
             m_pipelines.push_back(pipeline);
+            m_parameters.push_back(parameters);
         }
     }
 }
@@ -163,9 +199,9 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
 
         cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
 
-        cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
             });
 
         struct ModelBuffer
@@ -185,9 +221,9 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
         constantBuffer.tintColour = material.getProperty<math::float4>("DiffuseColor");
         constantBuffer.objectID = 0;
 
-        cmdList->bindDescriptorSet(1,
+        cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
             });
 
         DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipelines[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);

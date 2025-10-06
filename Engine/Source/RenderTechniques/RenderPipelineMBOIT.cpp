@@ -161,6 +161,11 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
 
     DEBUG_MARKER_SCOPE(cmdList, "Transparency", color::rgbaf::GREEN);
 
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Transparency)].empty())
+    {
+        return;
+    }
+
     ObjectHandle hLinearSampler = scene.m_globalResources.get("linear_sampler_repeat");
     ASSERT(hLinearSampler.isValid(), "must be valid");
     renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(hLinearSampler);
@@ -173,7 +178,7 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
         cmdList->setStencilRef(0);
         cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass1]);
 
-        cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(m_pipeline[Pass::MBOIT_Pass1]->getShaderProgram(), 0,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
@@ -219,7 +224,7 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
             constantBuffer.tint = materialState.tint;
             constantBuffer.objectID = itemMesh.object->ID();
 
-            cmdList->bindDescriptorSet(1,
+            cmdList->bindDescriptorSet(m_pipeline[Pass::MBOIT_Pass1]->getShaderProgram(), 1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
                     renderer::Descriptor(materialState.sampler, 2),
@@ -245,7 +250,7 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
         cmdList->setStencilRef(0);
         cmdList->setPipelineState(*m_pipeline[Pass::MBOIT_Pass2]);
 
-        cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(m_pipeline[Pass::MBOIT_Pass2]->getShaderProgram(), 0,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
@@ -291,7 +296,7 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
             constantBuffer.tint = materialState.tint;
             constantBuffer.objectID = itemMesh.object->ID();
 
-            cmdList->bindDescriptorSet(1,
+            cmdList->bindDescriptorSet(m_pipeline[Pass::MBOIT_Pass2]->getShaderProgram(), 1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
                     renderer::Descriptor(materialState.sampler, 2),
@@ -326,12 +331,12 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
         cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
         cmdList->setPipelineState(*m_pipeline[Pass::CompositionPass]);
 
-        cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(m_pipeline[Pass::MBOIT_Pass2]->getShaderProgram(), 0,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
             });
 
-        cmdList->bindDescriptorSet(1,
+        cmdList->bindDescriptorSet(m_pipeline[Pass::MBOIT_Pass2]->getShaderProgram(), 1,
             {
                 renderer::Descriptor(sampler_state, 2),
                 renderer::Descriptor(renderer::TextureView(composition_Texture), 3),

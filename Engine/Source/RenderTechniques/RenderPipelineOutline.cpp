@@ -40,16 +40,24 @@ void RenderPipelineOutlineStage::create(renderer::Device* device, scene::SceneDa
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "outline.hlsl", "main_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_renderTarget->getRenderPassDesc(), 
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_renderTarget->getRenderPassDesc(),
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "outline_pipeline");
 
-   m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-   m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-   m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-   m_pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
-   m_pipeline->setDepthWrite(false);
-   m_pipeline->setDepthTest(false);
-   m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+    m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+    m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+    m_pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
+    m_pipeline->setDepthWrite(false);
+    m_pipeline->setDepthTest(false);
+    m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Outline);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerState);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_ColorTextrue);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_MaterialTexture);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_SelectionTexture);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, rw_BufferID);
 
     m_readbackObjectID = V3D_NEW(renderer::UnorderedAccessBuffer, memory::MemoryLabel::MemoryGame)(device, renderer::BufferUsage::Buffer_GPURead, sizeof(u64) * 2, "objectID");
     m_mappedData._ptr = m_readbackObjectID->map<u32>();
@@ -97,9 +105,9 @@ void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneD
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setPipelineState(*m_pipeline);
 
-    cmdList->bindDescriptorSet(0,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
         });
 
     ObjectHandle composite = scene.m_globalResources.get("render_target");
@@ -128,14 +136,14 @@ void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneD
     constantBuffer.lineColor = { 1.f, 1.f, 0.f, 1.f };
     constantBuffer.lineThickness = 2.f;
 
-    cmdList->bindDescriptorSet(1,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-            renderer::Descriptor(sampler_state, 2),
-            renderer::Descriptor(renderer::TextureView(compositeTexture, 0, 0), 3),
-            renderer::Descriptor(renderer::TextureView(gbuffer_materialTexture, 0, 0), 4),
-            renderer::Descriptor(renderer::TextureView(selected_objectsTexture, 0, 0), 5),
-            renderer::Descriptor(m_readbackObjectID, 6),
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Outline),
+            renderer::Descriptor(sampler_state, m_parameters.s_SamplerState),
+            renderer::Descriptor(renderer::TextureView(compositeTexture, 0, 0), m_parameters.t_ColorTextrue),
+            renderer::Descriptor(renderer::TextureView(gbuffer_materialTexture, 0, 0), m_parameters.t_MaterialTexture),
+            renderer::Descriptor(renderer::TextureView(selected_objectsTexture, 0, 0), m_parameters.t_SelectionTexture),
+            renderer::Descriptor(m_readbackObjectID, m_parameters.rw_BufferID),
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);

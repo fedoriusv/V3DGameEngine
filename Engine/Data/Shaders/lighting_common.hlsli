@@ -2,13 +2,14 @@
 #define _LIGTING_COMMON_HLSL_
 
 #include "viewport.hlsli"
+#include "environment_common.hlsli"
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
 struct LightBuffer
 {
     float4 position;
-    float4 direction;
+    float4 direction_range;
     float4 color;
     float  type;
     float  attenuation;
@@ -50,18 +51,54 @@ float3 temperature_RGB(float temperature)
 ///////////////////////////////////////////////////////////////////////////////////////
 
 float4 lambert_lighting(
-    in float3 LightDir,
-    in float3 WorldNormal,
-    in float3 LightColor,
-    in float3 PixelColor)
+    in uniform ConstantBuffer<Viewport> Viewport,
+    in uniform ConstantBuffer<LightBuffer> Light,
+    in float3 WorldPos,
+    in float3 Direction,
+    in float3 Albedo,
+    in float3 Normals,
+    in float Roughness,
+    in float Metallic,
+    in float Depth)
 {
-    float3 N = normalize(WorldNormal);
-    float3 L = normalize(-LightDir);
-    
-    float diffuseKoeff = saturate(dot(N, L));
-    return float4(diffuseKoeff * LightColor * PixelColor, 1.0);
+    float3 N = normalize(Normals);
+    float3 L = -normalize(Direction);
+
+    float diffuseKoeff = 1.0; //;max(dot(N, L), 0.01);
+    return float4(diffuseKoeff * Albedo * Light.color.rgb, 1.0);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+
+float4 phong_blinn_lighting(
+    in uniform ConstantBuffer<Viewport> Viewport,
+    in uniform ConstantBuffer<LightBuffer> Light,
+    in float3 WorldPos,
+    in float3 Direction,
+    in float3 Albedo,
+    in float3 Specular,
+    in float3 Normals,
+    in float Roughness,
+    in float Metallic,
+    in float Depth)
+{
+    float3 N = normalize(Normals);
+    float3 L = -normalize(Direction);
+    float3 V = normalize(Viewport.cameraPosition.xyz - WorldPos);
+    float3 H = normalize(L + V);
+    
+    float diffuseKoeff = max(dot(N, L), 0.01);
+    float4 color = float4(diffuseKoeff * Albedo * Light.color.rgb, 1.0);
+    if (diffuseKoeff > 0.01)
+    {
+        color.rgb += Specular * pow(max(dot(N, H), 0.0), Light.intensity) * Light.attenuation;
+        
+        //float R = reflect(-L, N);
+        //color.rgb += Specular * pow(max(dot(R, V), 0.0), Light.intensity) * Light.attenuation;
+    }
+
+    return color;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -90,7 +127,7 @@ float G_Smith(float NdotV, float NdotL, float roughness)
 // Fresnel Schlick approximation
 float3 Fresnel_Schlick(float cosTheta, float3 F0)
 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -99,42 +136,52 @@ float3 Fresnel_Schlick(float cosTheta, float3 F0)
 float4 cook_torrance_BRDF(
     in uniform ConstantBuffer<Viewport> Viewport,
     in uniform ConstantBuffer<LightBuffer> Light,
+    in EnvironmentBuffer Environment,
     in float3 WorldPos,
+    in float3 Direction,
     in float3 Albedo,
     in float3 Normals,
-    in float Metallic,
     in float Roughness,
+    in float Metallic,
     in float Depth)
 {
     // Build TBN matrix
     float3 N = normalize(Normals);
     float3 V = normalize(Viewport.cameraPosition.xyz - WorldPos);
-    float3 L = normalize(-Light.direction.xyz);
+    float3 L = -normalize(Direction);
     float3 H = normalize(L + V);
 
-    float NdotL = max(dot(N, L), 0.0);
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotH = max(dot(N, H), 0.0);
-    float VdotH = max(dot(V, H), 0.0);
+    float NdotV = abs(dot(N, V)) + 1e-5;
+    float NdotL = max(dot(N, L), 0.01);
+    float NdotH = saturate(dot(N, H));
+    float VdotH = saturate(max(dot(V, H), 0.0));
 
     // Fresnel reflectance at normal incidence
     float3 F0 = float3(0.04, 0.04, 0.04); // dielectric
     F0 = lerp(F0, Albedo, Metallic); // metal uses albedo
-
+    
     // BRDF components
     float D = D_GGX(NdotH, Roughness);
     float G = G_Smith(NdotV, NdotL, Roughness);
     float3 F = Fresnel_Schlick(VdotH, F0);
     
     float3 numerator = D * G * F;
-    float denominator = 4.0 * NdotV * NdotL + 1e-5;
+    float denominator = max(4.0 * NdotV * NdotL, 0.001);
     float3 specular = numerator / denominator;
 
     float3 kD = (1.0 - F) * (1.0 - Metallic);
     float3 diffuse = kD * Albedo / PI;
     
+    //temp
+    float constant = 1.0f;
+    float lin = 0.09f;
+    float quadratic = 0.032f;
+    float distance = length(Direction);
+    float attenuation = 1.0 / (constant + lin * distance + quadratic * (distance * distance));
+    
     float3 lightColor = temperature_RGB(Light.temperature) * Light.color.rgb * Light.intensity;
-    float3 Lo = (diffuse + specular) * lightColor * NdotL;
+    float3 radiance = lightColor * attenuation;
+    float3 Lo = (diffuse + specular) * radiance * NdotL;
 
     return float4(Lo, 1.0);
 }

@@ -1,4 +1,5 @@
 #include "RenderPipelineZPrepass.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -65,6 +66,9 @@ void RenderPipelineZPrepassStage::create(renderer::Device* device, scene::SceneD
     m_depthPipeline->setStencilTest(true);
     m_depthPipeline->setStencilCompareOp(renderer::CompareOperation::Always, 0xFF);
     m_depthPipeline->setStencilOp(renderer::StencilOperation::Replace, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+
+    BIND_SHADER_PARAMETER(m_depthPipeline, m_depthParameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_depthPipeline, m_depthParameters, cb_Model);
 }
 
 void RenderPipelineZPrepassStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -110,9 +114,9 @@ void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::Scene
         cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
         cmdList->setPipelineState(*m_depthPipeline);
 
-        cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(m_depthPipeline->getShaderProgram(), 0,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_depthParameters.cb_Viewport)
             });
 
         for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
@@ -138,9 +142,9 @@ void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::Scene
             constantBuffer.tintColour = math::float4{ 1.0, 1.0, 1.0, 1.0 };
             constantBuffer.objectID = itemMesh.object->ID();
 
-            cmdList->bindDescriptorSet(1,
+            cmdList->bindDescriptorSet(m_depthPipeline->getShaderProgram(), 1,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, 1),
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer) }, m_depthParameters.cb_Model),
                 });
 
             DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_depthPipeline->getName()), color::rgbaf::LTGREY);

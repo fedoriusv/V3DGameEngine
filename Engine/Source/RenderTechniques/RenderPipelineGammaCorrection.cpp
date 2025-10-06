@@ -1,4 +1,5 @@
 #include "RenderPipelineGammaCorrection.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -17,6 +18,7 @@ namespace scene
 RenderPipelineGammaCorrectionStage::RenderPipelineGammaCorrectionStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "Gamma")
     , m_gammaRenderTarget(nullptr)
+    , m_pipeline(nullptr)
 {
 }
 
@@ -33,33 +35,34 @@ void RenderPipelineGammaCorrectionStage::create(renderer::Device* device, scene:
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "gamma.hlsl", "gamma_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_gammaRenderTarget->getRenderPassDesc(),
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_gammaRenderTarget->getRenderPassDesc(),
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gamma_pipeline");
 
-    pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-    pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-    pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-    pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
-    pipeline->setDepthWrite(false);
-    pipeline->setDepthTest(false);
-    pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+    m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+    m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+    m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+    m_pipeline->setDepthCompareOp(renderer::CompareOperation::Always);
+    m_pipeline->setDepthWrite(false);
+    m_pipeline->setDepthTest(false);
+    m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
-    m_pipeline.push_back(pipeline);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_ColorSampler);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_ColorTexture);
 }
 
 void RenderPipelineGammaCorrectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
-    for (auto& pipeline : m_pipeline)
+    if (m_pipeline)
     {
-        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
+        const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
         V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
-        pipeline = nullptr;
+        V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
+        m_pipeline = nullptr;
     }
-    m_pipeline.clear();
 }
 
 void RenderPipelineGammaCorrectionStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -86,11 +89,11 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
     cmdList->beginRenderTarget(*m_gammaRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setPipelineState(*m_pipeline[0]);
+    cmdList->setPipelineState(*m_pipeline);
 
-    cmdList->bindDescriptorSet(0,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
         });
 
     ObjectHandle composite_attachment = scene.m_globalResources.get("render_target");
@@ -101,10 +104,10 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
     ASSERT(sampler_state_h.isValid(), "must be valid");
     renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 
-    cmdList->bindDescriptorSet(1,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
         {
-            renderer::Descriptor(sampler_state, 0),
-            renderer::Descriptor(renderer::TextureView(texture, 0, 0), 1),
+            renderer::Descriptor(sampler_state, m_parameters.s_ColorSampler),
+            renderer::Descriptor(renderer::TextureView(texture, 0, 0), m_parameters.t_ColorTexture),
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);

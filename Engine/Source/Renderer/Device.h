@@ -47,13 +47,13 @@ namespace renderer
         /**
          * @brief bindDescriptorSet command
         */
-        virtual void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) = 0;
+        virtual void bindDescriptorSet(const ShaderProgram* program, u32 set, const std::vector<Descriptor>& descriptors) = 0;
 
-        virtual void bindTexture(u32 set, u32 slot, const TextureView& textureView) = 0;
-        virtual void bindSampler(u32 set, u32 slot, const SamplerState& sampler) = 0;
-        virtual void bindUAV(u32 set, u32 slot, Buffer* buffer) = 0;
-        virtual void bindUAV(u32 set, u32 slot, Texture* texture) = 0;
-        virtual void bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data) = 0;
+        virtual void bindTexture(const ShaderProgram* program, u32 set, u32 binding, const TextureView& textureView) = 0;
+        virtual void bindSampler(const ShaderProgram* program, u32 set, u32 binding, const SamplerState& sampler) = 0;
+        virtual void bindUAV(const ShaderProgram* program, u32 set, u32 binding, Buffer* buffer) = 0;
+        virtual void bindUAV(const ShaderProgram* program, u32 set, u32 binding, Texture* texture) = 0;
+        virtual void bindConstantBuffer(const ShaderProgram* program, u32 set, u32 binding, u32 size, const void* data) = 0;
         virtual void bindPushConstant(ShaderType type, u32 size, const void* data) = 0;
 
         virtual void insertDebugMarker(const std::string& marker, const color::Color& color) = 0;

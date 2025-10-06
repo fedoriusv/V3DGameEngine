@@ -34,10 +34,19 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Model);
+            SHADER_PARAMETER(s_SamplerState);
+            SHADER_PARAMETER(t_TextureBaseColor);
+        };
+
         scene::ModelHandler* m_modelHandler;
 
         renderer::RenderTargetState* m_renderTarget;
         std::vector<v3d::renderer::GraphicsPipelineState*> m_pipelines;
+        std::vector<MaterialParameters> m_parameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

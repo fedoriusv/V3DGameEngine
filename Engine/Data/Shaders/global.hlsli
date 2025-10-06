@@ -4,9 +4,26 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #define HLSL 1
+#define DX_FORMAT 1
+
 #define GLSL 0
+#define GL_FORMAT 0
 
 #define REVERSED_DEPTH 1
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+#define CONSTANT_BUFFER(Struct, Name, Set, Binding) \
+    [[vk::binding(##Binding, ##Set)]] ConstantBuffer<##Struct> Name : register(b##Binding, space##Set)
+
+#define TEXTURE2D(Name, Set, Binding) \
+        [[vk::binding(##Binding, ##Set)]] Texture2D Name : register(t##Binding, space##Set)
+
+#define TEXTURE3D(Name, Set, Binding) \
+        [[vk::binding(##Binding, ##Set)]] Texture3D Name : register(t##Binding, space##Set)
+
+#define SAMPLER_STATE(Name, Set, Binding) \
+        [[vk::binding(##Binding, ##Set)]] SamplerState Name : register(t##Binding, space##Set)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -81,7 +98,7 @@ struct ModelBuffer
     float4x4 modelMatrix;
     float4x4 prevModelMatrix;
     float4x4 normalMatrix;
-    float4   tint;
+    float4   tintColour;
     uint64_t objectID;
 };
 

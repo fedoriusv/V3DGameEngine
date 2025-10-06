@@ -1,4 +1,5 @@
 #include "RenderTechniques/RenderPipelineFXAA.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -44,6 +45,10 @@ void RenderPipelineFXAAStage::create(renderer::Device* device, scene::SceneData&
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerState);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureColor);
 }
 
 void RenderPipelineFXAAStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -82,9 +87,9 @@ void RenderPipelineFXAAStage::execute(renderer::Device* device, scene::SceneData
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setPipelineState(*m_pipeline);
 
-    cmdList->bindDescriptorSet(0,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
         });
 
     ObjectHandle render_target = scene.m_globalResources.get("render_target");
@@ -95,10 +100,10 @@ void RenderPipelineFXAAStage::execute(renderer::Device* device, scene::SceneData
     ASSERT(sampler_state_h.isValid(), "must be valid");
     renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 
-    cmdList->bindDescriptorSet(1,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
         {
-            renderer::Descriptor(sampler_state, 1),
-            renderer::Descriptor(texture, 2)
+            renderer::Descriptor(sampler_state, m_parameters.s_SamplerState),
+            renderer::Descriptor(texture, m_parameters.t_TextureColor)
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);

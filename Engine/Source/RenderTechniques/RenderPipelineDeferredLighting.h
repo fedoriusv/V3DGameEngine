@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "RenderPipelineStage.h"
+#include "RenderPipelineGBuffer.h"
 
 namespace v3d
 {
@@ -30,11 +31,26 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Light);
+            SHADER_PARAMETER(s_SamplerState);
+            SHADER_PARAMETER(t_TextureBaseColor);
+            SHADER_PARAMETER(t_TextureNormal);
+            SHADER_PARAMETER(t_TextureMaterial);
+            SHADER_PARAMETER(t_TextureDepth);
+#if WORLD_POS_ATTACHMENT
+            SHADER_PARAMETER(t_TextureWorldPos);
+#endif
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_deferredRenderTarget;
         v3d::renderer::GraphicsPipelineState* m_pipeline;
+        MaterialParameters m_parameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

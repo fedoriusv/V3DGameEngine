@@ -190,7 +190,6 @@ bool Shader::load(const stream::Stream* stream, u32 offset)
         }
     }
 
-    //m_hash = crc32c::Crc32c(reinterpret_cast<u8*>(m_source), m_size);
     LOG_DEBUG("Shader::load: The stream has been read %d from %d bytes", stream->tell() - m_header._offset, m_header._size);
 
     m_loaded = true;

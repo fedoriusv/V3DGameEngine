@@ -38,42 +38,42 @@ namespace renderer
             u32     _size = 0;
         };
 
-        Descriptor(const ConstantBuffer& CBO, u32 slot) noexcept
+        Descriptor(const ConstantBuffer& CBO, u32 binding) noexcept
             : _type(Type::Descriptor_ConstantBuffer)
             , _frequency(Frequency::Frequency_Dynamic)
-            , _slot(slot)
+            , _binding(binding)
             , _resource(CBO)
         {
         }
 
-        Descriptor(const TextureView& view, u32 slot) noexcept
+        Descriptor(const TextureView& view, u32 binding) noexcept
             : _type(Type::Descriptor_TextureSampled)
             , _frequency(Frequency::Frequency_Dynamic)
-            , _slot(slot)
+            , _binding(binding)
             , _resource(view)
         {
         }
 
-        Descriptor(Texture* UAV, u32 slot) noexcept
+        Descriptor(Texture* UAV, u32 binding) noexcept
             : _type(Type::Descriptor_RWTexture)
             , _frequency(Frequency::Frequency_Dynamic)
-            , _slot(slot)
+            , _binding(binding)
             , _resource(UAV)
         {
         }
 
-        Descriptor(Buffer* UAV, u32 slot) noexcept
+        Descriptor(Buffer* UAV, u32 binding) noexcept
             : _type(Type::Descriptor_RWBuffer)
             , _frequency(Frequency::Frequency_Dynamic)
-            , _slot(slot)
+            , _binding(binding)
             , _resource(UAV)
         {
         }
 
-        Descriptor(SamplerState* sampler, u32 slot) noexcept
+        Descriptor(SamplerState* sampler, u32 binding) noexcept
             : _type(Type::Descriptor_Sampler)
             , _frequency(Frequency::Frequency_Dynamic)
-            , _slot(slot)
+            , _binding(binding)
             , _resource(sampler)
         {
         }
@@ -81,14 +81,14 @@ namespace renderer
         Descriptor(Type type) noexcept
             : _type(type)
             , _frequency(Frequency::Frequency_Dynamic)
-            , _slot(0)
+            , _binding(0)
             , _resource()
         {
         }
 
         Type        _type       : 16;
         Frequency   _frequency  : 16;
-        u32         _slot;
+        u32         _binding;
         std::variant<std::monostate, ConstantBuffer, TextureView, Texture*, Buffer*, SamplerState*> _resource;
     };
 

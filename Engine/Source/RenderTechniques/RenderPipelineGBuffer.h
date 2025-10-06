@@ -3,6 +3,9 @@
 #include "Common.h"
 #include "RenderPipelineStage.h"
 
+//For debug
+#define WORLD_POS_ATTACHMENT 0
+
 namespace v3d
 {
 namespace renderer
@@ -34,6 +37,19 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Model);
+            SHADER_PARAMETER(s_SamplerState);
+            SHADER_PARAMETER(t_TextureAlbedo);
+            SHADER_PARAMETER(t_TextureNormal);
+            SHADER_PARAMETER(t_TextureMetalness);
+            SHADER_PARAMETER(t_TextureRoughness);
+
+            SHADER_PARAMETER(t_TextureMaterial);
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
@@ -41,6 +57,7 @@ namespace scene
 
         renderer::RenderTargetState* m_GBufferRenderTarget;
         std::vector<v3d::renderer::GraphicsPipelineState*> m_pipeline;
+        std::vector<MaterialParameters> m_parameters;
     };
 
 

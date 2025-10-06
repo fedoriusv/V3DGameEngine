@@ -36,11 +36,23 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Outline);
+            SHADER_PARAMETER(s_SamplerState);
+            SHADER_PARAMETER(t_ColorTextrue);
+            SHADER_PARAMETER(t_MaterialTexture);
+            SHADER_PARAMETER(t_SelectionTexture);
+            SHADER_PARAMETER(rw_BufferID);
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_renderTarget;
         renderer::GraphicsPipelineState* m_pipeline;
+        MaterialParameters m_parameters;
 
         renderer::UnorderedAccessBuffer* m_readbackObjectID;
         MappedData m_mappedData;

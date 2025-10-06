@@ -30,11 +30,19 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(s_ColorSampler);
+            SHADER_PARAMETER(t_ColorTexture);
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_gammaRenderTarget;
-        std::vector<renderer::GraphicsPipelineState*> m_pipeline;
+        renderer::GraphicsPipelineState* m_pipeline;
+        MaterialParameters m_parameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

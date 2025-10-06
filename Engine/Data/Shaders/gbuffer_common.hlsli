@@ -35,8 +35,11 @@ struct PS_GBUFFER_STRUCT
 {
     [[vk::location(0)]] float4 BaseColor : SV_TARGET0; // RGB = BaseColor, A = unused
     [[vk::location(1)]] float4 Normal    : SV_TARGET1; // RGB = Normal (world), A = unused
-    [[vk::location(2)]] float4 Material  : SV_TARGET2; // R = Roughness, G = Metalness, B = objectID, A = unused
+    [[vk::location(2)]] float4 Material  : SV_TARGET2; // R = Roughness, G = Metalness, B = ObjectID, A = unused
     [[vk::location(3)]] float2 Velocity  : SV_TARGET3; // RG = Velocity
+#if WORLD_POS_ATTACHMENT
+    [[vk::location(4)]] float4 WorldPos  : SV_TARGET4; // RGB = World position, A = Depth
+#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -75,13 +78,13 @@ float2 calc_velocity(float4 position, float4 prevPosition)
 }
 
 PS_GBUFFER_STRUCT _gbuffer_standard_ps(
-    in PS_GBUFFER_STANDARD_INPUT Input, 
+    in PS_GBUFFER_STANDARD_INPUT Input,
     in uniform ConstantBuffer<Viewport> Viewport,
     in uniform ConstantBuffer<ModelBuffer> Model,
     in float3 Albedo,
     in float3 Normal,
-    in float Metalness,
-    in float Roughness)
+    in float Roughness,
+    in float Metalness)
 {
     PS_GBUFFER_STRUCT Output;
     
@@ -93,11 +96,13 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
     float3x3 TBN = float3x3(T, B, N);
     float3 normal = normalize(mul(Normal, TBN));
 
-    Output.BaseColor = float4(Albedo * Model.tint.rgb, 1.0);
+    Output.BaseColor = float4(Albedo * Model.tintColour.rgb, 1.0);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
-    Output.Material = float4(Roughness, Metalness, Model.objectID, 0.0);
+    Output.Material = float4(Roughness, Metalness, (float)Model.objectID, 0.0);
     Output.Velocity = velocity;
-    
+#if WORLD_POS_ATTACHMENT
+    Output.WorldPos = float4(Input.WorldPos, Input.ClipPos.z / Input.ClipPos.w);
+#endif
     return Output;
 }
 
@@ -108,9 +113,10 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     in uniform ConstantBuffer<Viewport> Viewport,
     in uniform ConstantBuffer<ModelBuffer> Model,
     in float3 Albedo,
+    in float Opacity,
     in float3 Normal,
-    in float Metalness,
-    in float Roughness)
+    in float Roughness,
+    in float Metalness)
 {
     PS_GBUFFER_STRUCT Output;
 
@@ -120,13 +126,15 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     float3 B = normalize(Input.Bitangent);
     float3 T = normalize(Input.Tangent);
     float3x3 TBN = float3x3(T, B, N);
-    float3 normal = normalize(mul(Normal, TBN));
+    float3 normal = normalize(mul(TBN, Normal));
 
-    Output.BaseColor = float4(Albedo * Model.tint.rgb, Model.tint.a);
+    Output.BaseColor = float4(Albedo * Model.tintColour.rgb, Opacity * Model.tintColour.a);
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
-    Output.Material = float4(Roughness, Metalness, Model.objectID, 0.0);
+    Output.Material = float4(Roughness, Metalness, (float)Model.objectID, 0.0);
     Output.Velocity = velocity;
-    
+#if WORLD_POS_ATTACHMENT
+    Output.WorldPos = float4(Input.WorldPos, Input.ClipPos.z / Input.ClipPos.w);
+#endif
     return Output;
 }
 

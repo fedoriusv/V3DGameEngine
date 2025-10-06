@@ -1,4 +1,5 @@
 #include "RenderPipelineSelection.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -56,6 +57,9 @@ void RenderPipelineSelectionStage::create(renderer::Device* device, scene::Scene
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Model);
 }
 
 void RenderPipelineSelectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -102,9 +106,9 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
     cmdList->setStencilRef(0);
     cmdList->setPipelineState(*m_pipeline);
 
-    cmdList->bindDescriptorSet(0,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
         });
 
     for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)])
@@ -129,9 +133,9 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
         constantBuffer.tintColour = material.getProperty<math::float4>("ColorDiffuse");
         constantBuffer.objectID = itemMesh.object->ID();
 
-        cmdList->bindDescriptorSet(1,
+        cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Model),
             });
 
         DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline->getName()), color::rgbaf::LTGREY);

@@ -951,8 +951,8 @@ bool ImGuiWidgetHandler::renderDrawData(ImGuiWidgetViewportData* viewportData, I
 
                     u64 textureID = pCmd->GetTexID();
                     ASSERT(textureID < m_activeTextures.size() && m_activeTextures[textureID], "range out or invalid");
-                    viewportData->_cmdList->bindTexture(0, 0, m_activeTextures[textureID]);
-                    viewportData->_cmdList->bindSampler(0, 1, *m_imageSampler);
+                    viewportData->_cmdList->bindTexture(m_UIProgram, 0, 0, m_activeTextures[textureID]);
+                    viewportData->_cmdList->bindSampler(m_UIProgram, 0, 1, *m_imageSampler);
                 }
 
                 viewportData->_cmdList->drawIndexed(viewportData->_geometryDesc[currentIndex], pCmd->IdxOffset + global_idx_offset, pCmd->ElemCount, pCmd->VtxOffset + global_vtx_offset, 0, 1);

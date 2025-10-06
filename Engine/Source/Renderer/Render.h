@@ -33,9 +33,9 @@ namespace renderer
     constexpr u32 k_maxDescriptorSetCount = 4;
 
     /**
-    * @brief k_maxDescriptorBindingCount
+    * @brief k_maxDescriptorSlotsCount
     */
-    constexpr u32 k_maxDescriptorBindingCount = 8;
+    constexpr u32 k_maxDescriptorSlotsCount = 8;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 

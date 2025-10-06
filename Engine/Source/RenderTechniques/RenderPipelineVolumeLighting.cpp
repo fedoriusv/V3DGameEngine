@@ -1,4 +1,5 @@
 #include "RenderPipelineVolumeLighting.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 
@@ -9,9 +10,11 @@
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
 
+#include "FrameProfiler.h"
+
 namespace v3d
 {
-namespace renderer
+namespace scene
 {
 
 RenderPipelineVolumeLightingStage::RenderPipelineVolumeLightingStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
@@ -25,21 +28,24 @@ RenderPipelineVolumeLightingStage::~RenderPipelineVolumeLightingStage()
 {
 }
 
-void RenderPipelineVolumeLightingStage::create(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
     {
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "simple.hlsl", "main_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "light.hlsl", "light_primitive_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::Shader::DefineList defines =
+        {
+            { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
+        };
 
-        RenderPassDesc desc{};
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "light.hlsl", "main_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "light.hlsl", "light_volume_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        renderer::RenderPassDesc desc{};
         desc._countColorAttachments = 1;
-        desc._attachmentsDesc[0]._format = Format_R16G16B16A16_SFloat;
-        desc._hasDepthStencilAttahment = true;
-        desc._attachmentsDesc.back()._format = Format_D32_SFloat;
+        desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "lighting");
@@ -49,21 +55,37 @@ void RenderPipelineVolumeLightingStage::create(Device* device, scene::SceneData&
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
         pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
 #if ENABLE_REVERSED_Z
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-        pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_LessOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
-        pipeline->setDepthTest(true);
+        pipeline->setDepthTest(false);
         pipeline->setDepthWrite(false);
+        pipeline->setBlendEnable(0, true);
         pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
         pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
         pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
 
+        MaterialParameters parameters;
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Model);
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Light);
+        BIND_SHADER_PARAMETER(pipeline, parameters, s_SamplerState);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureBaseColor);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureNormal);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMaterial);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureDepth);
+#if WORLD_POS_ATTACHMENT
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureWorldPos);
+#endif
         m_pipelines.push_back(pipeline);
+        m_parameters.push_back(parameters);
     }
+
+    m_sphereVolume = scene::MeshHelper::createSphere(device, 1.f, 16, 16, "pointLight");
 }
 
-void RenderPipelineVolumeLightingStage::destroy(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineVolumeLightingStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -78,7 +100,7 @@ void RenderPipelineVolumeLightingStage::destroy(Device* device, scene::SceneData
     m_pipelines.clear();
 }
 
-void RenderPipelineVolumeLightingStage::prepare(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineVolumeLightingStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_lightRenderTarget)
     {
@@ -91,14 +113,15 @@ void RenderPipelineVolumeLightingStage::prepare(Device* device, scene::SceneData
     }
 }
 
-void RenderPipelineVolumeLightingStage::execute(Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = scene.m_renderState.m_cmdList;
+    renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
 
+    TRACE_PROFILER_SCOPE("VolumeLight", color::rgba8::GREEN);
     DEBUG_MARKER_SCOPE(cmdList, "VolumeLight", color::rgbaf::GREEN);
 
-    if (!scene.m_lists[toEnumType(scene::MaterialType::Lights)].empty())
+    if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty())
     {
         ObjectHandle rt_h = scene.m_globalResources.get("render_target");
         ASSERT(rt_h.isValid(), "must be valid");
@@ -107,6 +130,28 @@ void RenderPipelineVolumeLightingStage::execute(Device* device, scene::SceneData
         ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
         ASSERT(depth_stencil_h.isValid(), "must be valid");
         renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(depth_stencil_h);
+
+        ObjectHandle gbuffer_albedo_h = scene.m_globalResources.get("gbuffer_albedo");
+        ASSERT(gbuffer_albedo_h.isValid(), "must be valid");
+        renderer::Texture2D* gbufferAlbedoTexture = objectFromHandle<renderer::Texture2D>(gbuffer_albedo_h);
+
+        ObjectHandle gbuffer_normals_h = scene.m_globalResources.get("gbuffer_normals");
+        ASSERT(gbuffer_normals_h.isValid(), "must be valid");
+        renderer::Texture2D* gbufferNormalsTexture = objectFromHandle<renderer::Texture2D>(gbuffer_normals_h);
+
+        ObjectHandle gbuffer_material_h = scene.m_globalResources.get("gbuffer_material");
+        ASSERT(gbuffer_material_h.isValid(), "must be valid");
+        renderer::Texture2D* gbufferMaterialTexture = objectFromHandle<renderer::Texture2D>(gbuffer_material_h);
+
+#if WORLD_POS_ATTACHMENT
+        ObjectHandle gbuffer_world_pos_h = scene.m_globalResources.get("gbuffer_world_pos");
+        ASSERT(gbuffer_world_pos_h.isValid(), "must be valid");
+        renderer::Texture2D* gbufferWorldPosTexture = objectFromHandle<renderer::Texture2D>(gbuffer_world_pos_h);
+#endif
+
+        ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_clamp");
+        ASSERT(sampler_state_h.isValid(), "must be valid");
+        renderer::SamplerState* samplerState = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 
         m_lightRenderTarget->setColorTexture(0, renderTargetTexture,
             {
@@ -117,33 +162,21 @@ void RenderPipelineVolumeLightingStage::execute(Device* device, scene::SceneData
             }
         );
 
-        m_lightRenderTarget->setDepthStencilTexture(depthStencilTexture,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.f
-            },
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
-            },
-            {
-                renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-            }
-        );
-
+        cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_ShaderRead);
         cmdList->beginRenderTarget(*m_lightRenderTarget);
         cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
         cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
 
-        for (auto& item : scene.m_lists[toEnumType(scene::MaterialType::Lights)])
+        for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)])
         {
-            const scene::Light& light = *static_cast<scene::Light*>(item->_object);
-            const scene::Mesh* volume = light.getVolumeMesh();
-            ASSERT(volume, "missing volume");
+            const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
+            const scene::PointLight& light = *static_cast<const scene::PointLight*>(itemLight.light);
 
-            cmdList->setPipelineState(*m_pipelines[item->_pipelineID]);
+            cmdList->setPipelineState(*m_pipelines[entry->pipelineID]);
 
-            cmdList->bindDescriptorSet(0,
+            cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 0,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[entry->pipelineID].cb_Viewport)
                 });
 
             struct ModelBuffer
@@ -151,45 +184,81 @@ void RenderPipelineVolumeLightingStage::execute(Device* device, scene::SceneData
                 math::Matrix4D modelMatrix;
                 math::Matrix4D prevModelMatrix;
                 math::Matrix4D normalMatrix;
-                math::float4   tint;
+                math::float4   tintColour;
                 u64            objectID;
                 u64           _pad = 0;
             };
 
             ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = item->_object->getTransform();
-            constantBuffer.prevModelMatrix = item->_object->getPrevTransform();
-            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
-            constantBuffer.normalMatrix.makeTransposed();
-            constantBuffer.tint = item->_material._tint;
-            constantBuffer.objectID = item->_objectID;
+            constantBuffer.modelMatrix = itemLight.object->getTransform().getMatrix();
+            constantBuffer.prevModelMatrix = itemLight.object->getPrevTransform().getMatrix();
+            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+            constantBuffer.tintColour = math::float4{1.0, 1.0, 1.0, 1.0};
+            constantBuffer.objectID = 0;
 
-            cmdList->bindDescriptorSet(1,
+            struct LightBuffer
+            {
+                math::Vector3D position;
+                math::Vector3D range;
+                math::float4   color;
+                f32            type;
+                f32            attenuation;
+                f32            intensity;
+                f32            temperature;
+            };
+
+            LightBuffer lightBuffer;
+            lightBuffer.position = itemLight.object->getTransform().getPosition();
+            lightBuffer.range = { light.getRadius(), 0.0, 0.0};
+            lightBuffer.color = light.getColor();
+            lightBuffer.intensity = light.getIntensity();
+            lightBuffer.temperature = light.getTemperature();
+            lightBuffer.attenuation = light.getAttenuation();
+            lightBuffer.type = light.getType() == typeOf<scene::PointLight>() ? 1 : 2;
+
+            cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 1,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[entry->pipelineID].cb_Model),
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters[entry->pipelineID].cb_Light),
+                    renderer::Descriptor(samplerState, m_parameters[entry->pipelineID].s_SamplerState),
+                    renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureBaseColor),
+                    renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureNormal),
+                    renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureMaterial),
+                    renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters[entry->pipelineID].t_TextureDepth),
+#if WORLD_POS_ATTACHMENT
+                    renderer::Descriptor(renderer::TextureView(gbufferWorldPosTexture), m_parameters[entry->pipelineID].t_TextureWorldPos),
+#endif
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", item->_objectID, m_pipelines[item->_pipelineID]->getName()), color::rgbaf::LTGREY);
-            renderer::GeometryBufferDesc desc(volume->m_indexBuffer, 0, volume->m_vertexBuffer[0], 0, sizeof(VertexFormatSimpleLit), 0);
-            cmdList->drawIndexed(desc, 0, volume->m_indexBuffer->getIndicesCount(), 0, 0, 1);
+            DEBUG_MARKER_SCOPE(cmdList, std::format("Light {}", light.getName()), color::rgbaf::LTGREY);
+            if (light.getType() == typeOf<scene::PointLight>())
+            {
+                renderer::GeometryBufferDesc desc(m_sphereVolume->getIndexBuffer(), 0, m_sphereVolume->getVertexBuffer(0), 0, sizeof(VertexFormatSimpleLit), 0);
+                cmdList->drawIndexed(desc, 0, m_sphereVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+            }
+            else if (light.getType() == typeOf<scene::SpotLight>())
+            {
+                //TODO
+            }
         }
 
         cmdList->endRenderTarget();
+        cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_DepthStencilAttachment);
     }
 }
 
-void RenderPipelineVolumeLightingStage::createRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineVolumeLightingStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_lightRenderTarget == nullptr, "must be nullptr");
     m_lightRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
 }
 
-void RenderPipelineVolumeLightingStage::destroyRenderTarget(Device* device, scene::SceneData& data)
+void RenderPipelineVolumeLightingStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_lightRenderTarget, "must be valid");
     V3D_DELETE(m_lightRenderTarget, memory::MemoryLabel::MemoryGame);
     m_lightRenderTarget = nullptr;
 }
 
-} // namespace renderer
+} // namespace scene
 } // namespace v3d

@@ -1,4 +1,5 @@
 #include "RenderPipelineDeferredLighting.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -30,10 +31,15 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene
 {
     createRenderTarget(device, scene);
 
+    const renderer::Shader::DefineList defines =
+    {
+        { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
+    };
+
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-        "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        "offscreen.hlsl", "offscreen_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-        "light.hlsl", "deffered_lighting_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        "light.hlsl", "deffered_lighting_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
     m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_deferredRenderTarget->getRenderPassDesc(),
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "deffered_light_pipeline");
@@ -48,6 +54,17 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene
     m_pipeline->setStencilTest(true);
     m_pipeline->setStencilCompareOp(renderer::CompareOperation::NotEqual, 0x0);
     m_pipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Light);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerState);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureBaseColor);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureNormal);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureMaterial);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureDepth);
+#if WORLD_POS_ATTACHMENT
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureWorldPos);
+#endif
 }
 
 void RenderPipelineDeferredLightingStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -92,9 +109,9 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setStencilRef(0x0);
     cmdList->setPipelineState(*m_pipeline);
-    cmdList->bindDescriptorSet(0,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
         });
 
     ObjectHandle gbuffer_albedo_h = scene.m_globalResources.get("gbuffer_albedo");
@@ -108,6 +125,12 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
     ObjectHandle gbuffer_material_h = scene.m_globalResources.get("gbuffer_material");
     ASSERT(gbuffer_material_h.isValid(), "must be valid");
     renderer::Texture2D* gbufferMaterialTexture = objectFromHandle<renderer::Texture2D>(gbuffer_material_h);
+
+#if WORLD_POS_ATTACHMENT
+    ObjectHandle gbuffer_world_pos_h = scene.m_globalResources.get("gbuffer_world_pos");
+    ASSERT(gbuffer_world_pos_h.isValid(), "must be valid");
+    renderer::Texture2D* gbufferWorldPosTexture = objectFromHandle<renderer::Texture2D>(gbuffer_world_pos_h);
+#endif
 
     ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_clamp");
     ASSERT(sampler_state_h.isValid(), "must be valid");
@@ -138,14 +161,17 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
     lightBuffer.intensity = dirLight.getIntensity();
     lightBuffer.temperature = dirLight.getTemperature();
 
-    cmdList->bindDescriptorSet(1,
+    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, 2),
-            renderer::Descriptor(samplerState, 3),
-            renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), 4),
-            renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), 5),
-            renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), 6),
-            renderer::Descriptor(renderer::TextureView(depthStencilTexture), 7),
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters.cb_Light),
+            renderer::Descriptor(samplerState, m_parameters.s_SamplerState),
+            renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), m_parameters.t_TextureBaseColor),
+            renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters.t_TextureNormal),
+            renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters.t_TextureMaterial),
+            renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters.t_TextureDepth),
+#if WORLD_POS_ATTACHMENT
+            renderer::Descriptor(renderer::TextureView(gbufferWorldPosTexture), m_parameters.t_TextureWorldPos),
+#endif
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);

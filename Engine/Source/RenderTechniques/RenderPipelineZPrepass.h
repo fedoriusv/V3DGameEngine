@@ -34,6 +34,12 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Model);
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
 
@@ -41,6 +47,7 @@ namespace scene
 
         renderer::RenderTargetState* m_depthRenderTarget;
         renderer::GraphicsPipelineState* m_depthPipeline;
+        MaterialParameters m_depthParameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

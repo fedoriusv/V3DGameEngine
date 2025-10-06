@@ -20,8 +20,8 @@ RenderPipelineTAAStage::RenderPipelineTAAStage(RenderTechnique* technique) noexc
     , m_renderTarget(nullptr)
     , m_pipeline(nullptr)
 
-    , m_resolved(nullptr)
-    , m_history(nullptr)
+    , m_resolvedTexture(nullptr)
+    , m_historyTexture(nullptr)
 {
 }
 
@@ -52,6 +52,13 @@ void RenderPipelineTAAStage::create(renderer::Device* device, scene::SceneData& 
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerLinear);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerPoint);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureBaseColor);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureHistory);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureVelocity);
 }
 
 void RenderPipelineTAAStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -92,34 +99,34 @@ void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData&
         cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
         cmdList->setPipelineState(*m_pipeline);
 
-        ObjectHandle render_target = scene.m_globalResources.get("render_target");
-        ASSERT(render_target.isValid(), "must be valid");
-        renderer::Texture2D* render_targetTexture = objectFromHandle<renderer::Texture2D>(render_target);
+        ObjectHandle render_target_h = scene.m_globalResources.get("render_target");
+        ASSERT(render_target_h.isValid(), "must be valid");
+        renderer::Texture2D* renderRenderTexture = objectFromHandle<renderer::Texture2D>(render_target_h);
 
-        ObjectHandle velocity_target = scene.m_globalResources.get("gbuffer_velocity");
-        ASSERT(render_target.isValid(), "must be valid");
-        renderer::Texture2D* velocity_targetTexture = objectFromHandle<renderer::Texture2D>(velocity_target);
+        ObjectHandle velocity_target_h = scene.m_globalResources.get("gbuffer_velocity");
+        ASSERT(velocity_target_h.isValid(), "must be valid");
+        renderer::Texture2D* velocityRenderTarget = objectFromHandle<renderer::Texture2D>(velocity_target_h);
 
         ObjectHandle sampler_state_linear_h = scene.m_globalResources.get("linear_sampler_clamp");
         ASSERT(sampler_state_linear_h.isValid(), "must be valid");
-        renderer::SamplerState* sampler_state_linear = objectFromHandle<renderer::SamplerState>(sampler_state_linear_h);
+        renderer::SamplerState* samplerStateLinear = objectFromHandle<renderer::SamplerState>(sampler_state_linear_h);
 
         ObjectHandle linear_sampler_clamp_h = scene.m_globalResources.get("linear_sampler_clamp");
         ASSERT(linear_sampler_clamp_h.isValid(), "must be valid");
-        renderer::SamplerState* sampler_state_point = objectFromHandle<renderer::SamplerState>(linear_sampler_clamp_h);
+        renderer::SamplerState* samplerStatePoint = objectFromHandle<renderer::SamplerState>(linear_sampler_clamp_h);
 
-        cmdList->bindDescriptorSet(0,
+        cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
             {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
             });
 
-        cmdList->bindDescriptorSet(1,
+        cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
             {
-                renderer::Descriptor(sampler_state_linear, 1),
-                renderer::Descriptor(sampler_state_point, 2),
-                renderer::Descriptor(renderer::TextureView(render_targetTexture, 0, 0), 3),
-                renderer::Descriptor(renderer::TextureView(m_history, 0, 0), 4),
-                renderer::Descriptor(renderer::TextureView(velocity_targetTexture, 0, 0), 5)
+                renderer::Descriptor(samplerStateLinear, m_parameters.s_SamplerLinear),
+                renderer::Descriptor(samplerStatePoint, m_parameters.s_SamplerPoint),
+                renderer::Descriptor(renderer::TextureView(renderRenderTexture, 0, 0), m_parameters.t_TextureBaseColor),
+                renderer::Descriptor(renderer::TextureView(m_historyTexture, 0, 0), m_parameters.t_TextureHistory),
+                renderer::Descriptor(renderer::TextureView(velocityRenderTarget, 0, 0), m_parameters.t_TextureVelocity)
             });
 
         cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
@@ -128,7 +135,7 @@ void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData&
 
     {
         TRACE_PROFILER_SCOPE("TAA Copy", color::rgba8::GREEN);
-        cmdList->copy(m_resolved, m_history, { m_resolved->getWidth(), m_resolved->getHeight(), 1 });
+        cmdList->copy(m_resolvedTexture, m_historyTexture, { m_resolvedTexture->getWidth(), m_resolvedTexture->getHeight(), 1 });
     }
 
     scene.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
@@ -136,17 +143,17 @@ void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData&
 
 void RenderPipelineTAAStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
-    ASSERT(m_resolved == nullptr, "must be nullptr");
-    m_resolved = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Read,
+    ASSERT(m_resolvedTexture == nullptr, "must be nullptr");
+    m_resolvedTexture = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Read,
         renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "resolved_taa");
 
-    ASSERT(m_history == nullptr, "must be nullptr");
-    m_history = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
+    ASSERT(m_historyTexture == nullptr, "must be nullptr");
+    m_historyTexture = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
         renderer::Format::Format_R16G16B16A16_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "history_taa");
 
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
     m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
-    m_renderTarget->setColorTexture(0, m_resolved,
+    m_renderTarget->setColorTexture(0, m_resolvedTexture,
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
@@ -157,13 +164,13 @@ void RenderPipelineTAAStage::createRenderTarget(renderer::Device* device, scene:
 
 void RenderPipelineTAAStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
-    ASSERT(m_resolved, "must be valid");
-    V3D_DELETE(m_resolved, memory::MemoryLabel::MemoryGame);
-    m_resolved = nullptr;
+    ASSERT(m_resolvedTexture, "must be valid");
+    V3D_DELETE(m_resolvedTexture, memory::MemoryLabel::MemoryGame);
+    m_resolvedTexture = nullptr;
 
-    ASSERT(m_history, "must be valid");
-    V3D_DELETE(m_history, memory::MemoryLabel::MemoryGame);
-    m_history = nullptr;
+    ASSERT(m_historyTexture, "must be valid");
+    V3D_DELETE(m_historyTexture, memory::MemoryLabel::MemoryGame);
+    m_historyTexture = nullptr;
 
     ASSERT(m_renderTarget, "must be valid");
     V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);

@@ -70,7 +70,7 @@ namespace renderer
         u32 _maxVertexInputBindings = k_maxVertexInputBindings;
 
         u32 _maxDescriptorSets = k_maxDescriptorSetCount;
-        u32 _maxDescriptorBindings = k_maxDescriptorBindingCount;
+        u32 _maxDescriptorBindingsPerSet = k_maxDescriptorSlotsCount;
 
         u32 _constantBufferSize = 1024; //1 KB
 

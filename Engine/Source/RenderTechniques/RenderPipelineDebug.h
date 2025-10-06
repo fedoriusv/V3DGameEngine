@@ -34,12 +34,19 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Model);
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
         scene::ModelHandler* m_modelHandler;
         renderer::RenderTargetState* m_renderTarget;
         std::vector<renderer::GraphicsPipelineState*> m_pipelines;
+        std::vector<MaterialParameters> m_parameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

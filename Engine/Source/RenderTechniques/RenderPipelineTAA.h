@@ -33,14 +33,25 @@ namespace scene
 
     private:
 
+        struct MaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(s_SamplerLinear);
+            SHADER_PARAMETER(s_SamplerPoint);
+            SHADER_PARAMETER(t_TextureBaseColor);
+            SHADER_PARAMETER(t_TextureHistory);
+            SHADER_PARAMETER(t_TextureVelocity);
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
         renderer::RenderTargetState* m_renderTarget;
         renderer::GraphicsPipelineState* m_pipeline;
+        MaterialParameters m_parameters;
 
-        renderer::Texture2D* m_resolved;
-        renderer::Texture2D* m_history;
+        renderer::Texture2D* m_resolvedTexture;
+        renderer::Texture2D* m_historyTexture;
 
     };
 

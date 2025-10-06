@@ -218,15 +218,15 @@ void resolveMoments(out float transmittance_at_depth, out float total_transmitta
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-[[vk::binding(0, 0)]] ConstantBuffer<Viewport> CB_Viewport : register(b0, space0);
+[[vk::binding(0, 0)]] ConstantBuffer<Viewport> cb_Viewport : register(b0, space0);
 
-[[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> CB_Model : register(b1, space1);
-[[vk::binding(2, 1)]] SamplerState samplerState : register(s0, space1);
-[[vk::binding(3, 1)]] Texture2D texture0 : register(t0, space1);
-[[vk::binding(4, 1)]] Texture2D texture1 : register(t1, space1);
-[[vk::binding(5, 1)]] Texture2D texture2 : register(t2, space1);
-[[vk::binding(6, 1)]] Texture2D texture3 : register(t3, space1);
-[[vk::binding(7, 1)]] Texture2D texture4 : register(t4, space1);
+[[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> cb_Model : register(b1, space1);
+[[vk::binding(2, 1)]] SamplerState s_SamplerState          : register(s0, space1);
+[[vk::binding(3, 1)]] Texture2D t_Texture0                 : register(t0, space1);
+[[vk::binding(4, 1)]] Texture2D t_Texture1                 : register(t1, space1);
+[[vk::binding(5, 1)]] Texture2D t_Texture2                 : register(t2, space1);
+[[vk::binding(6, 1)]] Texture2D t_Texture3                 : register(t3, space1);
+[[vk::binding(7, 1)]] Texture2D t_Texture4                 : register(t4, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -249,14 +249,21 @@ struct PS_MBOIT_STRUCT
 
 PS_MBOIT_STRUCT mboit_pass1_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
-    PS_GBUFFER_STRUCT GBubfferStruct = _gbuffer_standard_alpha_ps(Input, CB_Viewport, CB_Model, texture0, texture1, texture2, samplerState);
+    float4 baseColor = t_Texture0.Sample(s_SamplerState, Input.UV);
+    float3 albedo = srgb_linear(baseColor.rgb);
+    float3 normal = t_Texture1.Sample(s_SamplerState, Input.UV).rgb * 2.0 - 1.0;
+    float3 materials = t_Texture2.Sample(s_SamplerState, Input.UV).rgb;
+    float roughness = materials.r;
+    float metalness = materials.g;
+	
+    PS_GBUFFER_STRUCT GBubfferStruct = _gbuffer_standard_alpha_ps(Input, cb_Viewport, cb_Model, albedo, baseColor.a, normal, roughness, metalness);
     
     float3 color = GBubfferStruct.BaseColor.rgb;
     float opacity = GBubfferStruct.BaseColor.a;
     float emissive = 0.0;
     
-    float4 viewPos = mul(CB_Viewport.viewMatrix, float4(Input.WorldPos, 1.0));
-    float depth = linearize_depth_log(viewPos.z, CB_Viewport.clipNearFar.x, CB_Viewport.clipNearFar.y);
+    float4 viewPos = mul(cb_Viewport.viewMatrix, float4(Input.WorldPos, 1.0));
+    float depth = linearize_depth_log(viewPos.z, cb_Viewport.clipNearFar.x, cb_Viewport.clipNearFar.y);
     
     float coverage = clamp(opacity + lerp(MIN_COVERAGE, EMISSIVE_ELEMENT_COVERAGE, saturate(emissive)), MIN_COVERAGE, MAX_COVERAGE);
     float transmittance = 1.0 - coverage;
@@ -277,18 +284,25 @@ struct PS_TRANSPARENCY_OUTPUT
 
 PS_TRANSPARENCY_OUTPUT mboit_pass2_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
-    PS_GBUFFER_STRUCT GBubfferStruct = _gbuffer_standard_alpha_ps(Input, CB_Viewport, CB_Model, texture0, texture1, texture2, samplerState);
+    float4 baseColor = t_Texture0.Sample(s_SamplerState, Input.UV);
+    float3 albedo = srgb_linear(baseColor.rgb);
+    float3 normal = t_Texture1.Sample(s_SamplerState, Input.UV).rgb * 2.0 - 1.0;
+    float3 materials = t_Texture2.Sample(s_SamplerState, Input.UV).rgb;
+    float roughness = materials.r;
+    float metalness = materials.g;
+	
+    PS_GBUFFER_STRUCT GBubfferStruct = _gbuffer_standard_alpha_ps(Input, cb_Viewport, cb_Model, albedo, baseColor.a, normal, roughness, metalness);
     
     float3 color = GBubfferStruct.BaseColor.rgb;
     float opacity = GBubfferStruct.BaseColor.a;
     float emissive = 0.0;
     
-    float4 viewPos = mul(CB_Viewport.viewMatrix, float4(Input.WorldPos, 1.0));
-    float depth = linearize_depth_log(viewPos.z, CB_Viewport.clipNearFar.x, CB_Viewport.clipNearFar.y);
+    float4 viewPos = mul(cb_Viewport.viewMatrix, float4(Input.WorldPos, 1.0));
+    float depth = linearize_depth_log(viewPos.z, cb_Viewport.clipNearFar.x, cb_Viewport.clipNearFar.y);
     
-    float2 positionScreenUV = Input.Position.xy * (1.0 / CB_Viewport.viewportSize.xy);
-    float zeroMoment = texture3.Sample(samplerState, positionScreenUV).r;
-    float4 totalMoments_p1234 = texture4.Sample(samplerState, positionScreenUV);
+    float2 positionScreenUV = Input.Position.xy * (1.0 / cb_Viewport.viewportSize.xy);
+    float zeroMoment = t_Texture3.Sample(s_SamplerState, positionScreenUV).r;
+    float4 totalMoments_p1234 = t_Texture4.Sample(s_SamplerState, positionScreenUV);
     
     float transmittanceDepth = 0.0;
     float totalTransmittance = 0.0;
@@ -317,10 +331,10 @@ void resolveTotalMoments(out float total_transmittance, float zeroth_moment)
 
 [[vk::location(0)]] float4 mboit_resolve_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
-    float3 baseColor = texture0.SampleLevel(samplerState, Input.UV, 0).rgb;
-    float4 totalTransparencyColor = texture1.SampleLevel(samplerState, Input.UV, 0);
+    float3 baseColor = t_Texture0.SampleLevel(s_SamplerState, Input.UV, 0).rgb;
+    float4 totalTransparencyColor = t_Texture1.SampleLevel(s_SamplerState, Input.UV, 0);
     
-    float totalOpticalDepth = texture2.SampleLevel(samplerState, Input.UV, 0).r;
+    float totalOpticalDepth = t_Texture2.SampleLevel(s_SamplerState, Input.UV, 0).r;
     float totalTransmittance = 0.0;
     resolveTotalMoments(totalTransmittance, totalOpticalDepth);
     float f = (1.0 - totalTransmittance) / totalTransparencyColor.a;

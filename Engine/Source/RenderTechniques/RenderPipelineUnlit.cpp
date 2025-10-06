@@ -1,4 +1,5 @@
 #include "RenderPipelineUnlit.h"
+#include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"
@@ -61,7 +62,14 @@ void RenderPipelineUnlitStage::create(renderer::Device* device, scene::SceneData
         pipeline->setDepthWrite(true);
         pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
+        MaterialParameters parameters;
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Model);
+        BIND_SHADER_PARAMETER(pipeline, parameters, s_SamplerState);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureBaseColor);
+
         m_pipelines.push_back(pipeline);
+        m_parameters.push_back(parameters);
     }
 }
 
@@ -157,9 +165,9 @@ void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneDat
             cmdList->setStencilRef(0x0);
             cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
 
-            cmdList->bindDescriptorSet(0,
+            cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, 0)
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
                 });
 
             struct ModelBuffer
@@ -180,11 +188,11 @@ void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneDat
             constantBuffer.tintColour = material.getProperty<math::float4>("Color");
             constantBuffer.objectID = itemMesh.object->ID();
 
-            cmdList->bindDescriptorSet(1,
+            cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, 1),
-                    renderer::Descriptor(sampler, 2),
-                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), 3)
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
+                    renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), m_parameters[itemMesh.pipelineID].t_TextureBaseColor)
                 });
 
             DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipelines[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);

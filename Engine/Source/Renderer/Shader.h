@@ -309,13 +309,12 @@ namespace renderer
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
-        ShaderHeader    m_header;
-        ShaderType      m_type;
-        ShaderModel     m_shaderModel;
-        std::string     m_entryPoint;
-        ShaderData      m_data;
-
-        Resources       m_mappedResources;
+        ShaderHeader m_header;
+        ShaderType   m_type;
+        ShaderModel  m_shaderModel;
+        std::string  m_entryPoint;
+        ShaderData   m_data;
+        Resources    m_mappedResources;
     };
 
     inline ShaderType Shader::getType() const

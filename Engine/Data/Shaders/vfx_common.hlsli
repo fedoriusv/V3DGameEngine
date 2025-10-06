@@ -6,6 +6,10 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+
 VS_SIMPLE_OUTPUT _horizontal_billboard_vs(
     in uniform ConstantBuffer<Viewport> Viewport,
     in uniform ConstantBuffer<ModelBuffer> Model,
@@ -39,15 +43,6 @@ VS_SIMPLE_OUTPUT _horizontal_billboard_vs(
     float3 worldPos = float3(Model.modelMatrix[0][3], Model.modelMatrix[1][3], Model.modelMatrix[2][3]);
     float3 position = worldPos + (right * offset.x) + (up * offset.y);
     
-    //// Apply scaling from model matrix (scale encoded in basis vectors)
-    //float3 scaledOffset =
-    //    offsetWorld.x * float3(Model.modelMatrix._11, Model.modelMatrix._21, Model.modelMatrix._31) +
-    //    offsetWorld.y * float3(Model.modelMatrix._12, Model.modelMatrix._22, Model.modelMatrix._32) +
-    //    offsetWorld.z * float3(Model.modelMatrix._13, Model.modelMatrix._23, Model.modelMatrix._33);
-    
-    //// Translate to final world position
-    //float3 position = float3(Model.modelMatrix._41, Model.modelMatrix._42, Model.modelMatrix._43) + scaledOffset;
-
     VS_SIMPLE_OUTPUT Output;
     
     Output.ClipPos = mul(Viewport.projectionMatrix, mul(Viewport.viewMatrix, float4(position, 1.0)));
@@ -83,10 +78,10 @@ VS_SIMPLE_OUTPUT _billboard_vs(
         float2(1.0f, 1.0f),
     };
     
-    float3 scale;
-    scale.x = length(Model.modelMatrix[0].xyz);
-    scale.y = length(Model.modelMatrix[1].xyz);
-    scale.z = length(Model.modelMatrix[2].xyz);
+    float3 scale = float3(0.1f, 0.1f, 0.1f);
+    //scale.x = length(Model.modelMatrix[0].xyz);
+    //scale.y = length(Model.modelMatrix[1].xyz);
+    //scale.z = length(Model.modelMatrix[2].xyz);
     
 
     float3 right = normalize(float3(Viewport.viewMatrix[0].xyz));
