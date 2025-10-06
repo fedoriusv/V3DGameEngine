@@ -62,6 +62,7 @@ namespace scene
         f32 getTemperature() const;
         f32 getAttenuation() const;
         const color::ColorRGBAF& getColor() const;
+        const std::string_view getName() const;
 
     protected:
 
@@ -116,6 +117,11 @@ namespace scene
         return m_color;
     }
 
+    inline const std::string_view Light::getName() const
+    {
+        return m_header.getName();
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -146,10 +152,27 @@ namespace scene
         explicit PointLight(renderer::Device* device, const LightHeader& header) noexcept;
         ~PointLight();
 
+        void setRadius(f32 radius);
+        f32 getRadius() const;
+
     private:
+
+        f32 m_radius;
 
         friend LightHelper;
     };
+
+    inline void PointLight::setRadius(f32 radius)
+    {
+        m_radius = radius;
+    }
+
+    inline f32 PointLight::getRadius() const
+    {
+        return m_radius;
+    }
+
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -87,6 +87,7 @@ DirectionalLight::~DirectionalLight()
 
 PointLight::PointLight(renderer::Device* device) noexcept
     : ComponentBase<PointLight, Light>(device, Type::PointLight)
+    , m_radius(1.f)
 {
     LOG_DEBUG("PointLight::PointLight constructor %llx", this);
 }
