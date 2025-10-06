@@ -81,7 +81,7 @@
 #define FRAME_PROFILER_ENABLE (0 || PROFILE)
 #define GPU_MARKERS_ENABLE (DEBUG || DEVELOPMENT)
 
-#define ENABLE_RENDERDOC_PROFILE 1
+#define ENABLE_RENDERDOC_PROFILE (0 || DEBUG)
 #define ENABLE_PIX_PROFILE 0
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
