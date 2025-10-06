@@ -97,9 +97,9 @@ namespace vk
         void addImageBarrier(VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout);
         void flushBarriers(VulkanCommandBuffer* cmdBuffer);
 
-        void bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range);
-        void bind(BindingType type, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource);
-        void bind(BindingType type, u32 set, u32 binding, VulkanSampler* sampler);
+        void bind(BindingType type, u32 slot, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range);
+        void bind(BindingType type, u32 slot, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource);
+        void bind(BindingType type, u32 slot, u32 set, u32 binding, VulkanSampler* sampler);
         void bindPushConstant(ShaderType type, u32 size, const void* data);
 
         void init(VulkanDevice* device);
@@ -159,17 +159,17 @@ namespace vk
         return _dirty & (1 << mask);
     }
 
-    inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range)
+    inline void VulkanRenderState::bind(BindingType type, u32 slot, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range)
     {
         ASSERT(buffer, "must be valid");
         ASSERT(type == BindingType::Uniform || type == BindingType::DynamicUniform || type == BindingType::RWBuffer, "wrong type");
-        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[binding];
+        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[slot];
         bindingInfo._binding = binding;
         bindingInfo._arrayIndex = 0;
         bindingInfo._type = type;
         bindingInfo._info._bufferInfo = makeVkDescriptorBufferInfo(buffer, static_cast<u64>(offset), static_cast<u64>(range));
 
-        _boundSetInfo[set]._resource[binding] = buffer;
+        _boundSetInfo[set]._resource[slot] = buffer;
         _boundSetInfo[set]._activeBindingsFlags |= 1 << binding;
         _boundSets[set] = VK_NULL_HANDLE;
         setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
@@ -181,18 +181,18 @@ namespace vk
         }
     }
 
-    inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource)
+    inline void VulkanRenderState::bind(BindingType type, u32 slot, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource)
     {
         ASSERT(type == BindingType::Texture || type == BindingType::RWTexture, "wrong type");
         VkImageLayout layout = (type == BindingType::RWTexture) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[binding];
+        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[slot];
         bindingInfo._binding = binding;
         bindingInfo._arrayIndex = arrayIndex;
         bindingInfo._type = type;
         bindingInfo._info._imageInfo = makeVkDescriptorImageInfo(image, nullptr, layout, subresource);
 
-        _boundSetInfo[set]._resource[binding] = image;
+        _boundSetInfo[set]._resource[slot] = image;
         _boundSetInfo[set]._activeBindingsFlags |= 1 << binding;
         _boundSets[set] = VK_NULL_HANDLE;
         setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
@@ -200,16 +200,16 @@ namespace vk
         addImageBarrier(image, subresource, layout);
     }
 
-    inline void VulkanRenderState::bind(BindingType type, u32 set, u32 binding, VulkanSampler* sampler)
+    inline void VulkanRenderState::bind(BindingType type, u32 slot, u32 set, u32 binding, VulkanSampler* sampler)
     {
         ASSERT(type == BindingType::Sampler, "wrong type");
-        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[binding];
+        BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[slot];
         bindingInfo._binding = binding;
         bindingInfo._arrayIndex = 0;
         bindingInfo._type = type;
         bindingInfo._info._imageInfo = makeVkDescriptorImageInfo(nullptr, sampler, VK_IMAGE_LAYOUT_UNDEFINED, {});
 
-        _boundSetInfo[set]._resource[binding] = sampler;
+        _boundSetInfo[set]._resource[slot] = sampler;
         _boundSetInfo[set]._activeBindingsFlags |= 1 << binding;
         _boundSets[set] = VK_NULL_HANDLE;
         setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));

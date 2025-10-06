@@ -59,14 +59,13 @@ namespace vk
 
         void transition(const TextureView& textureView, TransitionOp state)override;
 
-        void bindTexture(u32 set, u32 slot, const TextureView& textureView) override;
-        void bindSampler(u32 set, u32 slot, const SamplerState& sampler) override;
-        void bindUAV(u32 set, u32 slot, Buffer* buffer) override;
-        void bindUAV(u32 set, u32 slot, Texture* texture) override;
-        void bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data) override;
+        void bindDescriptorSet(const ShaderProgram* program, u32 binding, const std::vector<Descriptor>& descriptors) override;
+        void bindTexture(const ShaderProgram* program, u32 set, u32 binding, const TextureView& textureView) override;
+        void bindSampler(const ShaderProgram* program, u32 set, u32 binding, const SamplerState& sampler) override;
+        void bindUAV(const ShaderProgram* program, u32 set, u32 binding, Buffer* buffer) override;
+        void bindUAV(const ShaderProgram* program, u32 set, u32 binding, Texture* texture) override;
+        void bindConstantBuffer(const ShaderProgram* program, u32 set, u32 binding, u32 size, const void* data) override;
         void bindPushConstant(ShaderType type, u32 size, const void* data) override;
-
-        void bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors) override;
 
         void draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 vertexCount, u32 firstInstance, u32 instanceCount) override;
         void drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, u32 indexCount, u32 vertexOffest, u32 firstInstance, u32 instanceCount) override;

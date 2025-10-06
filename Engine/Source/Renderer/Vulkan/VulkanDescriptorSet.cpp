@@ -78,17 +78,18 @@ std::tuple<VulkanDescriptorSetPool*, VkDescriptorSet, u32> VulkanDescriptorSetMa
 
 void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuffer, VkDescriptorSet set, const std::vector<VkDescriptorSetLayoutBinding>& layoutBindings, const SetInfo& setInfo)
 {
-    std::array<VkWriteDescriptorSet, k_maxDescriptorBindingCount> writeDescriptorSets;
+    std::array<VkWriteDescriptorSet, k_maxDescriptorSlotsCount> writeDescriptorSets;
     u32 writeDescriptorCount = 0;
 
-    for (auto& layoutBinding : layoutBindings)
+    for (u32 slot = 0; slot < layoutBindings.size(); ++slot)
     {
-        ASSERT(layoutBinding.binding < k_maxDescriptorBindingCount, "range out");
-        auto& binding = setInfo._bindings[layoutBinding.binding];
+        auto& binding = setInfo._bindings[slot];
         if (binding._type == BindingType::Unknown || !setInfo.isActiveBinding(binding._binding))
         {
             continue;
         }
+
+        ASSERT(layoutBindings[slot].binding == binding._binding, "must be same");
 
         VkWriteDescriptorSet& writeDescriptorSet = writeDescriptorSets[writeDescriptorCount];
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -112,7 +113,7 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             //TODO Will update range if it gets errors
             /*VkDescriptorBufferInfo bufferInfo(bindingInfo._info._bufferInfo);
             bufferInfo.offset = 0;
-            bufferInfo.range = state._offsets[layoutBinding.binding] + bufferInfo.range;*/
+            bufferInfo.range = state._offsets[slot] + bufferInfo.range;*/
             writeDescriptorSet.pBufferInfo = &binding._info._bufferInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
             break;
@@ -123,8 +124,8 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             writeDescriptorSet.pImageInfo = &binding._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 
-            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
-            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
+            ASSERT(setInfo._resource[slot], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[slot]);
             break;
 
         case BindingType::Texture:
@@ -133,8 +134,8 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             writeDescriptorSet.pImageInfo = &binding._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
-            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
-            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
+            ASSERT(setInfo._resource[slot], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[slot]);
             break;
 
         case BindingType::RWTexture:
@@ -143,8 +144,8 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             writeDescriptorSet.pImageInfo = &binding._info._imageInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 
-            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
-            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
+            ASSERT(setInfo._resource[slot], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[slot]);
             break;
 
         case BindingType::RWBuffer:
@@ -152,8 +153,8 @@ void VulkanDescriptorSetManager::updateDescriptorSet(VulkanCommandBuffer* cmdBuf
             writeDescriptorSet.pBufferInfo = &binding._info._bufferInfo;
             writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
-            ASSERT(setInfo._resource[layoutBinding.binding], "invalid");
-            cmdBuffer->captureResource(setInfo._resource[layoutBinding.binding]);
+            ASSERT(setInfo._resource[slot], "invalid");
+            cmdBuffer->captureResource(setInfo._resource[slot]);
             break;
 
         default:

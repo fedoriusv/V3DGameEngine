@@ -293,7 +293,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
             const Shader::Resources& res = shader->getMappingResources();
             for (auto& uniform : res._uniformBuffers)
             {
-                ASSERT(uniform._set < k_maxDescriptorSetCount && uniform._binding < k_maxDescriptorBindingCount, "range out");
+                ASSERT(uniform._set < k_maxDescriptorSetCount, "range out");
                 if (uniform._set != setIndex)
                 {
                     continue;
@@ -324,7 +324,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& sampledImage : res._sampledImages)
             {
-                ASSERT(sampledImage._set < k_maxDescriptorSetCount && sampledImage._binding < k_maxDescriptorBindingCount, "range out");
+                ASSERT(sampledImage._set < k_maxDescriptorSetCount, "range out");
                 if (sampledImage._set != setIndex)
                 {
                     continue;
@@ -355,7 +355,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& sampler : res._samplers)
             {
-                ASSERT(sampler._set < k_maxDescriptorSetCount && sampler._binding < k_maxDescriptorBindingCount, "range out");
+                ASSERT(sampler._set < k_maxDescriptorSetCount, "range out");
                 if (sampler._set != setIndex)
                 {
                     continue;
@@ -386,7 +386,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& image : res._images)
             {
-                ASSERT(image._set < k_maxDescriptorSetCount && image._binding < k_maxDescriptorBindingCount, "range out");
+                ASSERT(image._set < k_maxDescriptorSetCount, "range out");
                 if (image._set != setIndex)
                 {
                     continue;
@@ -417,7 +417,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& storageImage : res._storageImages)
             {
-                ASSERT(storageImage._set < k_maxDescriptorSetCount && storageImage._binding < k_maxDescriptorBindingCount, "range out");
+                ASSERT(storageImage._set < k_maxDescriptorSetCount, "range out");
                 if (storageImage._set != setIndex)
                 {
                     continue;
@@ -435,7 +435,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 else
                 {
                     VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                    descriptorSetLayoutBinding.descriptorType = device.getVulkanDeviceCaps()._useDynamicUniforms ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                     descriptorSetLayoutBinding.binding = storageImage._binding;
                     descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
                     descriptorSetLayoutBinding.descriptorCount = storageImage._array;
@@ -448,7 +448,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
 
             for (auto& storageBuffer : res._storageBuffers)
             {
-                ASSERT(storageBuffer._set < k_maxDescriptorSetCount && storageBuffer._binding < k_maxDescriptorBindingCount, "range out");
+                ASSERT(storageBuffer._set < k_maxDescriptorSetCount, "range out");
                 if (storageBuffer._set != setIndex)
                 {
                     continue;
@@ -466,7 +466,7 @@ VulkanPipelineLayoutManager::DescriptorSetLayoutCreator::DescriptorSetLayoutCrea
                 else
                 {
                     VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-                    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                    descriptorSetLayoutBinding.descriptorType = device.getVulkanDeviceCaps()._useDynamicUniforms ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
                     descriptorSetLayoutBinding.binding = storageBuffer._binding;
                     descriptorSetLayoutBinding.stageFlags = convertShaderTypeToVkStage((ShaderType)type);
                     descriptorSetLayoutBinding.descriptorCount = storageBuffer._array;

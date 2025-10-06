@@ -2,6 +2,7 @@
 
 #include "Utils/Logger.h"
 
+#include "Renderer/ShaderProgram.h"
 #ifdef VULKAN_RENDER
 #   include "VulkanDebug.h"
 #   include "VulkanImage.h"
@@ -1542,6 +1543,7 @@ void VulkanCmdList::endRenderTarget()
     LOG_DEBUG("VulkanCmdList[%u]::endRenderTarget", m_concurrencySlot);
 #endif //VULKAN_DEBUG
     m_pendingRenderState._insideRenderpass = false;
+    m_pendingRenderState.invalidate();
 
     VulkanCommandBuffer* drawBuffer = m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)];
     if (drawBuffer && drawBuffer->isInsideRenderPass())
@@ -1612,7 +1614,7 @@ void VulkanCmdList::transition(const TextureView& textureView, TransitionOp stat
     m_pendingRenderState.addImageBarrier(image, textureView._subresource, newLayout);
 }
 
-void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureView)
+void VulkanCmdList::bindTexture(const ShaderProgram* program, u32 set, u32 binding, const TextureView& textureView)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindTexture", color::rgba8::GREEN);
 
@@ -1627,28 +1629,32 @@ void VulkanCmdList::bindTexture(u32 set, u32 slot, const TextureView& textureVie
     {
         image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(textureView._texture->getTextureHandle()));
     }
-    m_pendingRenderState.bind(BindingType::Texture, set, slot, 0, image, textureView._subresource);
+
+    u32 slot = program->getResourceSlot(set, binding);
+    m_pendingRenderState.bind(BindingType::Texture, slot, set, binding, 0, image, textureView._subresource);
 }
 
-void VulkanCmdList::bindUAV(u32 set, u32 slot, Buffer* buffer)
+void VulkanCmdList::bindUAV(const ShaderProgram* program, u32 set, u32 binding, Buffer* buffer)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::rgba8::GREEN);
 
     ASSERT(buffer, "nullptr");
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer->getBufferHandle()));
-    m_pendingRenderState.bind(BindingType::RWBuffer, set, slot, vkBuffer, 0, vkBuffer->getSize());
+    u32 slot = program->getResourceSlot(set, binding);
+    m_pendingRenderState.bind(BindingType::RWBuffer, slot, set, binding, vkBuffer, 0, vkBuffer->getSize());
 }
 
-void VulkanCmdList::bindUAV(u32 set, u32 slot, Texture* texture)
+void VulkanCmdList::bindUAV(const ShaderProgram* program, u32 set, u32 binding, Texture* texture)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::rgba8::GREEN);
 
     ASSERT(texture, "nullptr");
     VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
-    m_pendingRenderState.bind(BindingType::RWTexture, set, slot, 0, vkImage, RenderTexture::makeSubresource(0, vkImage->getArrayLayers(), 0, 1));
+    u32 slot = program->getResourceSlot(set, binding);
+    m_pendingRenderState.bind(BindingType::RWTexture, slot, set, binding, 0, vkImage, RenderTexture::makeSubresource(0, vkImage->getArrayLayers(), 0, 1));
 }
 
-void VulkanCmdList::bindSampler(u32 set, u32 slot, const SamplerState& sampler)
+void VulkanCmdList::bindSampler(const ShaderProgram* program, u32 set, u32 binding, const SamplerState& sampler)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindSampler", color::rgba8::GREEN);
 
@@ -1656,10 +1662,11 @@ void VulkanCmdList::bindSampler(u32 set, u32 slot, const SamplerState& sampler)
     ASSERT(vkSampler, "nullptr");
     const_cast<SamplerState&>(sampler).m_tracker.attach(vkSampler);
 
-    m_pendingRenderState.bind(BindingType::Sampler, set, slot, vkSampler);
+    u32 slot = program->getResourceSlot(set, binding);
+    m_pendingRenderState.bind(BindingType::Sampler, slot, set, binding, vkSampler);
 }
 
-void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, const void* data)
+void VulkanCmdList::bindConstantBuffer(const ShaderProgram* program, u32 set, u32 binding, u32 size, const void* data)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindConstantBuffer", color::rgba8::GREEN);
 
@@ -1667,8 +1674,9 @@ void VulkanCmdList::bindConstantBuffer(u32 set, u32 slot, u32 size, const void* 
     ConstantBufferRange range = m_CBOManager->acquireConstantBuffer(alignmentSize);
     [[maybe_unused]] bool updated = VulkanConstantBufferManager::update(range._buffer, range._offset, size, data);
 
+    u32 slot = program->getResourceSlot(set, binding);
     BindingType type = (m_device.getVulkanDeviceCaps()._useDynamicUniforms) ? BindingType::DynamicUniform : BindingType::Uniform;
-    m_pendingRenderState.bind(type, set, slot, range._buffer, range._offset, alignmentSize);
+    m_pendingRenderState.bind(type, slot, set, binding, range._buffer, range._offset, alignmentSize);
 }
 
 void VulkanCmdList::bindPushConstant(ShaderType type, u32 size, const void* data)
@@ -1679,21 +1687,27 @@ void VulkanCmdList::bindPushConstant(ShaderType type, u32 size, const void* data
     m_pendingRenderState.bindPushConstant(type, size, data);
 }
 
-void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& descriptors)
+void VulkanCmdList::bindDescriptorSet(const ShaderProgram* program, u32 set, const std::vector<Descriptor>& descriptors)
 {
     TRACE_PROFILER_RENDER_SCOPE("bindDescriptorSet", color::rgba8::GREEN);
 
     ASSERT(set < m_device.getVulkanDeviceCaps()._maxDescriptorSets, "set out of range");
     for (const Descriptor& desc : descriptors)
     {
-        ASSERT(desc._slot < m_device.getVulkanDeviceCaps()._maxDescriptorBindings, "set out of range");
+        if (desc._binding == k_invalidBinding)
+        {
+            m_pendingRenderState.setDirty(DirtyStateMask(DirtyState_DescriptorSet + set));
+            continue;
+        }
+
+        ASSERT(descriptors.size() <= m_device.getVulkanDeviceCaps()._maxDescriptorBindingsPerSet, "set out of range");
         switch (desc._type)
         {
         case Descriptor::Type::Descriptor_ConstantBuffer:
         {
             ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_ConstantBuffer, "wrong id");
             const Descriptor::ConstantBuffer& CBO = std::get<Descriptor::Type::Descriptor_ConstantBuffer>(desc._resource);
-            VulkanCmdList::bindConstantBuffer(set, desc._slot, CBO._size, CBO._data);
+            VulkanCmdList::bindConstantBuffer(program, set, desc._binding, CBO._size, CBO._data);
 
             break;
         }
@@ -1702,7 +1716,7 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
         {
             ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_TextureSampled, "wrong id");
             const TextureView& view = std::get<Descriptor::Type::Descriptor_TextureSampled>(desc._resource);
-            VulkanCmdList::bindTexture(set, desc._slot, view);
+            VulkanCmdList::bindTexture(program, set, desc._binding, view);
 
             break;
         }
@@ -1711,7 +1725,7 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
         {
             ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_RWTexture, "wrong id");
             Texture* texture = std::get<Descriptor::Type::Descriptor_RWTexture>(desc._resource);
-            VulkanCmdList::bindUAV(set, desc._slot, texture);
+            VulkanCmdList::bindUAV(program, set, desc._binding, texture);
 
             break;
         }
@@ -1720,7 +1734,7 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
         {
             ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_RWBuffer, "wrong id");
             Buffer* buffer = std::get<Descriptor::Type::Descriptor_RWBuffer>(desc._resource);
-            VulkanCmdList::bindUAV(set, desc._slot, buffer);
+            VulkanCmdList::bindUAV(program, set, desc._binding, buffer);
 
             break;
         }
@@ -1729,7 +1743,7 @@ void VulkanCmdList::bindDescriptorSet(u32 set, const std::vector<Descriptor>& de
         {
             ASSERT(desc._resource.index() == Descriptor::Type::Descriptor_Sampler, "wrong id");
             SamplerState* sampler = std::get<Descriptor::Type::Descriptor_Sampler>(desc._resource);
-            VulkanCmdList::bindSampler(set, desc._slot, *sampler);
+            VulkanCmdList::bindSampler(program, set, desc._binding, *sampler);
 
             break;
         }
