@@ -233,6 +233,110 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief WidgetInputDragFloat3 class
+    */
+    class WidgetInputDragFloat3 final : public WidgetInputDragBase<WidgetInputDragFloat3, f32, 3>
+    {
+    public:
+
+        explicit WidgetInputDragFloat3(f32 value1, f32 value2, f32 value3) noexcept;
+        WidgetInputDragFloat3(const WidgetInputDragFloat3&) noexcept;
+        WidgetInputDragFloat3(WidgetInputDragFloat3&&) noexcept;
+        ~WidgetInputDragFloat3();
+
+        f32 getValue() const;
+
+        WidgetInputDragFloat3& setOnChangedValueEvent(const OnWidgetEventFloat3Param& event);
+
+        TypePtr getType() const final;
+
+        struct StateInputDragFloat3 : StateInputDragBase
+        {
+            OnWidgetEventFloat3Param _onChangedValueEvent;
+        };
+
+    private:
+
+        using WidgetType = WidgetInputDragFloat3;
+        using StateType = StateInputDragFloat3;
+
+        bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
+        Widget* copy() const final;
+
+    };
+
+    inline f32 WidgetInputDragFloat3::getValue() const
+    {
+        return Widget::cast_data<StateType>(m_data)._value[0];
+    }
+
+    inline WidgetInputDragFloat3& WidgetInputDragFloat3::setOnChangedValueEvent(const OnWidgetEventFloat3Param& event)
+    {
+        Widget::cast_data<StateType>(m_data)._onChangedValueEvent = event;
+        return *this;
+    }
+
+    inline TypePtr WidgetInputDragFloat3::getType() const
+    {
+        return typeOf<WidgetInputDragFloat3>();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+    * @brief WidgetInputDragFloat4 class
+    */
+    class WidgetInputDragFloat4 final : public WidgetInputDragBase<WidgetInputDragFloat4, f32, 4>
+    {
+    public:
+
+        explicit WidgetInputDragFloat4(f32 value1, f32 value2, f32 value3, f32 value4) noexcept;
+        WidgetInputDragFloat4(const WidgetInputDragFloat4&) noexcept;
+        WidgetInputDragFloat4(WidgetInputDragFloat4&&) noexcept;
+        ~WidgetInputDragFloat4();
+
+        f32 getValue() const;
+
+        WidgetInputDragFloat4& setOnChangedValueEvent(const OnWidgetEventFloat4Param& event);
+
+        TypePtr getType() const final;
+
+        struct StateInputDragFloat4 : StateInputDragBase
+        {
+            OnWidgetEventFloat4Param _onChangedValueEvent;
+        };
+
+    private:
+
+        using WidgetType = WidgetInputDragFloat4;
+        using StateType = StateInputDragFloat4;
+
+        bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
+        Widget* copy() const final;
+
+    };
+
+    inline f32 WidgetInputDragFloat4::getValue() const
+    {
+        return Widget::cast_data<StateType>(m_data)._value[0];
+    }
+
+    inline WidgetInputDragFloat4& WidgetInputDragFloat4::setOnChangedValueEvent(const OnWidgetEventFloat4Param& event)
+    {
+        Widget::cast_data<StateType>(m_data)._onChangedValueEvent = event;
+        return *this;
+    }
+
+    inline TypePtr WidgetInputDragFloat4::getType() const
+    {
+        return typeOf<WidgetInputDragFloat4>();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -249,6 +353,26 @@ namespace ui
 
     template<>
     struct TypeOf<ui::WidgetInputDragFloat>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<ui::WidgetInputDragFloat3>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<ui::WidgetInputDragFloat4>
     {
         static TypePtr get()
         {

@@ -136,7 +136,7 @@ namespace ui
         virtual bool draw_InputText(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
         virtual bool draw_InputValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber, u32 array) = 0;
         virtual bool draw_InputSliderValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) = 0;
-        virtual bool draw_InputDragValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber) = 0;
+        virtual bool draw_InputDragValue(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, bool isRealNumber, u32 array) = 0;
         virtual bool draw_ColorPalette(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
 
         virtual bool draw_Table(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state) = 0;
