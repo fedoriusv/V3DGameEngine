@@ -18,7 +18,7 @@ Light::Light(renderer::Device* device, Type type) noexcept
     , m_color({ 1.f, 1.f, 1.f, 1.f })
     , m_intensity()
     , m_temperature(0)
-    , m_attenuation(1.f)
+    , m_attenuation({ 1.f, 1.f, 1.f, 0.f})
 {
 }
 
@@ -28,7 +28,7 @@ Light::Light(renderer::Device* device, const LightHeader& header) noexcept
     , m_color({ 1.f, 1.f, 1.f, 1.f })
     , m_intensity()
     , m_temperature(0)
-    , m_attenuation(1.f)
+    , m_attenuation({ 1.f, 1.f, 1.f, 0.f })
 {
 }
 
@@ -51,7 +51,7 @@ bool Light::load(const stream::Stream* stream, u32 offset)
     stream->read<color::ColorRGBAF>(m_color);
     stream->read<f32>(m_intensity);
     stream->read<f32>(m_temperature);
-    stream->read<f32>(m_attenuation);
+    stream->read<math::float4>(m_attenuation);
 
     m_loaded = true;
     return true;
@@ -129,8 +129,8 @@ SpotLight::~SpotLight()
 PointLight* LightHelper::createPointLight(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, const std::string& name)
 {
     PointLight* light = V3D_NEW(PointLight, memory::MemoryLabel::MemoryObject)(device);
-    //light->m_volume = scene::MeshHelper::createSphere(device, cmdList, radius, 64, 64, name);
     light->m_header.setName(name);
+    light->setRadius(radius);
 
     return light;
 }

@@ -50,10 +50,11 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
     if (depth > 0.0)
     {
         float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, Input.UV, depth);
+        
         EnvironmentBuffer environment;
         environment.wetness = 0.0f;
     
-        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction_range.xyz, albedo, normals, roughness, metallic, depth);
+        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction_range.xyz, 0.0, albedo, normals, roughness, metallic, depth);
         return float4(color.rgb, 1.0);
     }
     
@@ -75,12 +76,14 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
     if (depth > 0.0) //TODO move to stencil test
     {
         float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, positionScreenUV, depth);
-        clip(cb_Light.direction_range.x - distance(worldPos, cb_Light.position.xyz));
+        float lightDistance = distance(worldPos, cb_Light.position.xyz);
+        clip(cb_Light.direction_range.x - lightDistance);
         
         EnvironmentBuffer environment;
         environment.wetness = 0.f;
-    
-        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, worldPos - cb_Light.position.xyz, albedo, normals, roughness, metallic, depth);
+
+        float3 lightDirection = worldPos - cb_Light.position.xyz;
+        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, lightDirection, lightDistance, albedo, normals, roughness, metallic, depth);
         return float4(color.rgb, 1.0);
     }
     

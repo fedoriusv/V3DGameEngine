@@ -201,19 +201,20 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
                 math::Vector3D position;
                 math::Vector3D range;
                 math::float4   color;
-                f32            type;
-                f32            attenuation;
+                math::float4   attenuation;
                 f32            intensity;
                 f32            temperature;
+                f32            type;
+                f32           _pad = 0;
             };
 
             LightBuffer lightBuffer;
             lightBuffer.position = itemLight.object->getTransform().getPosition();
             lightBuffer.range = { light.getRadius(), 0.0, 0.0};
             lightBuffer.color = light.getColor();
+            lightBuffer.attenuation = light.getAttenuation();
             lightBuffer.intensity = light.getIntensity();
             lightBuffer.temperature = light.getTemperature();
-            lightBuffer.attenuation = light.getAttenuation();
             lightBuffer.type = light.getType() == typeOf<scene::PointLight>() ? 1 : 2;
 
             cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 1,

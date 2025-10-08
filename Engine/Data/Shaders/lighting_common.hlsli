@@ -11,11 +11,10 @@ struct LightBuffer
     float4 position;
     float4 direction_range;
     float4 color;
-    float  type;
-    float  attenuation;
+    float4 attenuation;
     float  intensity;
     float  temperature;
-    
+    float  type;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -75,6 +74,7 @@ float4 phong_blinn_lighting(
     in uniform ConstantBuffer<LightBuffer> Light,
     in float3 WorldPos,
     in float3 Direction,
+    in float Distance,
     in float3 Albedo,
     in float3 Specular,
     in float3 Normals,
@@ -91,10 +91,16 @@ float4 phong_blinn_lighting(
     float4 color = float4(diffuseKoeff * Albedo * Light.color.rgb, 1.0);
     if (diffuseKoeff > 0.01)
     {
-        color.rgb += Specular * pow(max(dot(N, H), 0.0), Light.intensity) * Light.attenuation;
+        // Attenuation
+        float kConstant = Light.attenuation.x;
+        float kLinear = Light.attenuation.y;
+        float kQuadratic = Light.attenuation.z;
+        float attenuation = 1.0 / max(kConstant + kLinear * Distance + kQuadratic * (Distance * Distance), 1e-5);
+        
+        color.rgb += Specular * pow(max(dot(N, H), 0.0), Light.intensity) * attenuation;
         
         //float R = reflect(-L, N);
-        //color.rgb += Specular * pow(max(dot(R, V), 0.0), Light.intensity) * Light.attenuation;
+        //color.rgb += Specular * pow(max(dot(R, V), 0.0), Light.intensity) * attenuation;
     }
 
     return color;
@@ -115,7 +121,7 @@ float D_GGX(float NdotH, float roughness)
 float G_Schlick_GGX(float NdotV, float roughness)
 {
     float r = roughness + 1.0;
-    float k = (r * r) / 8.0; // for direct lighting
+    float k = (r * r) / 8.0; // UE4 style
     return NdotV / (NdotV * (1.0 - k) + k + 1e-5);
 }
 
@@ -139,6 +145,7 @@ float4 cook_torrance_BRDF(
     in EnvironmentBuffer Environment,
     in float3 WorldPos,
     in float3 Direction,
+    in float Distance,
     in float3 Albedo,
     in float3 Normals,
     in float Roughness,
@@ -172,17 +179,25 @@ float4 cook_torrance_BRDF(
     float3 kD = (1.0 - F) * (1.0 - Metallic);
     float3 diffuse = kD * Albedo / PI;
     
-    //temp
-    float constant = 1.0f;
-    float lin = 0.09f;
-    float quadratic = 0.032f;
-    float distance = length(Direction);
-    float attenuation = 1.0 / (constant + lin * distance + quadratic * (distance * distance));
+    // Attenuation
+    float kConstant = Light.attenuation.x;
+    float kLinear = Light.attenuation.y;
+    float kQuadratic = Light.attenuation.z;
+    float attenuation = 1.0 / max(kConstant + kLinear * Distance + kQuadratic * (Distance * Distance), 1e-5);
+    
+    // Range clamping (if lightRange > 0)
+    float lightRange = Light.attenuation.w;
+    if (lightRange > 0.0)
+    {
+        // smooth fade to zero near range (optional)
+        float rangeFactor = saturate(1.0 - (Distance / lightRange));
+        attenuation *= rangeFactor * rangeFactor; // sharper falloff near the end
+    }
     
     float3 lightColor = temperature_RGB(Light.temperature) * Light.color.rgb * Light.intensity;
     float3 radiance = lightColor * attenuation;
+    
     float3 Lo = (diffuse + specular) * radiance * NdotL;
-
     return float4(Lo, 1.0);
 }
 

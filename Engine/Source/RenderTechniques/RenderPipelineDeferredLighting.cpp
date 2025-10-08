@@ -146,18 +146,19 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
         math::Vector3D position;
         math::Vector3D direction;
         math::float4   color;
-        f32            type;
-        f32            attenuation;
+        math::float4   attenuation;
         f32            intensity;
         f32            temperature;
+        f32            type;
+        f32           _pad = 0;
     };
 
     LightBuffer lightBuffer;
     lightBuffer.position = entry->object->getTransform().getPosition();
     lightBuffer.direction = entry->object->getDirection();
     lightBuffer.color = dirLight.getColor();
+    lightBuffer.attenuation = { 1.f,  1.f,  1.f, 0.f };
     lightBuffer.type = 0;
-    lightBuffer.attenuation = 1.f;
     lightBuffer.intensity = dirLight.getIntensity();
     lightBuffer.temperature = dirLight.getTemperature();
 

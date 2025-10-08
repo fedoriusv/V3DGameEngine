@@ -1253,7 +1253,7 @@ u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream, Mod
 
         f32 intensity = std::max(light->mColorDiffuse.r, std::max(light->mColorDiffuse.g, light->mColorDiffuse.b));
         f32 temperature = 1.0;
-        f32 attenuation = 1.0;
+        math::float4 attenuation = { light->mAttenuationConstant, light->mAttenuationLinear, light->mAttenuationQuadratic };
 
         color::ColorRGBAF color;
         color._x = light->mColorDiffuse.r / intensity;
@@ -1274,7 +1274,7 @@ u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream, Mod
         lightsStreamSize += stream->write<color::ColorRGBAF>(color);
         lightsStreamSize += stream->write<f32>(intensity);
         lightsStreamSize += stream->write<f32>(temperature);
-        lightsStreamSize += stream->write<f32>(attenuation);
+        lightsStreamSize += stream->write<math::float4>(attenuation);
         mainStreamOffset += colorStreamSize + sizeof(ResourceHeader);
     }
 

@@ -57,10 +57,11 @@ namespace scene
         void setIntensity(f32 intensity);
         void setColor(const color::ColorRGBAF& color);
         void setTemperature(f32 temperature);
+        void setAttenuation(f32 constant, f32 linear, f32 quadratic, f32 cutOff);
 
         f32 getIntensity() const;
         f32 getTemperature() const;
-        f32 getAttenuation() const;
+        math::float4 getAttenuation() const;
         const color::ColorRGBAF& getColor() const;
         const std::string_view getName() const;
 
@@ -72,9 +73,9 @@ namespace scene
         LightHeader             m_header;
         renderer::Device* const m_device;
         color::ColorRGBAF       m_color;
+        math::float4            m_attenuation;
         f32                     m_intensity;
         f32                     m_temperature;
-        f32                     m_attenuation;
 
     private:
 
@@ -97,6 +98,11 @@ namespace scene
         m_temperature = temperature;
     }
 
+    inline void Light::setAttenuation(f32 constant, f32 linear, f32 quadratic, f32 cutOff)
+    {
+        m_attenuation.set(constant, linear, quadratic, cutOff);
+    }
+
     inline f32 Light::getIntensity() const
     {
         return m_intensity;
@@ -107,7 +113,7 @@ namespace scene
         return m_temperature;
     }
 
-    inline f32 Light::getAttenuation() const
+    inline math::float4 Light::getAttenuation() const
     {
         return m_attenuation;
     }
