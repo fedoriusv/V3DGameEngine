@@ -18,6 +18,7 @@ namespace scene
         SkinnedTransparency,
 
         Billboard,
+        Skybox,
         VFX,
 
         DirectionLight,

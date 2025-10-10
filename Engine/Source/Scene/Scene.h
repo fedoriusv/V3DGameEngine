@@ -224,6 +224,12 @@ namespace scene
         Component* light = nullptr;
     };
 
+    struct SkyboxNodeEntry : NodeEntry
+    {
+        Component* skybox = nullptr;
+        Component* material = nullptr;
+    };
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     struct SceneData

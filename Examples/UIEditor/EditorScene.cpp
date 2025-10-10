@@ -14,6 +14,7 @@
 #include "Scene/Model.h"
 #include "Scene/Light.h"
 #include "Scene/Billboard.h"
+#include "Scene/Skybox.h"
 #include "Scene/Material.h"
 
 #include "Renderer/Render.h"
@@ -35,6 +36,7 @@
 #include "RenderTechniques/RenderPipelineVolumeLighting.h"
 #include "RenderTechniques/RenderPipelineDebug.h"
 #include "RenderTechniques/RenderPipelineUnlit.h"
+#include "RenderTechniques/RenderPipelineSkybox.h"
 
 #include "Stream/StreamManager.h"
 
@@ -52,8 +54,9 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     new scene::RenderPipelineSelectionStage(this, modelHandler);
     new scene::RenderPipelineDeferredLightingStage(this);
     new scene::RenderPipelineVolumeLightingStage(this, modelHandler);
-    new scene::RenderPipelineMBOITStage(this);
+    new scene::RenderPipelineSkyboxStage(this, modelHandler);
     new scene::RenderPipelineUnlitStage(this, modelHandler);
+    new scene::RenderPipelineMBOITStage(this);
     new scene::RenderPipelineOutlineStage(this);
     new scene::RenderPipelineTAAStage(this);
     new scene::RenderPipelineDebugStage(this, modelHandler);
@@ -157,6 +160,7 @@ EditorScene::EditorScene() noexcept
     resource::ResourceManager::createInstance();
     resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/textures/");
     resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/models/");
+    resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/skybox/");
     resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/");
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/textures/");
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/models/");
@@ -368,11 +372,9 @@ void EditorScene::finalize()
 
             if (scene::Billboard* unlit = node->getComponentByType<scene::Billboard>(); unlit)
             {
-                scene::Material* material = node->getComponentByType<scene::Material>();
-
                 scene::DrawNodeEntry* entry = new scene::DrawNodeEntry;
                 entry->object = node;
-                entry->material = material;
+                entry->material = node->getComponentByType<scene::Material>();
                 entry->passID = scene::RenderPipelinePass::Indicator;
                 entry->pipelineID = 0;
 
@@ -395,6 +397,19 @@ void EditorScene::finalize()
                 entry->object = node;
                 entry->light = light;
                 entry->passID = scene::RenderPipelinePass::PunctualLights;
+
+                m_sceneData.m_generalRenderList.push_back(entry);
+            }
+            else if (scene::Skybox* skybox = node->getComponentByType<scene::Skybox>(); skybox)
+            {
+                scene::Material* material = node->getComponentByType<scene::Material>();
+
+                scene::SkyboxNodeEntry* entry = new scene::SkyboxNodeEntry;
+                entry->object = node;
+                entry->material = material;
+                entry->skybox = skybox;
+                entry->passID = scene::RenderPipelinePass::Skybox;
+                entry->pipelineID = material->getProperty<u32>("pipelineID");
 
                 m_sceneData.m_generalRenderList.push_back(entry);
             }
@@ -517,6 +532,7 @@ void EditorScene::test_loadTestScene()
     {
         resource::ModelFileLoader::ModelPolicy policy;
         scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        nodeCube->setPosition(scene::TransformMode::Local, { 3.f, 1.f, -1.f });
         m_sceneData.m_nodes.push_back(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
@@ -540,6 +556,20 @@ void EditorScene::test_loadTestScene()
         material->setProperty("Metalness", default_metalness);
         material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
         nodePlane->addComponent(material);
+    }
+
+    {
+        scene::SceneNode* skyboxNode = new scene::SceneNode();
+        skyboxNode->m_name = "Skybox";
+        m_sceneData.m_nodes.push_back(skyboxNode);
+
+        scene::Skybox* skybox = new scene::Skybox(m_device);
+        skyboxNode->addComponent(skybox);
+
+        scene::Material* material = new scene::Material(m_device);
+        material->setProperty("BaseColor", loadTexture2D(m_device, "Skybox/DaySkyHDRI026A_4K-HDR.dds", false));
+        material->setProperty("pipelineID", 0U);
+        skyboxNode->addComponent(material);
     }
 }
 

@@ -29,6 +29,7 @@ namespace resource
         Mesh,
         Material,
         Billboard,
+        Skybox,
         Light,
         Camera,
 
