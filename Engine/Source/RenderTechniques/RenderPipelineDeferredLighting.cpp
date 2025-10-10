@@ -33,7 +33,6 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene
 
     const renderer::Shader::DefineList defines =
     {
-        { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
     };
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -62,9 +61,6 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureNormal);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureMaterial);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureDepth);
-#if WORLD_POS_ATTACHMENT
-    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureWorldPos);
-#endif
 }
 
 void RenderPipelineDeferredLightingStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -126,12 +122,6 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
     ASSERT(gbuffer_material_h.isValid(), "must be valid");
     renderer::Texture2D* gbufferMaterialTexture = objectFromHandle<renderer::Texture2D>(gbuffer_material_h);
 
-#if WORLD_POS_ATTACHMENT
-    ObjectHandle gbuffer_world_pos_h = scene.m_globalResources.get("gbuffer_world_pos");
-    ASSERT(gbuffer_world_pos_h.isValid(), "must be valid");
-    renderer::Texture2D* gbufferWorldPosTexture = objectFromHandle<renderer::Texture2D>(gbuffer_world_pos_h);
-#endif
-
     ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_clamp");
     ASSERT(sampler_state_h.isValid(), "must be valid");
     renderer::SamplerState* samplerState = objectFromHandle<renderer::SamplerState>(sampler_state_h);
@@ -170,9 +160,6 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
             renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters.t_TextureNormal),
             renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters.t_TextureMaterial),
             renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters.t_TextureDepth),
-#if WORLD_POS_ATTACHMENT
-            renderer::Descriptor(renderer::TextureView(gbufferWorldPosTexture), m_parameters.t_TextureWorldPos),
-#endif
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);

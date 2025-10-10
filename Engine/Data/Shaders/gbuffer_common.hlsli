@@ -37,9 +37,6 @@ struct PS_GBUFFER_STRUCT
     [[vk::location(1)]] float4 Normal    : SV_TARGET1; // RGB = Normal (world), A = unused
     [[vk::location(2)]] float4 Material  : SV_TARGET2; // R = Roughness, G = Metalness, B = ObjectID, A = unused
     [[vk::location(3)]] float2 Velocity  : SV_TARGET3; // RG = Velocity
-#if WORLD_POS_ATTACHMENT
-    [[vk::location(4)]] float4 WorldPos  : SV_TARGET4; // RGB = World position, A = Depth
-#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -100,9 +97,7 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
     Output.Material = float4(Roughness, Metalness, (float)Model.objectID, 0.0);
     Output.Velocity = velocity;
-#if WORLD_POS_ATTACHMENT
-    Output.WorldPos = float4(Input.WorldPos, Input.ClipPos.z / Input.ClipPos.w);
-#endif
+
     return Output;
 }
 
@@ -132,9 +127,7 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     Output.Normal = float4(normal * 0.5 + 0.5, 0.0);
     Output.Material = float4(Roughness, Metalness, (float)Model.objectID, 0.0);
     Output.Velocity = velocity;
-#if WORLD_POS_ATTACHMENT
-    Output.WorldPos = float4(Input.WorldPos, Input.ClipPos.z / Input.ClipPos.w);
-#endif
+
     return Output;
 }
 

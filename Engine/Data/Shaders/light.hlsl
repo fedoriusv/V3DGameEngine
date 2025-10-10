@@ -14,9 +14,6 @@
 [[vk::binding(5, 1)]] Texture2D t_TextureNormal            : register(t1, space1);
 [[vk::binding(6, 1)]] Texture2D t_TextureMaterial          : register(t2, space1);
 [[vk::binding(7, 1)]] Texture2D t_TextureDepth             : register(t3, space1);
-#if WORLD_POS_ATTACHMENT
-[[vk::binding(8, 1)]] Texture2D t_TextureWorldPos          : register(t4, space1);
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 

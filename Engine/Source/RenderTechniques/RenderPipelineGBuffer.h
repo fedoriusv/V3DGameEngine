@@ -3,9 +3,6 @@
 #include "Common.h"
 #include "RenderPipelineStage.h"
 
-//For debug
-#define WORLD_POS_ATTACHMENT 0
-
 namespace v3d
 {
 namespace renderer
@@ -44,10 +41,10 @@ namespace scene
             SHADER_PARAMETER(s_SamplerState);
             SHADER_PARAMETER(t_TextureAlbedo);
             SHADER_PARAMETER(t_TextureNormal);
+            SHADER_PARAMETER(t_TextureMaterial);
+
             SHADER_PARAMETER(t_TextureMetalness);
             SHADER_PARAMETER(t_TextureRoughness);
-
-            SHADER_PARAMETER(t_TextureMaterial);
         };
 
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);

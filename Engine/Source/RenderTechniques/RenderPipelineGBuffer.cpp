@@ -45,7 +45,6 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         const renderer::Shader::DefineList defines =
         { 
             { "SEPARATE_MATERIALS", "1" },
-            { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
         };
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device, 
@@ -89,7 +88,6 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         const renderer::Shader::DefineList defines =
         {
             { "SEPARATE_MATERIALS", "0" },
-            { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
         };
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -123,7 +121,6 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         const renderer::Shader::DefineList defines =
         {
             { "SEPARATE_MATERIALS", "1" },
-            { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
         };
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -157,7 +154,6 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         const renderer::Shader::DefineList defines =
         {
             { "SEPARATE_MATERIALS", "0" },
-            { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
         };
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -354,7 +350,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
 void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, scene::SceneData& state)
 {
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
-    m_GBufferRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, state.m_viewportState._viewpotSize, 4 + WORLD_POS_ATTACHMENT, 0, "gbuffer_pass");
+    m_GBufferRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, state.m_viewportState._viewpotSize, 4, 0, "gbuffer_pass");
 
     renderer::Texture2D* albedoAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R8G8B8A8_UNorm, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_albedo");
@@ -400,28 +396,10 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
         }
     );
 
-#if WORLD_POS_ATTACHMENT
-    renderer::Texture2D* worldPosAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_world_pos");
-    m_GBufferRenderTarget->setColorTexture(4, worldPosAttachment,
-        {
-            renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
-        },
-        {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
-        }
-    );
-#endif // WORLD_POS_ATTACHMENT
-
-
-
     state.m_globalResources.bind("gbuffer_albedo", albedoAttachment);
     state.m_globalResources.bind("gbuffer_normals", normalsAttachment);
     state.m_globalResources.bind("gbuffer_material", materialAttachment);
     state.m_globalResources.bind("gbuffer_velocity", velocityAttachment);
-#if WORLD_POS_ATTACHMENT
-    state.m_globalResources.bind("gbuffer_world_pos", worldPosAttachment);
-#endif
 
     ObjectHandle depth_stencil = state.m_globalResources.get("depth_stencil");
     ASSERT(depth_stencil.isValid(), "must be valid");
@@ -453,11 +431,6 @@ void RenderPipelineGBufferStage::destroyRenderTarget(renderer::Device* device, s
 
     renderer::Texture2D* velocityAttachment = m_GBufferRenderTarget->getColorTexture<renderer::Texture2D>(3);
     V3D_DELETE(velocityAttachment, memory::MemoryLabel::MemoryGame);
-
-#if WORLD_POS_ATTACHMENT
-    renderer::Texture2D* worldPosAttachment = m_GBufferRenderTarget->getColorTexture<renderer::Texture2D>(4);
-    V3D_DELETE(worldPosAttachment, memory::MemoryLabel::MemoryGame);
-#endif
 
     V3D_DELETE(m_GBufferRenderTarget, memory::MemoryLabel::MemoryGame);
     m_GBufferRenderTarget = nullptr;

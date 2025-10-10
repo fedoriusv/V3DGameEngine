@@ -35,7 +35,6 @@ void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::
     {
         const renderer::Shader::DefineList defines =
         {
-            { "WORLD_POS_ATTACHMENT", std::to_string(WORLD_POS_ATTACHMENT) }
         };
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -75,9 +74,7 @@ void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureNormal);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMaterial);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureDepth);
-#if WORLD_POS_ATTACHMENT
-        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureWorldPos);
-#endif
+
         m_pipelines.push_back(pipeline);
         m_parameters.push_back(parameters);
     }
@@ -142,12 +139,6 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
         ObjectHandle gbuffer_material_h = scene.m_globalResources.get("gbuffer_material");
         ASSERT(gbuffer_material_h.isValid(), "must be valid");
         renderer::Texture2D* gbufferMaterialTexture = objectFromHandle<renderer::Texture2D>(gbuffer_material_h);
-
-#if WORLD_POS_ATTACHMENT
-        ObjectHandle gbuffer_world_pos_h = scene.m_globalResources.get("gbuffer_world_pos");
-        ASSERT(gbuffer_world_pos_h.isValid(), "must be valid");
-        renderer::Texture2D* gbufferWorldPosTexture = objectFromHandle<renderer::Texture2D>(gbuffer_world_pos_h);
-#endif
 
         ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_clamp");
         ASSERT(sampler_state_h.isValid(), "must be valid");
@@ -226,9 +217,6 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
                     renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureNormal),
                     renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureMaterial),
                     renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters[entry->pipelineID].t_TextureDepth),
-#if WORLD_POS_ATTACHMENT
-                    renderer::Descriptor(renderer::TextureView(gbufferWorldPosTexture), m_parameters[entry->pipelineID].t_TextureWorldPos),
-#endif
                 });
 
             DEBUG_MARKER_SCOPE(cmdList, std::format("Light {}", light.getName()), color::rgbaf::LTGREY);

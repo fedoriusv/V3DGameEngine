@@ -48,9 +48,6 @@ namespace scene
             SHADER_PARAMETER(t_TextureNormal);
             SHADER_PARAMETER(t_TextureMaterial);
             SHADER_PARAMETER(t_TextureDepth);
-#if WORLD_POS_ATTACHMENT
-            SHADER_PARAMETER(t_TextureWorldPos);
-#endif
         };
 
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
