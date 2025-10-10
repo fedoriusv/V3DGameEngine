@@ -560,13 +560,13 @@ void EditorScene::test_loadLights()
     {
         scene::SceneNode* directionallightNode = new scene::SceneNode();
         directionallightNode->m_name = "DirectionLight";
-        directionallightNode->setPosition(scene::TransformMode::Local, { 0.f, 2.f, -2.f });
-        directionallightNode->setRotation(scene::TransformMode::Local, { 20.f, 0.0f, 0.0f });
+        directionallightNode->setPosition(scene::TransformMode::Local, { -3.f, 3.f, 2.f });
+        directionallightNode->setRotation(scene::TransformMode::Local, { 30.f, 90.0f, 0.0f });
         m_sceneData.m_nodes.push_back(directionallightNode);
 
-        scene::DirectionalLight* directionalLight = new scene::DirectionalLight(m_device);
+        scene::DirectionalLight* directionalLight = scene::LightHelper::createDirectionLight(m_device, "Sun");
         directionalLight->setColor({ 1.f, 1.f, 1.f, 1.f });
-        directionalLight->setIntensity(30.f);
+        directionalLight->setIntensity(5.f);
         directionalLight->setTemperature(4000.0);
         directionallightNode->addComponent(directionalLight);
 
@@ -602,13 +602,14 @@ void EditorScene::test_loadLights()
     {
         scene::SceneNode* pointLightNode = new scene::SceneNode();
         pointLightNode->m_name = "PointLight0";
-        pointLightNode->setPosition(scene::TransformMode::Local, { 0.f, 0.f, 0.f });
+        pointLightNode->setPosition(scene::TransformMode::Local, { -1.25f, 0.25f, 0.3f });
         m_sceneData.m_nodes.push_back(pointLightNode);
 
-        scene::PointLight* pointLight0 = new scene::PointLight(m_device);
+        scene::PointLight* pointLight0 = scene::LightHelper::createPointLight(m_device, 1.f, "Light0");
         pointLight0->setColor({ 1.f, 1.f, 1.f, 1.f });
         pointLight0->setIntensity(30.f);
         pointLight0->setTemperature(4000.0);
+        pointLight0->setAttenuation(1.0, 0.09, 0.032, 1.0f);
         pointLightNode->addComponent(pointLight0);
 
         if (m_editorMode)
@@ -617,7 +618,7 @@ void EditorScene::test_loadLights()
             pointLightNode->addComponent(icon);
 
             scene::Material* material = new scene::Material(m_device);
-            material->setProperty("Color", math::float4{ 1.0, 1.0, 0.0, 1.0 });
+            material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
             material->setProperty("BaseColor", uvGrid);
             pointLightNode->addComponent(material);
 
@@ -633,6 +634,47 @@ void EditorScene::test_loadLights()
                 material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
                 material->setProperty("pipelineID", 1U);
                 material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 0.0, 1.0 });
+                debugNode->addComponent(material);
+            }
+        }
+    }
+
+    {
+        scene::SceneNode* spotLightNode = new scene::SceneNode();
+        spotLightNode->m_name = "Flashlight";
+        spotLightNode->setPosition(scene::TransformMode::Local, { 0.f, 0.f, 0.f });
+        m_sceneData.m_nodes.push_back(spotLightNode);
+
+        scene::PointLight* flashLight = new scene::PointLight(m_device);
+        flashLight->setColor({ 1.f, 1.f, 1.f, 1.f });
+        flashLight->setIntensity(30.f);
+        flashLight->setTemperature(4000.0);
+        flashLight->setAttenuation(1.0, 0.09, 0.032, 1.0f);
+        spotLightNode->addComponent(flashLight);
+
+        if (m_editorMode)
+        {
+            scene::Billboard* icon = new scene::Billboard(m_device);
+            spotLightNode->addComponent(icon);
+
+            scene::Material* material = new scene::Material(m_device);
+            material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+            material->setProperty("BaseColor", uvGrid);
+            spotLightNode->addComponent(material);
+
+            {
+                scene::SceneNode* debugNode = new scene::SceneNode();
+                debugNode->m_name = "FlashlightDebug";
+                debugNode->setPosition(scene::TransformMode::Local, { 0.f, -1.f, 0.f });
+                spotLightNode->addChild(debugNode);
+
+                scene::Mesh* sphere = scene::MeshHelper::createCone(m_device, 1.f, 1.f, 16, "spotLight");
+                debugNode->addComponent(sphere);
+
+                scene::Material* material = new scene::Material(m_device);
+                material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+                material->setProperty("pipelineID", 1U);
+                material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
                 debugNode->addComponent(material);
             }
         }

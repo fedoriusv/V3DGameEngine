@@ -51,11 +51,11 @@ private:
     //light
     struct Light
     {
-        ui::WidgetInputDragFloat* m_propertyIntensity;
-        ui::WidgetInputDragFloat* m_propertyTemperature;
-        ui::WidgetInputDragFloat* m_propertyRadius;
-        ui::WidgetInputDragFloat* m_propertyAttenuation;
-        ui::WidgetColorPalette*   m_propertyColor;
+        ui::WidgetInputDragFloat*  m_propertyIntensity;
+        ui::WidgetInputDragFloat*  m_propertyTemperature;
+        ui::WidgetInputDragFloat*  m_propertyRadius;
+        ui::WidgetInputDragFloat4* m_propertyAttenuation;
+        ui::WidgetColorPalette*    m_propertyColor;
         u32 m_loadedFlag = 0;
     } m_lightProperty;
 

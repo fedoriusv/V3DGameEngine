@@ -5,6 +5,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 
 [[vk::binding(0, 0)]] ConstantBuffer<Viewport> cb_Viewport : register(b0, space0);
+
 [[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> cb_Model : register(b1, space1);
 [[vk::binding(2, 1)]] SamplerState s_SamplerState          : register(s0, space1);
 [[vk::binding(3, 1)]] Texture2D t_TextureBaseColor         : register(t0, space1);
@@ -38,7 +39,7 @@ VS_SIMPLE_OUTPUT billboard_vs(uint VertexID : SV_VERTEXID)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float4 unlit_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
+[[vk::location(0)]] float4 unlit_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
 {
     return float4(cb_Model.tintColour.rgb, 1.0);
 }

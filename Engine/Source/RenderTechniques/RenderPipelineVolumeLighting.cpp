@@ -79,7 +79,8 @@ void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::
         m_parameters.push_back(parameters);
     }
 
-    m_sphereVolume = scene::MeshHelper::createSphere(device, 1.f, 16, 16, "pointLight");
+    m_sphereVolume = scene::MeshHelper::createSphere(device, 1.f, 32, 32, "pointLight");
+    m_coneVolume = scene::MeshHelper::createCone(device, 1.f, 1.f, 32, "spotLight");
 }
 
 void RenderPipelineVolumeLightingStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -227,7 +228,8 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
             }
             else if (light.getType() == typeOf<scene::SpotLight>())
             {
-                //TODO
+                renderer::GeometryBufferDesc desc(m_coneVolume->getIndexBuffer(), 0, m_coneVolume->getVertexBuffer(0), 0, sizeof(VertexFormatSimpleLit), 0);
+                cmdList->drawIndexed(desc, 0, m_coneVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
             }
         }
 

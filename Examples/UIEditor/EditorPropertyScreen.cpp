@@ -18,6 +18,9 @@ EditorPropertyScreen::EditorPropertyScreen(event::GameEventReceiver* gameEventRe
 
     m_lightProperty.m_propertyIntensity = nullptr;
     m_lightProperty.m_propertyTemperature = nullptr;
+    m_lightProperty.m_propertyColor = nullptr;
+    m_lightProperty.m_propertyRadius = nullptr;
+    m_lightProperty.m_propertyAttenuation = nullptr;
     m_lightProperty.m_loadedFlag = 0;
 }
 
@@ -39,6 +42,9 @@ void EditorPropertyScreen::build()
     ASSERT(m_window, "must be valid");
     ui::WidgetWindow& window = *m_window;
     window.removeWigets();
+
+    m_transformProperty.m_loadedFlag = 0;
+    m_lightProperty.m_loadedFlag = 0;
 
     if (m_selectedNode)
     {
@@ -122,6 +128,9 @@ void EditorPropertyScreen::update(f32 dt)
 
                 color::ColorRGBAF color = light->getColor();
                 m_lightProperty.m_propertyColor->setColor(color);
+
+                math::float4 att = light->getAttenuation();
+                m_lightProperty.m_propertyAttenuation->setValue(att._x, att._y, att._z, att._w);
 
                 if (!m_selectedNode->m_children.empty())
                 {
@@ -426,15 +435,19 @@ void EditorPropertyScreen::buildLightProp()
         flags |= ui::WidgetTreeNode::TreeNodeFlag::Open;
     }
 
+    scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+    bool isPunctual = m_selectedNode->getComponentByType<scene::PointLight>() || m_selectedNode->getComponentByType<scene::SpotLight>();
+
     window
         .addWidget(ui::WidgetLayout()
             .setFontSize(ui::WidgetLayout::MediumFont)
             .addWidget(ui::WidgetTreeNode("Light", flags)
+                .addWidget(ui::WidgetText("Name: " + std::string(light->getName())))
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Intensity"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
-                        .setStep(1.f)
-                        .setRange(0.0f, 1000.f)
+                        .setStep(0.01f)
+                        .setRange(-100.0f, 1000.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyIntensity = static_cast<ui::WidgetInputDragFloat*>(w);
@@ -471,6 +484,7 @@ void EditorPropertyScreen::buildLightProp()
                     )
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
+                    .setVisible(isPunctual)
                     .addWidget(ui::WidgetText("Radius"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setStep(0.01)
@@ -496,22 +510,23 @@ void EditorPropertyScreen::buildLightProp()
                     )
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
+                    .setVisible(isPunctual)
                     .addWidget(ui::WidgetText("Attenuation"))
-                    .addWidget(ui::WidgetInputDragFloat(1.f)
-                        .setStep(0.01)
-                        .setRange(0.f, 1.f)
+                    .addWidget(ui::WidgetInputDragFloat4(1.f, 0.09f, 0.063f, 0.f)
+                    .setStep(0.01)
+                    .setRange(0.01f, 100.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                m_lightProperty.m_propertyAttenuation = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_propertyAttenuation = static_cast<ui::WidgetInputDragFloat4*>(w);
                                 m_lightProperty.m_loadedFlag |= 1 << 3;
                             })
-                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                        .setOnChangedValueEvent([this](ui::Widget* w, const math::float4& val) -> void
                             {
                                 if (m_selectedNode)
                                 {
                                     if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
                                     {
-                                        //TODO
+                                        light->setAttenuation(val._x, val._y, val._z, val._w);
                                     }
                                 }
                             })

@@ -126,7 +126,15 @@ SpotLight::~SpotLight()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PointLight* LightHelper::createPointLight(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, const std::string& name)
+DirectionalLight* LightHelper::createDirectionLight(renderer::Device* device, const std::string& name)
+{
+    DirectionalLight* light = V3D_NEW(DirectionalLight, memory::MemoryLabel::MemoryObject)(device);
+    light->m_header.setName(name);
+
+    return light;
+}
+
+PointLight* LightHelper::createPointLight(renderer::Device* device, f32 radius, const std::string& name)
 {
     PointLight* light = V3D_NEW(PointLight, memory::MemoryLabel::MemoryObject)(device);
     light->m_header.setName(name);
@@ -135,9 +143,12 @@ PointLight* LightHelper::createPointLight(renderer::Device* device, renderer::Cm
     return light;
 }
 
-SpotLight* LightHelper::createSpotLight(renderer::Device* device, renderer::CmdListRender* cmdList, const std::string& name)
+SpotLight* LightHelper::createSpotLight(renderer::Device* device, const std::string& name)
 {
-    return nullptr;
+    SpotLight* light = V3D_NEW(SpotLight, memory::MemoryLabel::MemoryObject)(device);
+    light->m_header.setName(name);
+
+    return light;
 }
 
 } //namespace scene

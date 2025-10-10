@@ -179,7 +179,6 @@ namespace scene
     }
 
 
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -193,7 +192,14 @@ namespace scene
         explicit SpotLight(renderer::Device* device, const LightHeader& header) noexcept;
         ~SpotLight();
 
+
+
     private:
+
+        f32 m_innerAngle;
+        f32 m_outerAngle;
+
+        friend LightHelper;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -202,8 +208,9 @@ namespace scene
     {
     public:
 
-        [[nodisard]] static PointLight* createPointLight(renderer::Device* device, renderer::CmdListRender* cmdList, f32 radius, const std::string& name = "");
-        [[nodisard]] static SpotLight* createSpotLight(renderer::Device* device, renderer::CmdListRender* cmdList, const std::string& name = "");
+        [[nodisard]] static DirectionalLight* createDirectionLight(renderer::Device* device, const std::string& name = "");
+        [[nodisard]] static PointLight* createPointLight(renderer::Device* device, f32 radius, const std::string& name = "");
+        [[nodisard]] static SpotLight* createSpotLight(renderer::Device* device, const std::string& name = "");
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

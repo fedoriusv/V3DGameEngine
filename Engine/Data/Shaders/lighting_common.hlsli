@@ -1,6 +1,7 @@
 #ifndef _LIGTING_COMMON_HLSL_
 #define _LIGTING_COMMON_HLSL_
 
+#include "global.hlsli"
 #include "viewport.hlsli"
 #include "environment_common.hlsli"
 
@@ -16,10 +17,6 @@ struct LightBuffer
     float  temperature;
     float  type;
 };
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-static const float PI = 3.14159265;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -159,7 +156,7 @@ float4 cook_torrance_BRDF(
     float3 H = normalize(L + V);
 
     float NdotV = abs(dot(N, V)) + 1e-5;
-    float NdotL = max(dot(N, L), 0.01);
+    float NdotL = max(dot(N, L), 1e-5);
     float NdotH = saturate(dot(N, H));
     float VdotH = saturate(max(dot(V, H), 0.0));
 
@@ -173,7 +170,7 @@ float4 cook_torrance_BRDF(
     float3 F = Fresnel_Schlick(VdotH, F0);
     
     float3 numerator = D * G * F;
-    float denominator = max(4.0 * NdotV * NdotL, 0.001);
+    float denominator = max(4.0 * NdotV * NdotL, 1e-5);
     float3 specular = numerator / denominator;
 
     float3 kD = (1.0 - F) * (1.0 - Metallic);
@@ -198,7 +195,13 @@ float4 cook_torrance_BRDF(
     float3 radiance = lightColor * attenuation;
     
     float3 Lo = (diffuse + specular) * radiance * NdotL;
-    return float4(Lo, 1.0);
+    
+    // Ambient / IBL (simple ambient approximation)
+    float3 ao = float3(1.0, 1.0, 1.0);
+    float3 ambient = float3(0.03, 0.03, 0.03) * Albedo * ao;
+    
+    float4 color = float4(Lo + ambient, 1.0);
+    return color;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

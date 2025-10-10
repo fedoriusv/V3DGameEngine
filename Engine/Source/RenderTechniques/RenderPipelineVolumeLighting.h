@@ -59,6 +59,7 @@ namespace scene
         std::vector<MaterialParameters> m_parameters;
 
         scene::Mesh* m_sphereVolume;
+        scene::Mesh* m_coneVolume;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
