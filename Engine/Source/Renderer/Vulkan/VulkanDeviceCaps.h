@@ -40,6 +40,7 @@ namespace vk
         bool _useLateDescriptorSetUpdate = false;
 
         bool _supportRenderpass2 = false;
+        bool _supportDynamicRendering = false;
         bool _supportDedicatedAllocation = false;
 
         bool _supportPipelineExecutableProperties = false;

@@ -70,13 +70,10 @@ namespace vk
 
             _graphicPipeline = other._graphicPipeline;
             _computePipeline = other._computePipeline;
-#if !DYNAMIC_RENDERING
             _renderpass = other._renderpass;
-            _framebuffer = other._framebuffer;
-#else
             _renderpassDesc = other._renderpassDesc;
+            _framebuffer = other._framebuffer;
             _framebufferDesc = other._framebufferDesc;
-#endif
             std::swap(_clearValues, other._clearValues);
             _insideRenderpass = other._insideRenderpass;
 
@@ -87,7 +84,6 @@ namespace vk
             }
             _descriptorSets = other._descriptorSets;
             _dynamicOffsets = other._dynamicOffsets;
-
 
             _imageBarriers = std::move(_imageBarriers);
             _debugMarkers = std::move(_debugMarkers);
@@ -122,13 +118,10 @@ namespace vk
         VulkanGraphicPipeline*         _graphicPipeline = nullptr;
         VulkanComputePipeline*         _computePipeline = nullptr;
 
-#if !DYNAMIC_RENDERING
         VulkanRenderPass*              _renderpass = nullptr;
-        VulkanFramebuffer*             _framebuffer = nullptr;
-#else
         RenderPassDesc                 _renderpassDesc = {};
+        VulkanFramebuffer*             _framebuffer = nullptr;
         FramebufferDesc                _framebufferDesc = {};
-#endif
         std::vector<VkClearValue>      _clearValues;
         bool                           _insideRenderpass = false;
 

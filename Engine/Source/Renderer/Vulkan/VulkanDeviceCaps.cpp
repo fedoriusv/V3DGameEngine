@@ -177,6 +177,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
     ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_3_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
     _supportRenderpass2 = isEnabledExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
+    _supportDynamicRendering = isEnabledExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     _supportMultiview = isEnabledExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);
     _enableSamplerMirrorClampToEdge = isEnabledExtension(VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
     _supportDepthAutoResolve = isEnabledExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
@@ -471,10 +472,11 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
     LOG_INFO("VulkanDeviceCaps::initialize: Device ID: %u", _deviceProperties.deviceID);
     LOG_INFO("VulkanDeviceCaps::initialize: Device Name: %s", _deviceProperties.deviceName);
 
+    LOG_INFO("VulkanDeviceCaps::initialize:  supportDynamicRendering is %s", _supportDynamicRendering ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportRenderpass2 is %s", _supportRenderpass2 ? "supported" : "unsupported");
-    LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", _enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDepthAutoResolve is %s", _supportDepthAutoResolve ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportDedicatedAllocation is %s", _supportDedicatedAllocation ? "supported" : "unsupported");
+    LOG_INFO("VulkanDeviceCaps::initialize:  enableSamplerMirrorClampToEdge is %s", _enableSamplerMirrorClampToEdge ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportMultiview is %s", _supportMultiview ? "supported" : "unsupported");
     LOG_INFO("VulkanDeviceCaps::initialize:  supportBlitImage is %s", _supportBlitImage ? "supported" : "unsupported");
 

@@ -98,13 +98,11 @@ void VulkanRenderState::invalidate()
 
     _graphicPipeline = nullptr;
     _computePipeline = nullptr;
-#if !DYNAMIC_RENDERING
     _renderpass = nullptr;
-    _framebuffer = nullptr;
-#else
     _renderpassDesc = {};
+    _framebuffer = nullptr;
     _framebufferDesc = {};
-#endif
+
     std::fill(_clearValues.begin(), _clearValues.end(), VkClearValue{});
     _insideRenderpass = false;
 

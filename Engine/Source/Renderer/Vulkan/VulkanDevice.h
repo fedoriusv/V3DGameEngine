@@ -238,10 +238,8 @@ namespace vk
 
         VulkanStagingBufferManager*             m_stagingBufferManager;
         VulkanSemaphoreManager*                 m_semaphoreManager;
-#if !DYNAMIC_RENDERING
         VulkanFramebufferManager*               m_framebufferManager;
         VulkanRenderpassManager*                m_renderpassManager;
-#endif
         VulkanPipelineLayoutManager*            m_pipelineLayoutManager;
         VulkanGraphicPipelineManager*           m_graphicPipelineManager;
         VulkanComputePipelineManager*           m_computePipelineManager;

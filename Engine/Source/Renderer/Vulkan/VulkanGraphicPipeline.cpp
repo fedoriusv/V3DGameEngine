@@ -432,30 +432,64 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     const GraphicsPipelineStateDesc& pipelineDesc = state.getPipelineStateDesc();
 
     VkPipelineCache pipelineCache = VK_NULL_HANDLE; //TODO
+    VkRenderPass compatibilityRenderPass = VK_NULL_HANDLE;
+    void* vkExtentions = nullptr;
+
+    VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {};
+    std::vector<VkFormat> colorAttachmentFormats;
+    pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    if (m_device.getVulkanDeviceCaps()._supportDynamicRendering)
+    {
+        colorAttachmentFormats.reserve(state.getRenderPassDesc()._countColorAttachment);
+        for (u32 i = 0; i < state.getRenderPassDesc()._countColorAttachment; ++i)
+        {
+            colorAttachmentFormats.push_back(VulkanImage::convertImageFormatToVkFormat(state.getRenderPassDesc()._attachmentsDesc[i]._format));
+        }
+
+        VkFormat depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+        VkFormat stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+        if (state.getRenderPassDesc()._hasDepthStencilAttachment)
+        {
+            VkFormat depthStencilAttachmentFormat = VulkanImage::convertImageFormatToVkFormat(state.getRenderPassDesc()._attachmentsDesc.back()._format);
+            depthAttachmentFormat = VulkanImage::isDepthFormat(depthStencilAttachmentFormat) ? depthStencilAttachmentFormat : VK_FORMAT_UNDEFINED;
+            stencilAttachmentFormat = VulkanImage::isStencilFormat(depthStencilAttachmentFormat) ? depthStencilAttachmentFormat : VK_FORMAT_UNDEFINED;
+        }
+
+        pipelineRenderingCreateInfo.pNext = nullptr;
+        pipelineRenderingCreateInfo.colorAttachmentCount = static_cast<u32>(colorAttachmentFormats.size());
+        pipelineRenderingCreateInfo.pColorAttachmentFormats = colorAttachmentFormats.data();
+        pipelineRenderingCreateInfo.depthAttachmentFormat = depthAttachmentFormat;
+        pipelineRenderingCreateInfo.stencilAttachmentFormat = stencilAttachmentFormat;
+        pipelineRenderingCreateInfo.viewMask = state.getRenderPassDesc()._viewsMask;
+
+        vkExtentions = &pipelineRenderingCreateInfo;
+    }
+    else
+    {
+        ASSERT(!m_compatibilityRenderPass, "not nullptr");
+        if (!createCompatibilityRenderPass(state.getRenderPassDesc(), m_compatibilityRenderPass))
+        {
+            LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
+            return false;
+        }
+
+        compatibilityRenderPass = static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->getHandle();
+    }
 
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
     graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    graphicsPipelineCreateInfo.pNext = nullptr;
-    graphicsPipelineCreateInfo.flags = 0; //VkPipelineDiscardRectangleStateCreateInfoEXT
+    graphicsPipelineCreateInfo.pNext = vkExtentions;
+    graphicsPipelineCreateInfo.flags = 0;
 #if VULKAN_DEBUG
     if (m_device.getVulkanDeviceCaps()._pipelineExecutablePropertiesEnabled)
     {
         graphicsPipelineCreateInfo.flags |= VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR;
     }
 #endif //VULKAN_DEBUG
+    graphicsPipelineCreateInfo.renderPass = compatibilityRenderPass;
+    graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineIndex = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-    ASSERT(!m_compatibilityRenderPass, "not nullptr");
-    if (!createCompatibilityRenderPass(state.getRenderPassDesc(), m_compatibilityRenderPass))
-    {
-        LOG_ERROR("VulkanGraphicPipeline::create couldn't create renderpass for pipline");
-        return false;
-    }
-
-    graphicsPipelineCreateInfo.renderPass = static_cast<VulkanRenderPass*>(m_compatibilityRenderPass)->getHandle();
-    graphicsPipelineCreateInfo.subpass = 0; //TODO
-
 
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos;
     if (!VulkanGraphicPipeline::createShaderModules(state.getShaderProgram()))

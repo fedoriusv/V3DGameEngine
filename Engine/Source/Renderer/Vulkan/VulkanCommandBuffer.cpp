@@ -37,6 +37,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, CommandBufferLeve
     , m_queueIndex(~0U)
 
     , m_fence(V3D_NEW(VulkanFence, memory::MemoryLabel::MemoryRenderCore)(&m_device))
+    , m_primaryBuffer(nullptr)
 
     , m_isInsideRenderPass(false)
 {
@@ -426,8 +427,18 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
     for (u32 color = 0; color < passDesc._countColorAttachment; ++color)
     {
         const AttachmentDesc& description = passDesc._attachmentsDesc[color];
-        auto& [image, subresource] = framebufferDesc._imageViews[color];
-        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image));
+        auto& [texture, subresource] = framebufferDesc._imageViews[color];
+        VulkanImage* vkImage = nullptr;
+        if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+        {
+            VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(texture->getTextureHandle()));
+            vkImage = swapchain->getCurrentSwapchainImage();
+            m_renderpassState._activeSwapchain = VulkanImage::getSwapchainFromImage(vkImage);
+        }
+        else
+        {
+            vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+        }
         ASSERT(vkImage, "nullptr");
 
         VkImageLayout oldLayout = m_resourceStates.getLayout(vkImage, subresource);
@@ -442,16 +453,11 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
         renderingAttachmentInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_COLOR_BIT);
         renderingAttachmentInfo.imageLayout = newLayout;
         renderingAttachmentInfo.clearValue = clearValues[color];
-        if (image->hasUsageFlag(TextureUsage::TextureUsage_Resolve))
+        if (texture->hasUsageFlag(TextureUsage::TextureUsage_Resolve))
         {
             renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
             renderingAttachmentInfo.resolveImageView = vkImage->getResolveImage()->getImageView(subresource, VK_IMAGE_ASPECT_COLOR_BIT);
             renderingAttachmentInfo.resolveImageLayout = newLayout;
-        }
-
-        if (vkImage->hasUsageFlag(TextureUsage_Backbuffer))
-        {
-            m_renderpassState._activeSwapchain = VulkanImage::getSwapchainFromImage(vkImage);
         }
 
         colorAttachments.push_back(renderingAttachmentInfo);
@@ -459,46 +465,48 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
 
     VkRenderingAttachmentInfo depthAttachment = {};
     VkRenderingAttachmentInfo stencilAttachment = {};
+    const AttachmentDesc& depthStencilDescription = passDesc._attachmentsDesc.back();
     if (passDesc._hasDepthStencilAttachment)
     {
-        const AttachmentDesc& description = passDesc._attachmentsDesc.back();
         auto& [image, subresource] = framebufferDesc._imageViews.back();
-        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image));
+        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image->getTextureHandle()));
         ASSERT(vkImage, "nullptr");
 
         VkImageLayout oldLayout = m_resourceStates.getLayout(vkImage, subresource);
-        VkImageLayout newLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._transition);
+        VkImageLayout newLayout = VulkanTransitionState::convertTransitionStateToImageLayout(depthStencilDescription._transition);
         VulkanCommandBuffer::cmdPipelineBarrier(vkImage, subresource, oldLayout, newLayout);
 
+        if (VulkanImage::isDepthFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format)))
         {
             depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
             depthAttachment.pNext = nullptr;
-            depthAttachment.loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._loadOp);
-            depthAttachment.storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._storeOp);
-            depthAttachment.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_DEPTH_BIT);
+            depthAttachment.loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(depthStencilDescription._loadOp);
+            depthAttachment.storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(depthStencilDescription._storeOp);
+            depthAttachment.imageView = vkImage->getImageView(subresource);
             depthAttachment.imageLayout = newLayout;
             depthAttachment.clearValue = clearValues.back();
             if (image->hasUsageFlag(TextureUsage::TextureUsage_Resolve))
             {
                 depthAttachment.resolveMode = VK_RESOLVE_MODE_MAX_BIT;
-                depthAttachment.resolveImageView = vkImage->getResolveImage()->getImageView(subresource, VK_IMAGE_ASPECT_DEPTH_BIT);
+                depthAttachment.resolveImageView = vkImage->getResolveImage()->getImageView(subresource);
                 depthAttachment.resolveImageLayout = newLayout;
             }
         }
 
+        if (VulkanImage::isStencilFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format)))
         {
-            depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-            depthAttachment.pNext = nullptr;
-            depthAttachment.loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._stencilLoadOp);
-            depthAttachment.storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._stencilStoreOp);
-            depthAttachment.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_STENCIL_BIT);
-            depthAttachment.imageLayout = newLayout;
-            depthAttachment.clearValue = clearValues.back();
+            stencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+            stencilAttachment.pNext = nullptr;
+            stencilAttachment.loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(depthStencilDescription._stencilLoadOp);
+            stencilAttachment.storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(depthStencilDescription._stencilStoreOp);
+            stencilAttachment.imageView = vkImage->getImageView(subresource);
+            stencilAttachment.imageLayout = newLayout;
+            stencilAttachment.clearValue = clearValues.back();
             if (image->hasUsageFlag(TextureUsage::TextureUsage_Resolve))
             {
-                depthAttachment.resolveMode = VK_RESOLVE_MODE_MAX_BIT;
-                depthAttachment.resolveImageView = vkImage->getResolveImage()->getImageView(subresource, VK_IMAGE_ASPECT_STENCIL_BIT);
-                depthAttachment.resolveImageLayout = newLayout;
+                stencilAttachment.resolveMode = VK_RESOLVE_MODE_MAX_BIT;
+                stencilAttachment.resolveImageView = vkImage->getResolveImage()->getImageView(subresource);
+                stencilAttachment.resolveImageLayout = newLayout;
             }
         }
     }
@@ -509,11 +517,11 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
     renderingInfo.flags = 0;
     renderingInfo.renderArea = { {0, 0 }, framebufferDesc._renderArea._width, framebufferDesc._renderArea._height };
     renderingInfo.viewMask = passDesc._viewsMask;
-    renderingInfo.layerCount = std::bit_width(passDesc._viewsMask);
+    renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = static_cast<u32>(colorAttachments.size());
     renderingInfo.pColorAttachments = colorAttachments.data();
-    renderingInfo.pDepthAttachment = passDesc._hasDepthStencilAttachment ? &depthAttachment : nullptr;
-    renderingInfo.pStencilAttachment = passDesc._hasDepthStencilAttachment ? &depthAttachment : nullptr;
+    renderingInfo.pDepthAttachment = (passDesc._hasDepthStencilAttachment && VulkanImage::isDepthFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format))) ? &depthAttachment : nullptr;
+    renderingInfo.pStencilAttachment = (passDesc._hasDepthStencilAttachment && VulkanImage::isStencilFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format))) ? &stencilAttachment : nullptr;
 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCommandBuffer::cmdBeginRendering area (width %u, height %u)", renderingInfo.renderArea.extent.width, renderingInfo.renderArea.extent.height);
@@ -535,12 +543,21 @@ void VulkanCommandBuffer::cmdEndRendering(const RenderPassDesc& passDesc, const 
     for (u32 color = 0; color < passDesc._countColorAttachment; ++color)
     {
         const AttachmentDesc& description = passDesc._attachmentsDesc[color];
-        auto& [image, subresource] = framebufferDesc._imageViews[color];
-        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image));
+        auto& [texture, subresource] = framebufferDesc._imageViews[color];
+        VulkanImage* vkImage = nullptr;
+        if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+        {
+            VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(texture->getTextureHandle()));
+            vkImage = swapchain->getCurrentSwapchainImage();
+            m_renderpassState._activeSwapchain = VulkanImage::getSwapchainFromImage(vkImage);
+        }
+        else
+        {
+            vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+        }
         ASSERT(vkImage, "nullptr");
 
         VkImageLayout oldLayout = m_resourceStates.getLayout(vkImage, subresource);
-        ASSERT(oldLayout == VulkanTransitionState::convertTransitionStateToImageLayout(description._transition), "must be same");
         VkImageLayout newLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._finalTransition);
         VulkanCommandBuffer::cmdPipelineBarrier(vkImage, subresource, oldLayout, newLayout);
     }
@@ -549,11 +566,10 @@ void VulkanCommandBuffer::cmdEndRendering(const RenderPassDesc& passDesc, const 
     {
         const AttachmentDesc& description = passDesc._attachmentsDesc.back();
         auto& [image, subresource] = framebufferDesc._imageViews.back();
-        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image));
+        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image->getTextureHandle()));
         ASSERT(vkImage, "nullptr");
 
         VkImageLayout oldLayout = m_resourceStates.getLayout(vkImage, subresource);
-        ASSERT(oldLayout == VulkanTransitionState::convertTransitionStateToImageLayout(description._transition), "must be same");
         VkImageLayout newLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._finalTransition);
         VulkanCommandBuffer::cmdPipelineBarrier(vkImage, subresource, oldLayout, newLayout);
     }

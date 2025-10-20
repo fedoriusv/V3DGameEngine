@@ -73,12 +73,12 @@ const std::vector<const c8*> k_deviceExtensionsList =
     VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
     VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
 
+    VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
     VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
     VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
     VK_KHR_MULTIVIEW_EXTENSION_NAME,
     VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-
     VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME,
 
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
@@ -139,10 +139,8 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
 
     , m_stagingBufferManager(nullptr)
     , m_semaphoreManager(nullptr)
-#if !DYNAMIC_RENDERING
     , m_framebufferManager(nullptr)
     , m_renderpassManager(nullptr)
-#endif
     , m_pipelineLayoutManager(nullptr)
     , m_graphicPipelineManager(nullptr)
     , m_computePipelineManager(nullptr)
@@ -179,10 +177,8 @@ VulkanDevice::~VulkanDevice()
     ASSERT(!m_computePipelineManager, "m_computePipelineManager is not nullptr");
     ASSERT(!m_graphicPipelineManager, "m_graphicPipelineManager is not nullptr");
     ASSERT(!m_pipelineLayoutManager, "m_pipelineLayoutManager is not nullptr");
-#if !DYNAMIC_RENDERING
     ASSERT(!m_renderpassManager, "m_renderpassManager is not nullptr");
     ASSERT(!m_framebufferManager, "m_framebufferManager not nullptr");
-#endif
     ASSERT(!m_semaphoreManager, "m_semaphoreManager is not nullptr");
     ASSERT(!m_imageMemoryManager, "m_imageMemoryManager not nullptr");
     ASSERT(!m_bufferMemoryManager, "m_bufferMemoryManager not nullptr");
@@ -449,10 +445,13 @@ bool VulkanDevice::initialize()
     m_stagingBufferManager = V3D_NEW(VulkanStagingBufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
 
     m_semaphoreManager = V3D_NEW(VulkanSemaphoreManager, memory::MemoryLabel::MemoryRenderCore)(this);
-#if !DYNAMIC_RENDERING
-    m_framebufferManager = V3D_NEW(VulkanFramebufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
-    m_renderpassManager = V3D_NEW(VulkanRenderpassManager, memory::MemoryLabel::MemoryRenderCore)(this);
-#endif
+
+    if (!m_deviceCaps._supportDynamicRendering)
+    {
+        m_framebufferManager = V3D_NEW(VulkanFramebufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
+        m_renderpassManager = V3D_NEW(VulkanRenderpassManager, memory::MemoryLabel::MemoryRenderCore)(this);
+    }
+
     m_pipelineLayoutManager = V3D_NEW(VulkanPipelineLayoutManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_graphicPipelineManager = V3D_NEW(VulkanGraphicPipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_computePipelineManager = V3D_NEW(VulkanComputePipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
@@ -822,6 +821,15 @@ bool VulkanDevice::createDevice()
         vkDeviceExtension = &physicalDeviceTimelineSemaphoreFeatures;
     }
 
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME))
+    {
+        VkPhysicalDeviceDynamicRenderingFeatures physicalDeviceDynamicRenderingFeatures = {};
+        physicalDeviceDynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+        physicalDeviceDynamicRenderingFeatures.pNext = vkDeviceExtension;
+        physicalDeviceDynamicRenderingFeatures.dynamicRendering = m_deviceCaps._supportDynamicRendering;
+        vkDeviceExtension = &physicalDeviceDynamicRenderingFeatures;
+    }
+
 #ifdef VK_EXT_descriptor_indexing
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
     {
@@ -979,7 +987,6 @@ void VulkanDevice::destroy()
         m_pipelineLayoutManager = nullptr;
     }
 
-#if !DYNAMIC_RENDERING
     if (m_renderpassManager)
     {
         V3D_DELETE(m_renderpassManager, memory::MemoryLabel::MemoryRenderCore);
@@ -991,7 +998,6 @@ void VulkanDevice::destroy()
         V3D_DELETE(m_framebufferManager, memory::MemoryLabel::MemoryRenderCore);
         m_framebufferManager = nullptr;
     }
-#endif
 
     if (m_deviceCaps._unifiedMemoryManager)
     {
@@ -1294,6 +1300,11 @@ void VulkanDevice::destroyBuffer(BufferHandle buffer)
 
 void VulkanDevice::destroyFramebuffer(Framebuffer* framebuffer)
 {
+    if (m_deviceCaps._supportDynamicRendering)
+    {
+        return;
+    }
+
 #if FRAME_PROFILER_INTERNAL
     RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
@@ -1305,16 +1316,19 @@ void VulkanDevice::destroyFramebuffer(Framebuffer* framebuffer)
 
     ASSERT(framebuffer, "nullptr");
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
-#if !DYNAMIC_RENDERING
     m_resourceDeleter.addResourceToDelete(vkFramebuffer, [this, vkFramebuffer](VulkanResource* resource) -> void
         {
             m_framebufferManager->removeFramebuffer(vkFramebuffer);
         });
-#endif
 }
 
 void VulkanDevice::destroyRenderpass(RenderPass* renderpass)
 {
+    if (m_deviceCaps._supportDynamicRendering)
+    {
+        return;
+    }
+
 #if FRAME_PROFILER_INTERNAL
     RenderFrameProfiler::StackProfiler stackFrameProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::FrameTime);
     RenderFrameProfiler::StackProfiler stackFuncProfiler(g_CPUProfiler, 0, RenderFrameProfiler::FrameCounter::RemoveResources);
@@ -1326,12 +1340,10 @@ void VulkanDevice::destroyRenderpass(RenderPass* renderpass)
 
     ASSERT(renderpass, "nullptr");
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
-#if !DYNAMIC_RENDERING
     m_resourceDeleter.addResourceToDelete(vkRenderpass, [this, vkRenderpass](VulkanResource* resource) -> void
         {
             m_renderpassManager->removeRenderPass(vkRenderpass);
         });
-#endif
 }
 
 void VulkanDevice::destroyPipeline(RenderPipeline* pipeline)
@@ -1507,19 +1519,23 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
 
     const FramebufferDesc& framebufferDesc = rendertarget.getFramebufferDesc();
     const RenderPassDesc& renderpassDesc = rendertarget.getRenderPassDesc();
-#if !DYNAMIC_RENDERING
-    VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(renderpassDesc, framebufferDesc, rendertarget.getName());
-    rendertarget.m_trackerRenderpass.attach(renderpass);
+    if (m_device.getVulkanDeviceCaps()._supportDynamicRendering)
+    {
+        m_pendingRenderState._framebufferDesc = framebufferDesc;
+        m_pendingRenderState._renderpassDesc = renderpassDesc;
+    }
+    else
+    {
+        VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(renderpassDesc, framebufferDesc, rendertarget.getName());
+        rendertarget.m_trackerRenderpass.attach(renderpass);
 
-    auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, framebufferDesc, rendertarget.getName());
-    rendertarget.m_trackerFramebuffer.attach(framebuffer);
+        auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, framebufferDesc, rendertarget.getName());
+        rendertarget.m_trackerFramebuffer.attach(framebuffer);
 
-    m_pendingRenderState._renderpass = renderpass;
-    m_pendingRenderState._framebuffer = framebuffer;
-#else
-    m_pendingRenderState._framebufferDesc = framebufferDesc;
-    m_pendingRenderState._renderpassDesc = renderpassDesc;
-#endif //!DYNAMIC_RENDERING
+        m_pendingRenderState._renderpass = renderpass;
+        m_pendingRenderState._framebuffer = framebuffer;
+    }
+
     if constexpr (sizeof(color::Color) == sizeof(VkClearValue))
     {
         memcpy(m_pendingRenderState._clearValues.data(), framebufferDesc._clearColorValues.data(), sizeof(framebufferDesc._clearColorValues));
@@ -1550,14 +1566,22 @@ void VulkanCmdList::endRenderTarget()
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCmdList[%u]::endRenderTarget", m_concurrencySlot);
 #endif //VULKAN_DEBUG
-    m_pendingRenderState._insideRenderpass = false;
-    m_pendingRenderState.invalidate();
 
     VulkanCommandBuffer* drawBuffer = m_currentCmdBuffer[toEnumType(CommandTargetType::CmdDrawBuffer)];
     if (drawBuffer && drawBuffer->isInsideRenderPass())
     {
-        drawBuffer->cmdEndRenderPass();
+        if (m_device.getVulkanDeviceCaps()._supportDynamicRendering)
+        {
+            drawBuffer->cmdEndRendering(m_pendingRenderState._renderpassDesc, m_pendingRenderState._framebufferDesc);
+        }
+        else
+        {
+            drawBuffer->cmdEndRenderPass();
+        }
     }
+
+    m_pendingRenderState._insideRenderpass = false;
+    m_pendingRenderState.invalidate();
 }
 
 void VulkanCmdList::setPipelineState(GraphicsPipelineState& state)
@@ -1778,15 +1802,19 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
 
         if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_RenderPass))
         {
-#if !DYNAMIC_RENDERING
-            drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._clearValues);
-            m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
-            m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
-#else
-            drawBuffer->cmdBeginRendering(m_pendingRenderState._renderpassDesc, m_pendingRenderState._framebufferDesc, m_pendingRenderState._clearValues);
-            m_currentRenderState._renderpassDesc = m_pendingRenderState._renderpassDesc;
-            m_currentRenderState._framebufferDesc = m_pendingRenderState._framebufferDesc;
-#endif
+            if (m_device.getVulkanDeviceCaps()._supportDynamicRendering)
+            {
+                drawBuffer->cmdBeginRendering(m_pendingRenderState._renderpassDesc, m_pendingRenderState._framebufferDesc, m_pendingRenderState._clearValues);
+                m_currentRenderState._renderpassDesc = m_pendingRenderState._renderpassDesc;
+                m_currentRenderState._framebufferDesc = m_pendingRenderState._framebufferDesc;
+            }
+            else
+            {
+                drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._clearValues);
+                m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
+                m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
+            }
+
             m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_RenderPass);
         }
     }

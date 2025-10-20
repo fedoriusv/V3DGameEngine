@@ -261,12 +261,12 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, VkPipeli
     VulkanCommandBuffer::cmdPipelineBarrier(image, VulkanImage::makeVulkanImageSubresource(image), srcStageMask, dstStageMask, layout);
 }
 
-inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& resource, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
+inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& subresource, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageLayout layout)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
 
-    VkImageLayout oldLayout = m_resourceStates.getLayout(image, resource);
+    VkImageLayout oldLayout = m_resourceStates.getLayout(image, subresource);
     if (oldLayout == layout)
     {
         return;
@@ -284,13 +284,13 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const Re
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.image = image->getHandle();
-    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(resource, image->getImageAspectFlags());
+    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(subresource, image->getImageAspectFlags());
 
     VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-    m_resourceStates.setLayout(image, layout, resource);
+    m_resourceStates.setLayout(image, layout, subresource);
 }
 
-inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& resource, VkImageLayout oldLayout, VkImageLayout newLayout)
+inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const RenderTexture::Subresource& subresource, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
@@ -314,9 +314,10 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const Re
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.image = image->getHandle();
-    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(resource, image->getImageAspectFlags());
+    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(subresource, image->getImageAspectFlags());
 
     VulkanWrapper::CmdPipelineBarrier(m_commands, srcStage, dstStage, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    m_resourceStates.setLayout(image, newLayout, subresource);
 }
 
 inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanBuffer* buffer, u32 offset, u32 size, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask)
