@@ -10,7 +10,7 @@ namespace scene
 {
 
 CameraEditorHandler::CameraEditorHandler(std::unique_ptr<Camera> camera) noexcept
-    : CameraHandler(std::move(camera))
+    : CameraController(std::move(camera))
 
     , m_distanceLimits({-10, 10})
 
@@ -59,7 +59,7 @@ void CameraEditorHandler::update(f32 deltaTime)
 
             math::Matrix4D transform = m_camera->getTransform();
             transform.makeInverse();
-            CameraHandler::setViewMatrix(transform);
+            CameraController::setViewMatrix(transform);
         }
         else if (m_freeFlyMode)
         {
@@ -77,10 +77,10 @@ void CameraEditorHandler::update(f32 deltaTime)
             m_camera->setTarget(m_camera->getPosition() + m_camera->getForwardVector() * 2.f);
 
             transform.makeInverse();
-            CameraHandler::setViewMatrix(transform);
+            CameraController::setViewMatrix(transform);
         }
 
-        CameraHandler::update(deltaTime);
+        CameraController::update(deltaTime);
         m_needUpdate = false;
     }
 }

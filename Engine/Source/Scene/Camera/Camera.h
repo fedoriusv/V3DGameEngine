@@ -114,7 +114,7 @@ namespace scene
         mutable CameraStateFlags m_matricesFlags;
         bool                     m_orthogonal;
 
-        friend class CameraHandler;
+        friend class CameraController;
 
     private:
 

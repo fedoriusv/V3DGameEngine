@@ -1,118 +1,118 @@
-#include "CameraHandler.h"
+#include "CameraController.h"
 
 namespace v3d
 {
 namespace scene
 {
 
-CameraHandler::CameraHandler(std::unique_ptr<Camera> camera) noexcept
+CameraController::CameraController(std::unique_ptr<Camera> camera) noexcept
     : m_camera(std::move(camera))
     , m_needUpdate(true)
 {
 }
 
-CameraHandler::~CameraHandler()
+CameraController::~CameraController()
 {
 }
 
-void CameraHandler::setPerspective(f32 FOV, const math::Dimension2D& size, f32 zNear, f32 zFar)
+void CameraController::setPerspective(f32 FOV, const math::Dimension2D& size, f32 zNear, f32 zFar)
 {
     m_camera->setPerspective(FOV, size, zNear, zFar);
     m_needUpdate = true;
 }
 
-void CameraHandler::setOrtho(const math::Rect& area, f32 zNear, f32 zFar)
+void CameraController::setOrtho(const math::Rect& area, f32 zNear, f32 zFar)
 {
     m_camera->setOrtho(area, zNear, zFar);
     m_needUpdate = true;
 }
 
-Camera& CameraHandler::getCamera()
+Camera& CameraController::getCamera()
 {
     return *m_camera;
 }
 
-const Camera& CameraHandler::getCamera() const
+const Camera& CameraController::getCamera() const
 {
     return *m_camera;
 }
 
-void CameraHandler::setPosition(const math::Vector3D& position)
+void CameraController::setPosition(const math::Vector3D& position)
 {
     m_camera->setPosition(position);
     m_needUpdate = true;
 }
 
-void CameraHandler::setTarget(const math::Vector3D& target)
+void CameraController::setTarget(const math::Vector3D& target)
 {
     m_camera->setTarget(target);
     m_needUpdate = true;
 }
 
-void CameraHandler::setNear(f32 value)
+void CameraController::setNear(f32 value)
 {
     m_camera->setNear(value);
     m_needUpdate = true;
 }
 
-void CameraHandler::setFar(f32 value)
+void CameraController::setFar(f32 value)
 {
     m_camera->setFar(value);
     m_needUpdate = true;
 }
 
-void CameraHandler::setFOV(f32 value)
+void CameraController::setFOV(f32 value)
 {
     m_camera->setFOV(value);
     m_needUpdate = true;
 }
 
-const math::Vector3D& CameraHandler::getPosition() const
+const math::Vector3D& CameraController::getPosition() const
 {
     return m_camera->getPosition();
 }
 
-const math::Vector3D& CameraHandler::getTarget() const
+const math::Vector3D& CameraController::getTarget() const
 {
     return m_camera->getTarget();
 }
 
-f32 CameraHandler::getNear() const
+f32 CameraController::getNear() const
 {
     return m_camera->getNear();
 }
 
-f32 CameraHandler::getFar() const
+f32 CameraController::getFar() const
 {
     return m_camera->getFar();
 }
 
-f32 CameraHandler::getFOV() const
+f32 CameraController::getFOV() const
 {
     return m_camera->getFOV();
 }
 
-f32 CameraHandler::getAspectRatio() const
+f32 CameraController::getAspectRatio() const
 {
     return m_camera->getAspectRatio();
 }
 
-bool CameraHandler::isOrthogonal() const
+bool CameraController::isOrthogonal() const
 {
     return m_camera->isOrthogonal();
 }
 
-const math::Matrix4D& CameraHandler::getProjectionMatrix() const
+const math::Matrix4D& CameraController::getProjectionMatrix() const
 {
     return m_camera->getProjectionMatrix();
 }
 
-const math::Matrix4D& CameraHandler::getViewMatrix() const
+const math::Matrix4D& CameraController::getViewMatrix() const
 {
     return m_camera->getViewMatrix();
 }
 
-void CameraHandler::update(f32 deltaTime)
+void CameraController::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
@@ -121,7 +121,7 @@ void CameraHandler::update(f32 deltaTime)
     }
 }
 
-math::float2 CameraHandler::calculateJitter(u32 frameID, const math::Dimension2D& viewport)
+math::float2 CameraController::calculateJitter(u32 frameID, const math::Dimension2D& viewport)
 {
     static constexpr u32 s_sampleCount = 16;
     static auto halton = [](u32 index, u32 base) -> f32
@@ -154,14 +154,14 @@ math::float2 CameraHandler::calculateJitter(u32 frameID, const math::Dimension2D
     return jitter;
 }
 
-void CameraHandler::setViewMatrix(const math::Matrix4D& view)
+void CameraController::setViewMatrix(const math::Matrix4D& view)
 {
     m_camera->m_matrices[Camera::Matrix::Matrix_ViewMatrix] = view;
     m_camera->m_matrices[Camera::Matrix::Matrix_ViewMatrixInverse] = view.getInversed();
     m_camera->m_matricesFlags &= ~Camera::CameraState::CameraState_View;
 }
 
-void CameraHandler::setProjectionMatrix(const math::Matrix4D& proj)
+void CameraController::setProjectionMatrix(const math::Matrix4D& proj)
 {
     m_camera->m_matrices[Camera::Matrix::Matrix_ProjectionMatrix] = proj;
     m_camera->m_matrices[Camera::Matrix::Matrix_ProjectionMatrixInverse] = proj.getInversed();

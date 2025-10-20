@@ -10,7 +10,7 @@ namespace scene
 {
 
 CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance) noexcept
-    : CameraHandler(std::move(camera))
+    : CameraController(std::move(camera))
     , m_distanceLimits({ getNear(), getFar() })
 
     , m_rotation({ 0.f, 0.f, 0.f })
@@ -22,7 +22,7 @@ CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 d
 }
 
 CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept
-    : CameraHandler(std::move(camera))
+    : CameraController(std::move(camera))
     , m_distanceLimits({ minDistance, maxDistance })
 
     , m_distance(distance)
@@ -61,7 +61,7 @@ void CameraArcballHandler::update(f32 deltaTime)
         view.makeInverse();
         setViewMatrix(view);
 
-        CameraHandler::update(deltaTime);
+        CameraController::update(deltaTime);
         m_needUpdate = false;
     }
 }

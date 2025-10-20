@@ -10,7 +10,7 @@ namespace scene
 {
 
 CameraFreeFlyHandler::CameraFreeFlyHandler(std::unique_ptr<Camera> camera, const math::Vector3D& position) noexcept
-    : CameraHandler(std::move(camera))
+    : CameraController(std::move(camera))
     , m_distanceLimits({ -10, 10 })
 
     , m_moveSpeed(1.f)
@@ -48,9 +48,9 @@ void CameraFreeFlyHandler::update(f32 deltaTime)
         m_camera->setTarget(m_camera->getPosition() + m_camera->getForwardVector() * 2.f);
 
         transform.makeInverse();
-        CameraHandler::setViewMatrix(transform);
+        CameraController::setViewMatrix(transform);
 
-        CameraHandler::update(deltaTime);
+        CameraController::update(deltaTime);
         m_needUpdate = false;
     }
 }

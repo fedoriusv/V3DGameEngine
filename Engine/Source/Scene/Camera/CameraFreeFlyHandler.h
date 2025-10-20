@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "CameraHandler.h"
+#include "CameraController.h"
 
 #include "Events/Input/InputEventHandler.h"
 
@@ -14,7 +14,7 @@ namespace scene
     /**
     * @brief CameraFreeFlyHandler class
     */
-    class CameraFreeFlyHandler final : public CameraHandler
+    class CameraFreeFlyHandler final : public CameraController
     {
     public:
 

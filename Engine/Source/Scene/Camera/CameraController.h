@@ -11,17 +11,17 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief CameraHandler class. Game side.
+    * @brief CameraController class. Game side.
     */
-    class CameraHandler : public Object
+    class CameraController : public Object
     {
     public:
 
-        CameraHandler() = delete;
-        CameraHandler(const CameraHandler&) = delete;
+        CameraController() = delete;
+        CameraController(const CameraController&) = delete;
 
-        explicit CameraHandler(std::unique_ptr<Camera> camera) noexcept;
-        virtual ~CameraHandler();
+        explicit CameraController(std::unique_ptr<Camera> camera) noexcept;
+        virtual ~CameraController();
 
         Camera& getCamera();
         const Camera& getCamera() const;
