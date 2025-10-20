@@ -37,6 +37,7 @@
 #include "RenderTechniques/RenderPipelineDebug.h"
 #include "RenderTechniques/RenderPipelineUnlit.h"
 #include "RenderTechniques/RenderPipelineSkybox.h"
+#include "RenderTechniques/RenderPipelineShadow.h"
 
 #include "Stream/StreamManager.h"
 
@@ -51,12 +52,13 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
 {
     new scene::RenderPipelineZPrepassStage(this, modelHandler);
     new scene::RenderPipelineGBufferStage(this, modelHandler);
+    new scene::RenderPipelineShadowStage(this, modelHandler);
     new scene::RenderPipelineSelectionStage(this, modelHandler);
     new scene::RenderPipelineDeferredLightingStage(this);
     new scene::RenderPipelineVolumeLightingStage(this, modelHandler);
     new scene::RenderPipelineSkyboxStage(this, modelHandler);
-    new scene::RenderPipelineUnlitStage(this, modelHandler);
     new scene::RenderPipelineMBOITStage(this);
+    new scene::RenderPipelineUnlitStage(this, modelHandler);
     new scene::RenderPipelineOutlineStage(this);
     new scene::RenderPipelineTAAStage(this);
     new scene::RenderPipelineDebugStage(this, modelHandler);
@@ -82,8 +84,6 @@ EditorScene::EditorScene() noexcept
         }))
 
     , m_mainPipeline(m_modelHandler, m_UIHandler)
-    , m_frameCounter(0)
-
     , m_activeIndex(k_emptyIndex)
 
 {
@@ -167,9 +167,6 @@ EditorScene::EditorScene() noexcept
     resource::ResourceManager::getInstance()->addPath("../../../../engine/data/shaders/");
 
     resource::ResourceManager::getInstance()->addPath("../../../../examples/uieditor/data/SunTemple/");
-
-    m_frameState.resize(3, {});
-    m_stateIndex = 0;
 }
 
 EditorScene::~EditorScene()
@@ -211,15 +208,6 @@ void EditorScene::destroy()
     m_mainPipeline.destroy(m_device, m_sceneData, m_frameState[m_stateIndex]);
 }
 
-void EditorScene::beginFrame()
-{
-}
-
-void EditorScene::endFrame()
-{
-    ++m_frameCounter;
-}
-
 void EditorScene::preRender(f32 dt)
 {
     TRACE_PROFILER_SCOPE("PreRender", color::rgba8::WHITE);
@@ -243,7 +231,7 @@ void EditorScene::preRender(f32 dt)
     viewportState.invProjectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix().getInversed();
     viewportState.viewMatrix = m_cameraHandler->getCamera().getViewMatrix();
     viewportState.invViewMatrix = m_cameraHandler->getCamera().getViewMatrix().getInversed();
-    viewportState.cameraJitter = scene::CameraHandler::calculateJitter(m_frameCounter, m_sceneData.m_viewportState._viewpotSize);
+    viewportState.cameraJitter = scene::CameraController::calculateJitter(m_frameCounter, m_sceneData.m_viewportState._viewpotSize);
     viewportState.cameraPosition = { m_cameraHandler->getPosition().getX(), m_cameraHandler->getPosition().getY(), m_cameraHandler->getPosition().getZ(), 0.f };
     viewportState.viewportSize = { (f32)m_sceneData.m_viewportState._viewpotSize._width, (f32)m_sceneData.m_viewportState._viewpotSize._height };
     viewportState.clipNearFar = { m_cameraHandler->getNear(), m_cameraHandler->getFar() };
@@ -307,7 +295,7 @@ void EditorScene::onChanged(const math::Matrix4D& view)
     m_cameraHandler->update(0.f);
 }
 
-const renderer::Texture2D* EditorScene::getOutputTexture() const
+renderer::Texture2D* EditorScene::getOutputTexture() const
 {
     ObjectHandle final = m_sceneData.m_globalResources.get("final");
     ASSERT(final.isValid(), "must be valid");
@@ -340,91 +328,6 @@ event::GameEventReceiver* EditorScene::getGameEventReceiver()
     return m_gameEventRecevier;
 }
 
-void EditorScene::finalize()
-{
-    static std::function<void(scene::SceneNode* node)> processNode = [&](scene::SceneNode* node)
-        {
-            if (scene::Mesh* geometry = node->getComponentByType<scene::Mesh>(); geometry)
-            {
-                scene::Material* material = node->getComponentByType<scene::Material>();
-
-                scene::DrawNodeEntry* entry = new scene::DrawNodeEntry;
-                entry->object = node;
-                entry->geometry = geometry;
-                entry->material = material;
-                if (material)
-                {
-                    if (material->getShadingModel() == scene::MaterialShadingModel::Custom)
-                    {
-                        entry->passID = (scene::RenderPipelinePass)material->getProperty<u32>("materialID");
-                        entry->pipelineID = material->getProperty<u32>("pipelineID");
-                    }
-                    else if (material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness || material->getShadingModel() == scene::MaterialShadingModel::PBR_Specular)
-                    {
-                        bool isOpaque = true;
-                        entry->passID = isOpaque ? scene::RenderPipelinePass::Opaque : scene::RenderPipelinePass::Transparency;
-                        entry->pipelineID = material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness ? 0 : 1;
-                    }
-                }
-
-                m_sceneData.m_generalRenderList.push_back(entry);
-            }
-
-            if (scene::Billboard* unlit = node->getComponentByType<scene::Billboard>(); unlit)
-            {
-                scene::DrawNodeEntry* entry = new scene::DrawNodeEntry;
-                entry->object = node;
-                entry->material = node->getComponentByType<scene::Material>();
-                entry->passID = scene::RenderPipelinePass::Indicator;
-                entry->pipelineID = 0;
-
-                m_sceneData.m_generalRenderList.push_back(entry);
-            }
-
-            if (scene::DirectionalLight* light = node->getComponentByType<scene::DirectionalLight>(); light)
-            {
-                scene::LightNodeEntry* entry = new scene::LightNodeEntry;
-                entry->object = node;
-                entry->light = light;
-                entry->passID = scene::RenderPipelinePass::DirectionLight;
-                entry->pipelineID = 0;
-
-                m_sceneData.m_generalRenderList.push_back(entry);
-            }
-            else if (scene::Light* light = node->getComponentByType<scene::Light>(); light)
-            {
-                scene::LightNodeEntry* entry = new scene::LightNodeEntry;
-                entry->object = node;
-                entry->light = light;
-                entry->passID = scene::RenderPipelinePass::PunctualLights;
-
-                m_sceneData.m_generalRenderList.push_back(entry);
-            }
-            else if (scene::Skybox* skybox = node->getComponentByType<scene::Skybox>(); skybox)
-            {
-                scene::Material* material = node->getComponentByType<scene::Material>();
-
-                scene::SkyboxNodeEntry* entry = new scene::SkyboxNodeEntry;
-                entry->object = node;
-                entry->material = material;
-                entry->skybox = skybox;
-                entry->passID = scene::RenderPipelinePass::Skybox;
-                entry->pipelineID = material->getProperty<u32>("pipelineID");
-
-                m_sceneData.m_generalRenderList.push_back(entry);
-            }
-
-            for (auto& child : node->m_children)
-            {
-                processNode(child);
-            }
-        };
-
-    for (auto& node : m_sceneData.m_nodes)
-    {
-        processNode(node);
-    }
-}
 
 void EditorScene::loadResources()
 {
@@ -533,6 +436,7 @@ void EditorScene::test_loadTestScene()
         resource::ModelFileLoader::ModelPolicy policy;
         scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeCube->setPosition(scene::TransformMode::Local, { 3.f, 1.f, -1.f });
+        nodeCube->m_shadowCast = true;
         m_sceneData.m_nodes.push_back(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
@@ -540,6 +444,7 @@ void EditorScene::test_loadTestScene()
         material->setProperty("Normals", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_NormalGL.png", true));
         material->setProperty("Roughness", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Roughness.png", true));
         material->setProperty("Metalness", default_metalness);
+        material->setProperty("Displacement", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Displacement.png", true));
         material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
         nodeCube->addComponent(material);
     }
@@ -554,6 +459,7 @@ void EditorScene::test_loadTestScene()
         material->setProperty("Normals", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_NormalGL.png", true));
         material->setProperty("Roughness", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Roughness.png", true));
         material->setProperty("Metalness", default_metalness);
+        material->setProperty("Displacement", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Displacement.png", true));
         material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
         nodePlane->addComponent(material);
     }
@@ -675,7 +581,7 @@ void EditorScene::test_loadLights()
         spotLightNode->setPosition(scene::TransformMode::Local, { 0.f, 0.f, 0.f });
         m_sceneData.m_nodes.push_back(spotLightNode);
 
-        scene::PointLight* flashLight = new scene::PointLight(m_device);
+        scene::PointLight* flashLight = scene::LightHelper::createPointLight(m_device, 1.f, "Light1");
         flashLight->setColor({ 1.f, 1.f, 1.f, 1.f });
         flashLight->setIntensity(30.f);
         flashLight->setTemperature(4000.0);

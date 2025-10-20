@@ -48,9 +48,18 @@ void ModelHandler::preUpdate(f32 dt, scene::SceneData& scene)
 
         if (item->object->m_visible)
         {
-            u32 index = toEnumType(item->passID);
-            ASSERT(index < toEnumType(RenderPipelinePass::Count), "out of range");
-            scene.m_renderLists[index].push_back(item);
+            u32 count = std::bit_width(item->passMask);
+            for (u32 index = 0; index < count; ++index)
+            {
+                u32 passID = 1 << index;
+                if ((item->passMask & passID) == 0)
+                {
+                    continue;
+                }
+
+                ASSERT(index < toEnumType(RenderPipelinePass::Count), "out of range");
+                scene.m_renderLists[index].push_back(item);
+            }
         }
     }
 }

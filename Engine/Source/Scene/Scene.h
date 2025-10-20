@@ -4,7 +4,7 @@
 #include "Utils/ResourceID.h"
 #include "Utils/Copiable.h"
 #include "Scene/Transform.h"
-#include "Scene/Camera/CameraHandler.h"
+#include "Scene/Camera/CameraController.h"
 #include "Scene/Light.h"
 
 #include "Renderer/Buffer.h"
@@ -48,9 +48,13 @@ namespace scene
 
         } _viewportBuffer;
 
-        math::Dimension2D       _viewpotSize;
-        scene::CameraHandler*   _camera;
+        math::Dimension2D        _viewpotSize;
+        scene::CameraController* _camera;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    constexpr u32 k_maxShadowmapCascadeCount = 4;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -58,6 +62,8 @@ namespace scene
     {
         renderer::Format _colorFormat = renderer::Format_R16G16B16A16_SFloat;
         renderer::Format _depthFormat = renderer::Format_D24_UNorm_S8_UInt;
+        math::Dimension2D _shadowmapSize = { 2048, 2048 };
+        u32 _shadowmapCascadeCount = k_maxShadowmapCascadeCount;
     };
 
     enum class TransformMode
@@ -111,6 +117,7 @@ namespace scene
         std::list<Component*> m_components;
         std::string           m_name;
         bool                  m_visible = true;
+        bool                  m_shadowCast = false;
 
     private:
 
@@ -209,7 +216,7 @@ namespace scene
     struct NodeEntry
     {
         SceneNode* object = nullptr;
-        scene::RenderPipelinePass passID = scene::RenderPipelinePass::Custom;
+        u32 passMask = 1 << toEnumType(scene::RenderPipelinePass::Custom);
         u32 pipelineID = 0;
     };
 
@@ -221,7 +228,9 @@ namespace scene
 
     struct LightNodeEntry : NodeEntry
     {
-        Component* light = nullptr;
+        Component*                  light = nullptr;
+        std::vector<math::Matrix4D> lightSpaceMatrix;
+        std::vector<f32>            casadeSplits;
     };
 
     struct SkyboxNodeEntry : NodeEntry
@@ -238,6 +247,7 @@ namespace scene
         std::vector<SceneNode*>    m_nodes;
         std::vector<NodeEntry*>    m_generalRenderList;
         std::vector<NodeEntry*>    m_renderLists[toEnumType(RenderPipelinePass::Count)];
+
         ViewportState              m_viewportState;
         Settings                   m_settings;
     };
@@ -261,12 +271,32 @@ namespace scene
     class Scene
     {
     public:
-        Scene() noexcept = default;
-        virtual ~Scene() = default;
+        Scene() noexcept;
+        virtual ~Scene();
+
+        virtual void create(renderer::Device* device, const math::Dimension2D& viewportSize) = 0;
+        virtual void destroy() = 0;
+
+        virtual void beginFrame();
+        virtual void endFrame();
+
+        virtual void preRender(f32 dt) = 0;
+        virtual void postRender(f32 dt) = 0;
+
+        virtual void submitRender() = 0;
+
+        void finalize();
 
     public:
 
-        bool m_editorMode = false;
+        static void calculateShadowCascades(scene::SceneData& scene, const math::Vector3D& light);
+
+        scene::SceneData                m_sceneData;
+        std::vector<scene::FrameData>   m_frameState;
+        u32                             m_stateIndex;
+
+        u64                             m_frameCounter;
+        bool                            m_editorMode;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

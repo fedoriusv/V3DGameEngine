@@ -70,15 +70,13 @@ public:
     EditorScene() noexcept;
     ~EditorScene();
 
-    void create(renderer::Device* device, const math::Dimension2D& viewportSize);
-    void destroy();
-    void beginFrame();
-    void endFrame();
+    void create(renderer::Device* device, const math::Dimension2D& viewportSize) final;
+    void destroy() final;
 
-    void preRender(f32 dt);
-    void postRender(f32 dt);
+    void preRender(f32 dt) final;
+    void postRender(f32 dt) final;
 
-    void submitRender();
+    void submitRender() final;
 
 public:
 
@@ -86,7 +84,7 @@ public:
 
 public:
 
-    const renderer::Texture2D* getOutputTexture() const;
+    renderer::Texture2D* getOutputTexture() const;
     const math::Rect& getViewportArea() const;
     scene::Camera* getCamera();
 
@@ -127,16 +125,9 @@ public:
     math::Rect                      m_currentViewportRect;
     ViewportParams                  m_vewportParams;
 
-    u32                             m_activeIndex;
-    u64                             m_frameCounter;
-
-    scene::SceneData                m_sceneData;
-    std::vector<scene::FrameData>   m_frameState;
-    u32 m_stateIndex;
-
 private:
 
-    void finalize();
+    u32                             m_activeIndex;
 
     void editor_loadDebug();
 
