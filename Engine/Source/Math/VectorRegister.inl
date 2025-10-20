@@ -276,7 +276,7 @@ namespace math
             v._v = DirectX::XMVectorDivide(_v, s._v);
             return v;
         }
-        return 0;
+        return *this;
     }
 
     template<RegisterType T, u32 Dim> requires ValidVectorDim<Dim>
