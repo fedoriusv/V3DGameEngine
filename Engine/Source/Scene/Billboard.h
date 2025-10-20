@@ -36,6 +36,8 @@ namespace scene
         explicit Billboard(renderer::Device* device, const BillboardHeader& header) noexcept;
         ~Billboard();
 
+        const std::string_view getName() const;
+
     private:
 
         BillboardHeader         m_header;
@@ -44,6 +46,11 @@ namespace scene
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
     };
+
+    inline const std::string_view Billboard::getName() const
+    {
+        return m_header.getName();
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
