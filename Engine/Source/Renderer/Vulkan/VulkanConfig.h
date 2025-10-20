@@ -49,11 +49,6 @@
 
 #define VULKAN_CURRENT_VERSION VULKAN_MAKE_VERSION(VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR)
 
-// Vulkan features
-
-// see https://www.khronos.org/blog/streamlining-render-passes
-#define DYNAMIC_RENDERING 0
-
 #endif //VULKAN_RENDER
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
