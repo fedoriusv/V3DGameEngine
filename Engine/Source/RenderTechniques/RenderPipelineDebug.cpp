@@ -42,9 +42,9 @@ void RenderPipelineDebugStage::create(renderer::Device* device, scene::SceneData
             "simple.hlsl", "unlit_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::RenderPassDesc desc{};
-        desc._countColorAttachments = 1;
+        desc._countColorAttachment = 1;
         desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
-        desc._hasDepthStencilAttahment = true;
+        desc._hasDepthStencilAttachment = true;
         desc._attachmentsDesc.back()._format = scene.m_settings._depthFormat;
 
         {

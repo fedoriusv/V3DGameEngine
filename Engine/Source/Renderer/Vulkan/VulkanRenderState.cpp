@@ -50,16 +50,25 @@ void VulkanRenderState::addImageBarrier(VulkanImage* texture, const RenderTextur
     setDirty(DirtyStateMask::DirtyState_Barriers);
 }
 
-void VulkanRenderState::flushBarriers(VulkanCommandBuffer* cmdBuffer)
+void VulkanRenderState::flushBarriers(VulkanCommandBuffer* currentCmdBuffer, VulkanCommandBuffer* cmdBuffer)
 {
     for (auto& image : _imageBarriers)
     {
-        if (cmdBuffer->getResourceStateTracker().getLayout(std::get<0>(image.second), std::get<1>(image.second)) == image.first)
+        if (VkImageLayout layout = currentCmdBuffer->getResourceStateTracker().getLayout(std::get<0>(image.second), std::get<1>(image.second)); layout == image.first)
         {
-            //don"t add duplicates
             continue;
         }
-        VulkanTransitionState::transitionImage(cmdBuffer, std::get<1>(image), std::get<0>(image));
+
+        if (cmdBuffer)
+        {
+            if (VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(std::get<0>(image.second), std::get<1>(image.second)); layout == image.first)
+            {
+                continue;
+            }
+        }
+
+        VkImageLayout newLayout = std::get<0>(image);
+        VulkanTransitionState::transitionImage(currentCmdBuffer, std::get<1>(image), newLayout);
     }
     _imageBarriers.clear();
 
@@ -89,10 +98,13 @@ void VulkanRenderState::invalidate()
 
     _graphicPipeline = nullptr;
     _computePipeline = nullptr;
-
+#if !DYNAMIC_RENDERING
     _renderpass = nullptr;
     _framebuffer = nullptr;
-    _renderArea = {};
+#else
+    _renderpassDesc = {};
+    _framebufferDesc = {};
+#endif
     std::fill(_clearValues.begin(), _clearValues.end(), VkClearValue{});
     _insideRenderpass = false;
 

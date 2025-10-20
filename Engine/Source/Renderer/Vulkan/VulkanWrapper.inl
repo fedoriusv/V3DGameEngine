@@ -1738,6 +1738,218 @@ inline void VulkanWrapper::GetDeviceImageSparseMemoryRequirements(VkDevice devic
 }
 #endif //VULKAN_VERSION_1_3
 
+//VULKAN_VERSION_1_4
+#ifdef VULKAN_VERSION_1_4
+inline void VulkanWrapper::CmdSetLineStipple(VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdSetLineStipple vkCmdSetLineStippleKHR
+#endif
+    vkCmdSetLineStipple(commandBuffer, lineStippleFactor, lineStipplePattern);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdSetLineStipple
+#endif
+}
+
+inline VkResult VulkanWrapper::MapMemory2(VkDevice device, const VkMemoryMapInfo* pMemoryMapInfo, void** ppData)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkMapMemory2 vkMapMemory2KHR
+#endif
+    return vkMapMemory2(device, pMemoryMapInfo, ppData);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkMapMemory2
+#endif
+}
+
+inline VkResult VulkanWrapper::UnmapMemory2(VkDevice device, const VkMemoryUnmapInfo* pMemoryUnmapInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkUnmapMemory2 vkUnmapMemory2KHR
+#endif
+    return vkUnmapMemory2(device, pMemoryUnmapInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkUnmapMemory2
+#endif
+}
+
+inline void VulkanWrapper::CmdBindIndexBuffer2(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdBindIndexBuffer2 vkCmdBindIndexBuffer2KHR
+#endif
+    vkCmdBindIndexBuffer2(commandBuffer, buffer, offset, size, indexType);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdBindIndexBuffer2
+#endif
+}
+
+inline void VulkanWrapper::GetRenderingAreaGranularity(VkDevice device, const VkRenderingAreaInfo* pRenderingAreaInfo, VkExtent2D* pGranularity)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkGetRenderingAreaGranularity vkGetRenderingAreaGranularityKHR
+#endif
+    vkGetRenderingAreaGranularity(device, pRenderingAreaInfo, pGranularity);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkGetRenderingAreaGranularity
+#endif
+}
+
+inline void VulkanWrapper::GetDeviceImageSubresourceLayout(VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkGetDeviceImageSubresourceLayout vkGetDeviceImageSubresourceLayoutKHR
+#endif
+    vkGetDeviceImageSubresourceLayout(device, pInfo, pLayout);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkGetDeviceImageSubresourceLayout
+#endif
+}
+
+inline void VulkanWrapper::GetImageSubresourceLayout2(VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkGetImageSubresourceLayout2 vkGetImageSubresourceLayout2KHR
+#endif
+    vkGetImageSubresourceLayout2(device, image, pSubresource, pLayout);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkGetImageSubresourceLayout2
+#endif
+}
+
+inline void VulkanWrapper::CmdPushDescriptorSet(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdPushDescriptorSet vkCmdPushDescriptorSetKHR
+#endif
+    vkCmdPushDescriptorSet(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdPushDescriptorSet
+#endif
+}
+
+inline void VulkanWrapper::CmdPushDescriptorSetWithTemplate(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const void* pData)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdPushDescriptorSetWithTemplate vkCmdPushDescriptorSetWithTemplateKHR
+#endif
+    vkCmdPushDescriptorSetWithTemplate(commandBuffer, descriptorUpdateTemplate, layout, set, pData);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdPushDescriptorSetWithTemplate
+#endif
+}
+
+inline void VulkanWrapper::CmdSetRenderingAttachmentLocations(VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfo* pLocationInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdSetRenderingAttachmentLocations vkCmdSetRenderingAttachmentLocationsKHR
+#endif
+    vkCmdSetRenderingAttachmentLocations(commandBuffer, pLocationInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdSetRenderingAttachmentLocations
+#endif
+}
+
+inline void VulkanWrapper::CmdSetRenderingInputAttachmentIndices(VkCommandBuffer commandBuffer, const VkRenderingInputAttachmentIndexInfo* pInputAttachmentIndexInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdSetRenderingInputAttachmentIndices vkCmdSetRenderingInputAttachmentIndicesKHR
+#endif
+    vkCmdSetRenderingInputAttachmentIndices(commandBuffer, pInputAttachmentIndexInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdSetRenderingInputAttachmentIndices
+#endif
+}
+
+inline void VulkanWrapper::CmdBindDescriptorSets2(VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfo* pBindDescriptorSetsInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdBindDescriptorSets2 vkCmdBindDescriptorSets2KHR
+#endif
+    vkCmdBindDescriptorSets2(commandBuffer, pBindDescriptorSetsInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdBindDescriptorSets2
+#endif
+}
+
+inline void VulkanWrapper::CmdPushConstants2(VkCommandBuffer commandBuffer, const VkPushConstantsInfo* pPushConstantsInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdPushConstants2 vkCmdPushConstants2KHR
+#endif
+    vkCmdPushConstants2(commandBuffer, pPushConstantsInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdPushConstants2
+#endif
+}
+
+inline void VulkanWrapper::CmdPushDescriptorSet2(VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfo* pPushDescriptorSetInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdPushDescriptorSet2 vkCmdPushDescriptorSet2KHR
+#endif
+    vkCmdPushDescriptorSet2(commandBuffer, pPushDescriptorSetInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdPushDescriptorSet2
+#endif
+}
+
+inline void VulkanWrapper::CmdPushDescriptorSetWithTemplate2(VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfo* pPushDescriptorSetWithTemplateInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCmdPushDescriptorSetWithTemplate2 vkCmdPushDescriptorSet2KHR
+#endif
+    vkCmdPushDescriptorSetWithTemplate2(commandBuffer, pPushDescriptorSetWithTemplateInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCmdPushDescriptorSetWithTemplate2
+#endif
+}
+
+inline VkResult VulkanWrapper::CopyMemoryToImage(VkDevice device, const VkCopyMemoryToImageInfo* pCopyMemoryToImageInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCopyMemoryToImage vvkCopyMemoryToImageKHR
+#endif
+    return vkCopyMemoryToImage(device, pCopyMemoryToImageInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCopyMemoryToImage
+#endif
+}
+
+inline VkResult VulkanWrapper::CopyImageToMemory(VkDevice device, const VkCopyImageToMemoryInfo* pCopyImageToMemoryInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCopyImageToMemory vkCopyImageToMemoryKHR
+#endif
+    return vkCopyImageToMemory(device, pCopyImageToMemoryInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCopyImageToMemory
+#endif
+}
+
+inline VkResult VulkanWrapper::CopyImageToImage(VkDevice device, const VkCopyImageToImageInfo* pCopyImageToImageInfo)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkCopyImageToImage vkCopyImageToImageKHR
+#endif
+    return vkCopyImageToImage(device, pCopyImageToImageInfo);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkCopyImageToImage
+#endif
+}
+
+inline VkResult VulkanWrapper::TransitionImageLayout(VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfo* pTransitions)
+{
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   define vkTransitionImageLayout vkTransitionImageLayoutKHR
+#endif
+    return vkTransitionImageLayout(device, transitionCount, pTransitions);
+#if (VULKAN_CURRENT_VERSION < VULKAN_VERSION_1_4)
+#   undef vkTransitionImageLayout
+#endif
+}
+#endif //VULKAN_VERSION_1_4
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef VK_KHR_surface

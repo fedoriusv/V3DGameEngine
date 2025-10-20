@@ -40,10 +40,10 @@ void RenderPipelineUnlitStage::create(renderer::Device* device, scene::SceneData
             "simple.hlsl", "unlit_selectable_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::RenderPassDesc desc{};
-        desc._countColorAttachments = 2;
+        desc._countColorAttachment = 2;
         desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
         desc._attachmentsDesc[1]._format = scene.m_settings._colorFormat;
-        desc._hasDepthStencilAttahment = true;
+        desc._hasDepthStencilAttachment = true;
         desc._attachmentsDesc.back()._format = scene.m_settings._depthFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), desc,
@@ -138,7 +138,7 @@ void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneDat
                     renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
                 },
             {
-                renderer::TransitionOp::TransitionOp_ShaderRead, renderer::TransitionOp::TransitionOp_ColorAttachment
+                renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
             });
 
         m_renderTarget->setDepthStencilTexture(depthStencilTexture,

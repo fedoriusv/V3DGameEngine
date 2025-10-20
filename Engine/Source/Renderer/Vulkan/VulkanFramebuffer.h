@@ -28,13 +28,14 @@ namespace vk
     {
     public:
 
-        explicit VulkanFramebuffer(VulkanDevice* device, const std::vector<TextureHandle>& images, const math::Dimension2D& size, const std::string& name = "") noexcept;
+        explicit VulkanFramebuffer(VulkanDevice* device, const std::vector<std::tuple<VulkanImage*, RenderTexture::Subresource>>& images, const VkRect2D& renderArea, const std::string& name = "") noexcept;
         ~VulkanFramebuffer();
 
         VkFramebuffer getHandle() const;
 
-        const std::vector<TextureHandle>& getImages() const;
-        const math::Dimension2D& getArea() const;
+        const std::tuple<VulkanImage*, RenderTexture::Subresource>& getImage(u32 index) const;
+        const VkRect2D& getRenderArea() const;
+        u32 getCountImage() const;
 
         bool create(const VulkanRenderPass* renderpass);
         void destroy();
@@ -44,13 +45,11 @@ namespace vk
         VulkanFramebuffer() = delete;
         VulkanFramebuffer(const VulkanFramebuffer&) = delete;
 
-        VulkanDevice&               m_device;
+        VulkanDevice&                                                     m_device;
 
-        std::vector<TextureHandle>  m_images;
-        std::vector<VkImageView>    m_imageViews;
-        math::Dimension2D           m_size;
-
-        VkFramebuffer               m_framebuffer;
+        std::vector<std::tuple<VulkanImage*, RenderTexture::Subresource>> m_images;
+        VkRect2D                                                          m_renderArea;
+        VkFramebuffer                                                     m_framebuffer;
 
 #if VULKAN_DEBUG_MARKERS
         std::string m_debugName;
@@ -59,14 +58,20 @@ namespace vk
         friend VulkanCommandBuffer;
     };
 
-    inline const std::vector<TextureHandle>& VulkanFramebuffer::getImages() const
+    inline const std::tuple<VulkanImage*, RenderTexture::Subresource>& VulkanFramebuffer::getImage(u32 index) const
     {
-        return m_images;
+        ASSERT(index < m_images.size(), "out of range");
+        return m_images[index];
     }
 
-    inline const math::Dimension2D& VulkanFramebuffer::getArea() const
+    inline const VkRect2D& VulkanFramebuffer::getRenderArea() const
     {
-        return m_size;
+        return m_renderArea;
+    }
+
+    inline u32 VulkanFramebuffer::getCountImage() const
+    {
+        return static_cast<u32>(m_images.size());
     }
 
     inline VkFramebuffer VulkanFramebuffer::getHandle() const
@@ -100,13 +105,13 @@ namespace vk
                 return memcmp(this, &other, sizeof(VulkanFramebufferDesc)) == 0;
             }
 
-            std::array<RenderTexture::ValueType, k_maxColorAttachments + 1> _renderTargetsIDs;
+            std::array<std::tuple<RenderTexture::ValueType, RenderTexture::Subresource>, k_maxColorAttachments + 1> _renderTargets;
         };
 
         explicit VulkanFramebufferManager(VulkanDevice* device) noexcept;
         ~VulkanFramebufferManager();
 
-        [[nodiscard]] std::tuple<VulkanFramebuffer*, bool> acquireFramebuffer(const VulkanRenderPass* renderpass, const FramebufferDesc& description, const std::string& name = "");
+        [[nodiscard]] std::tuple<VulkanFramebuffer*, bool> acquireFramebuffer(const VulkanRenderPass* renderpass, const FramebufferDesc& framebufferDesc, const std::string& name = "");
         bool removeFramebuffer(VulkanFramebuffer* framebuffer);
         void clear();
 

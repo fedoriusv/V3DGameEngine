@@ -89,8 +89,6 @@ namespace renderer
     */
     enum class TransitionOp : u32
     {
-        TransitionOp_Undefined,
-
         TransitionOp_ShaderRead,
         TransitionOp_ColorAttachment,
         TransitionOp_DepthStencilAttachment,

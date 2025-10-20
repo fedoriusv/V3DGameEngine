@@ -632,19 +632,14 @@ bool reflect(ID3DBlob* shader, stream::Stream* stream, u32 version)
         {
         case D3D_SRV_DIMENSION_TEXTURE1D:
             return renderer::TextureTarget::Texture1D;
-
-        case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
             return renderer::TextureTarget::Texture1DArray;
 
         case D3D_SRV_DIMENSION_TEXTURE2D:
         case D3D_SRV_DIMENSION_TEXTURE2DMS:
-            ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMS) ? true : false;
-            return renderer::TextureTarget::Texture2D;
-
         case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
         case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
-            ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
-            return renderer::TextureTarget::Texture2DArray;
+            ms = (dim == D3D_SRV_DIMENSION_TEXTURE2DMS || dim == D3D_SRV_DIMENSION_TEXTURE2DMSARRAY) ? true : false;
+            return renderer::TextureTarget::Texture2D;
 
         case D3D_SRV_DIMENSION_TEXTURE3D:
             return renderer::TextureTarget::Texture3D;

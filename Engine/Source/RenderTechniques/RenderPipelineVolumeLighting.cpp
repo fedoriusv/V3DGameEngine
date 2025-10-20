@@ -43,7 +43,7 @@ void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::
             "light.hlsl", "light_volume_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::RenderPassDesc desc{};
-        desc._countColorAttachments = 1;
+        desc._countColorAttachment = 1;
         desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
@@ -154,7 +154,6 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
             }
         );
 
-        cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_ShaderRead);
         cmdList->beginRenderTarget(*m_lightRenderTarget);
         cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
         cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
@@ -234,7 +233,6 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
         }
 
         cmdList->endRenderTarget();
-        cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_DepthStencilAttachment);
     }
 }
 

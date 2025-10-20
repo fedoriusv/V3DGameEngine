@@ -52,6 +52,7 @@ const std::vector<const c8*> k_instanceExtensionsList =
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
     VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
     VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME,
+    VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,
 #endif //VULKAN_LAYERS_CALLBACKS
 
     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
@@ -138,8 +139,10 @@ VulkanDevice::VulkanDevice(DeviceMaskFlags mask) noexcept
 
     , m_stagingBufferManager(nullptr)
     , m_semaphoreManager(nullptr)
+#if !DYNAMIC_RENDERING
     , m_framebufferManager(nullptr)
     , m_renderpassManager(nullptr)
+#endif
     , m_pipelineLayoutManager(nullptr)
     , m_graphicPipelineManager(nullptr)
     , m_computePipelineManager(nullptr)
@@ -176,8 +179,10 @@ VulkanDevice::~VulkanDevice()
     ASSERT(!m_computePipelineManager, "m_computePipelineManager is not nullptr");
     ASSERT(!m_graphicPipelineManager, "m_graphicPipelineManager is not nullptr");
     ASSERT(!m_pipelineLayoutManager, "m_pipelineLayoutManager is not nullptr");
+#if !DYNAMIC_RENDERING
     ASSERT(!m_renderpassManager, "m_renderpassManager is not nullptr");
     ASSERT(!m_framebufferManager, "m_framebufferManager not nullptr");
+#endif
     ASSERT(!m_semaphoreManager, "m_semaphoreManager is not nullptr");
     ASSERT(!m_imageMemoryManager, "m_imageMemoryManager not nullptr");
     ASSERT(!m_bufferMemoryManager, "m_bufferMemoryManager not nullptr");
@@ -444,8 +449,10 @@ bool VulkanDevice::initialize()
     m_stagingBufferManager = V3D_NEW(VulkanStagingBufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
 
     m_semaphoreManager = V3D_NEW(VulkanSemaphoreManager, memory::MemoryLabel::MemoryRenderCore)(this);
+#if !DYNAMIC_RENDERING
     m_framebufferManager = V3D_NEW(VulkanFramebufferManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_renderpassManager = V3D_NEW(VulkanRenderpassManager, memory::MemoryLabel::MemoryRenderCore)(this);
+#endif
     m_pipelineLayoutManager = V3D_NEW(VulkanPipelineLayoutManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_graphicPipelineManager = V3D_NEW(VulkanGraphicPipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
     m_computePipelineManager = V3D_NEW(VulkanComputePipelineManager, memory::MemoryLabel::MemoryRenderCore)(this);
@@ -582,9 +589,12 @@ bool VulkanDevice::createInstance()
         }
     }
 
+    //Extension
+    void* vkInstanceExtension = nullptr;
+
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pNext = nullptr; //VkDebugUtilsMessengerCreateInfoEXT
+    instanceCreateInfo.pNext = vkInstanceExtension;
     instanceCreateInfo.flags = 0;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
     instanceCreateInfo.enabledExtensionCount = static_cast<u32>(enabledExtensions.size());
@@ -801,23 +811,23 @@ bool VulkanDevice::createDevice()
     }
 
     //Features
-    void* vkExtension = nullptr;
+    void* vkDeviceExtension = nullptr;
 
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
     {
         VkPhysicalDeviceTimelineSemaphoreFeatures physicalDeviceTimelineSemaphoreFeatures = {};
         physicalDeviceTimelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-        physicalDeviceTimelineSemaphoreFeatures.pNext = vkExtension;
+        physicalDeviceTimelineSemaphoreFeatures.pNext = vkDeviceExtension;
         physicalDeviceTimelineSemaphoreFeatures.timelineSemaphore = m_deviceCaps._timelineSemaphore;
-        vkExtension = &physicalDeviceTimelineSemaphoreFeatures;
+        vkDeviceExtension = &physicalDeviceTimelineSemaphoreFeatures;
     }
 
 #ifdef VK_EXT_descriptor_indexing
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
     {
         VkPhysicalDeviceDescriptorIndexingFeaturesEXT& physicalDeviceDescriptorIndexingFeatures = m_deviceCaps._physicalDeviceDescriptorIndexingFeatures;
-        physicalDeviceDescriptorIndexingFeatures.pNext = vkExtension;
-        vkExtension = &physicalDeviceDescriptorIndexingFeatures;
+        physicalDeviceDescriptorIndexingFeatures.pNext = vkDeviceExtension;
+        vkDeviceExtension = &physicalDeviceDescriptorIndexingFeatures;
     }
 #endif
 
@@ -825,8 +835,8 @@ bool VulkanDevice::createDevice()
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
     {
         VkPhysicalDeviceCustomBorderColorFeaturesEXT& physicalDeviceCustomBorderColorFeatures = m_deviceCaps._physicalDeviceCustomBorderColorFeatures;
-        physicalDeviceCustomBorderColorFeatures.pNext = vkExtension;
-        vkExtension = &physicalDeviceCustomBorderColorFeatures;
+        physicalDeviceCustomBorderColorFeatures.pNext = vkDeviceExtension;
+        vkDeviceExtension = &physicalDeviceCustomBorderColorFeatures;
     }
 #endif
 
@@ -834,8 +844,8 @@ bool VulkanDevice::createDevice()
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME))
     {
         VkPhysicalDeviceHostQueryResetFeaturesEXT& physicalDeviceHostQueryResetFeatures = m_deviceCaps._physicalDeviceHostQueryResetFeatures;
-        physicalDeviceHostQueryResetFeatures.pNext = vkExtension;
-        vkExtension = &physicalDeviceHostQueryResetFeatures;
+        physicalDeviceHostQueryResetFeatures.pNext = vkDeviceExtension;
+        vkDeviceExtension = &physicalDeviceHostQueryResetFeatures;
     }
 #endif
 
@@ -843,8 +853,8 @@ bool VulkanDevice::createDevice()
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME))
     {
         VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT physicalDeviceShaderDemoteToHelperInvocationFeatures = m_deviceCaps._physicalDeviceShaderDemoteToHelperInvocationFeatures;
-        physicalDeviceShaderDemoteToHelperInvocationFeatures.pNext = vkExtension;
-        vkExtension = &physicalDeviceShaderDemoteToHelperInvocationFeatures;
+        physicalDeviceShaderDemoteToHelperInvocationFeatures.pNext = vkDeviceExtension;
+        vkDeviceExtension = &physicalDeviceShaderDemoteToHelperInvocationFeatures;
     }
 #endif
 
@@ -853,15 +863,15 @@ bool VulkanDevice::createDevice()
     {
         VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeatures = {};
         physicalDevicePipelineExecutablePropertiesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_EXECUTABLE_PROPERTIES_FEATURES_KHR;
-        physicalDevicePipelineExecutablePropertiesFeatures.pNext = vkExtension;
+        physicalDevicePipelineExecutablePropertiesFeatures.pNext = vkDeviceExtension;
         physicalDevicePipelineExecutablePropertiesFeatures.pipelineExecutableInfo = m_deviceCaps._pipelineExecutablePropertiesEnabled;
-        vkExtension = &physicalDevicePipelineExecutablePropertiesFeatures;
+        vkDeviceExtension = &physicalDevicePipelineExecutablePropertiesFeatures;
     }
 #endif //VULKAN_DEBUG
 
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.pNext = vkExtension;
+    deviceCreateInfo.pNext = vkDeviceExtension;
     deviceCreateInfo.flags = 0;
     deviceCreateInfo.queueCreateInfoCount = static_cast<u32>(queueCreateInfos.size());;
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
@@ -969,6 +979,7 @@ void VulkanDevice::destroy()
         m_pipelineLayoutManager = nullptr;
     }
 
+#if !DYNAMIC_RENDERING
     if (m_renderpassManager)
     {
         V3D_DELETE(m_renderpassManager, memory::MemoryLabel::MemoryRenderCore);
@@ -980,6 +991,7 @@ void VulkanDevice::destroy()
         V3D_DELETE(m_framebufferManager, memory::MemoryLabel::MemoryRenderCore);
         m_framebufferManager = nullptr;
     }
+#endif
 
     if (m_deviceCaps._unifiedMemoryManager)
     {
@@ -1293,10 +1305,12 @@ void VulkanDevice::destroyFramebuffer(Framebuffer* framebuffer)
 
     ASSERT(framebuffer, "nullptr");
     VulkanFramebuffer* vkFramebuffer = static_cast<VulkanFramebuffer*>(framebuffer);
+#if !DYNAMIC_RENDERING
     m_resourceDeleter.addResourceToDelete(vkFramebuffer, [this, vkFramebuffer](VulkanResource* resource) -> void
         {
             m_framebufferManager->removeFramebuffer(vkFramebuffer);
         });
+#endif
 }
 
 void VulkanDevice::destroyRenderpass(RenderPass* renderpass)
@@ -1312,10 +1326,12 @@ void VulkanDevice::destroyRenderpass(RenderPass* renderpass)
 
     ASSERT(renderpass, "nullptr");
     VulkanRenderPass* vkRenderpass = static_cast<VulkanRenderPass*>(renderpass);
+#if !DYNAMIC_RENDERING
     m_resourceDeleter.addResourceToDelete(vkRenderpass, [this, vkRenderpass](VulkanResource* resource) -> void
         {
             m_renderpassManager->removeRenderPass(vkRenderpass);
         });
+#endif
 }
 
 void VulkanDevice::destroyPipeline(RenderPipeline* pipeline)
@@ -1439,7 +1455,6 @@ void VulkanCmdList::setViewport(const math::Rect& viewport, const math::float2& 
     vkViewport.y = vkViewport.y + vkViewport.height;
     vkViewport.height = -vkViewport.height;
 #endif
-
     m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_Viewport);
 }
 
@@ -1460,7 +1475,6 @@ void VulkanCmdList::setScissor(const math::Rect& scissor)
     vkScissor.offset.y = scissor.getTopY();
     vkScissor.extent.width = static_cast<u32>(scissor.getWidth());
     vkScissor.extent.height = static_cast<u32>(scissor.getHeight());
-
     m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_Scissors);
 }
 
@@ -1477,7 +1491,6 @@ void VulkanCmdList::setStencilRef(u32 mask)
 #endif //FRAME_PROFILER_INTERNAL
 
     m_pendingRenderState._stencilRef = mask;
-
     m_pendingRenderState.setDirty(DirtyStateMask::DirtyState_StencilRef);
 }
 
@@ -1492,30 +1505,25 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
 #endif //FRAME_PROFILER_INTERNAL
     TRACE_PROFILER_RENDER_SCOPE("beginRenderTarget", color::rgba8::YELLOW);
 
-    VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(rendertarget.m_renderpassDesc, rendertarget.m_name);
+    const FramebufferDesc& framebufferDesc = rendertarget.getFramebufferDesc();
+    const RenderPassDesc& renderpassDesc = rendertarget.getRenderPassDesc();
+#if !DYNAMIC_RENDERING
+    VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(renderpassDesc, framebufferDesc, rendertarget.getName());
     rendertarget.m_trackerRenderpass.attach(renderpass);
 
-    FramebufferDesc targets(rendertarget.m_attachmentsDesc);
-    for (u32 index = 0; index < rendertarget.m_renderpassDesc._countColorAttachments; ++index)
-    {
-        if (rendertarget.m_renderpassDesc._attachmentsDesc[index]._backbuffer)
-        {
-            ASSERT(targets._images[index].isValid(), "should be vaild");
-            VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(targets._images[index]));
-            targets._images[index] = TextureHandle((RenderTexture*)swapchain->getCurrentSwapchainImage()); //replace to active swaphain texture
-        }
-    }
-
-    auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, targets, rendertarget.m_name);
+    auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, framebufferDesc, rendertarget.getName());
     rendertarget.m_trackerFramebuffer.attach(framebuffer);
 
     m_pendingRenderState._renderpass = renderpass;
     m_pendingRenderState._framebuffer = framebuffer;
-    m_pendingRenderState._renderArea = VkRect2D{ { 0, 0 }, { rendertarget.getRenderArea()._width, rendertarget.getRenderArea()._height }};
+#else
+    m_pendingRenderState._framebufferDesc = framebufferDesc;
+    m_pendingRenderState._renderpassDesc = renderpassDesc;
+#endif //!DYNAMIC_RENDERING
     if constexpr (sizeof(color::Color) == sizeof(VkClearValue))
     {
-        memcpy(m_pendingRenderState._clearValues.data(), rendertarget.m_attachmentsDesc._clearColorValues.data(), sizeof(rendertarget.m_attachmentsDesc._clearColorValues));
-        m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { rendertarget.m_attachmentsDesc._clearDepthValue, rendertarget.m_attachmentsDesc._clearStencilValue };
+        memcpy(m_pendingRenderState._clearValues.data(), framebufferDesc._clearColorValues.data(), sizeof(framebufferDesc._clearColorValues));
+        m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { framebufferDesc._clearDepthValue, framebufferDesc._clearStencilValue};
     }
     else
     {
@@ -1524,13 +1532,13 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
             //TODO cast to float value
             m_pendingRenderState._clearValues[i].color =
             {
-                rendertarget.m_attachmentsDesc._clearColorValues[i]._x,
-                rendertarget.m_attachmentsDesc._clearColorValues[i]._y,
-                rendertarget.m_attachmentsDesc._clearColorValues[i]._z,
-                rendertarget.m_attachmentsDesc._clearColorValues[i]._w,
+                framebufferDesc._clearColorValues[i]._x,
+                framebufferDesc._clearColorValues[i]._y,
+                framebufferDesc._clearColorValues[i]._z,
+                framebufferDesc._clearColorValues[i]._w,
             };
         }
-        m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { rendertarget.m_attachmentsDesc._clearDepthValue, rendertarget.m_attachmentsDesc._clearStencilValue };
+        m_pendingRenderState._clearValues[rendertarget.getColorTextureCount()].depthStencil = { framebufferDesc._clearDepthValue, framebufferDesc._clearStencilValue};
     }
 
     m_pendingRenderState._insideRenderpass = true;
@@ -1765,21 +1773,29 @@ bool VulkanCmdList::prepareDraw(VulkanCommandBuffer* drawBuffer)
         if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Barriers))
         {
             m_pendingRenderState.flushBarriers(drawBuffer);
+            m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_Barriers);
         }
 
         if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_RenderPass))
         {
-            drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._renderArea, m_pendingRenderState._clearValues);
+#if !DYNAMIC_RENDERING
+            drawBuffer->cmdBeginRenderpass(m_pendingRenderState._renderpass, m_pendingRenderState._framebuffer, m_pendingRenderState._clearValues);
             m_currentRenderState._renderpass = m_pendingRenderState._renderpass;
             m_currentRenderState._framebuffer = m_pendingRenderState._framebuffer;
-            m_currentRenderState._renderArea = m_pendingRenderState._renderArea;
+#else
+            drawBuffer->cmdBeginRendering(m_pendingRenderState._renderpassDesc, m_pendingRenderState._framebufferDesc, m_pendingRenderState._clearValues);
+            m_currentRenderState._renderpassDesc = m_pendingRenderState._renderpassDesc;
+            m_currentRenderState._framebufferDesc = m_pendingRenderState._framebufferDesc;
+#endif
             m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_RenderPass);
         }
     }
-    else if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Barriers))
+
+    if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Barriers))
     {
         VulkanCommandBuffer* transitionBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
-        m_pendingRenderState.flushBarriers(transitionBuffer);
+        m_pendingRenderState.flushBarriers(transitionBuffer, drawBuffer);
+        m_pendingRenderState.unsetDirty(DirtyStateMask::DirtyState_Barriers);
     }
 
     if (m_pendingRenderState.isDirty(DirtyStateMask::DirtyState_Viewport))

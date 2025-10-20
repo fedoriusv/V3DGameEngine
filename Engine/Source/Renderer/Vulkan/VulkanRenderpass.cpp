@@ -52,7 +52,7 @@ VkAttachmentStoreOp VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(
     return VK_ATTACHMENT_STORE_OP_STORE;
 }
 
-VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& description, const std::string& name) noexcept
+VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& renderpassDesc, const FramebufferDesc& framebufferDesc, const std::string& name) noexcept
     : m_device(*device)
     , m_renderpass(VK_NULL_HANDLE)
     , m_viewsMask(0x0)
@@ -61,43 +61,57 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& d
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanRenderpass::VulkanRenderpass constructor %llx", this);
 #endif //VULKAN_DEBUG
-    u32 countAttachments = (description._hasDepthStencilAttahment) ? description._countColorAttachments + 1 : description._countColorAttachments;
+    u32 countAttachments = (renderpassDesc._hasDepthStencilAttachment) ? renderpassDesc._countColorAttachment + 1 : renderpassDesc._countColorAttachment;
     m_descriptions.resize(countAttachments);
-    for (u32 index = 0; index < description._countColorAttachments; ++index)
+    for (u32 index = 0; index < renderpassDesc._countColorAttachment; ++index)
     {
         VulkanRenderPass::VulkanAttachmentDescription& desc = m_descriptions[index];
-        desc._format = VulkanImage::convertImageFormatToVkFormat(description._attachmentsDesc[index]._format);
-        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(description._attachmentsDesc[index]._samples);
-        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._attachmentsDesc[index]._loadOp);
-        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._attachmentsDesc[index]._storeOp);
-        desc._initialLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._attachmentsDesc[index]._initTransition);
-        desc._finalLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._attachmentsDesc[index]._finalTransition);
-        desc._layer = AttachmentDesc::uncompressLayer(description._attachmentsDesc[index]._layer);
-        desc._mip = 0;
+        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassDesc._attachmentsDesc[index]._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc._attachmentsDesc[index]._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc._attachmentsDesc[index]._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc._attachmentsDesc[index]._storeOp);
+        desc._initialLayout = (desc._loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+        desc._layout = VulkanTransitionState::convertTransitionStateToImageLayout(renderpassDesc._attachmentsDesc[index]._transition);
+        desc._finalLayout = VulkanTransitionState::convertTransitionStateToImageLayout(renderpassDesc._attachmentsDesc[index]._finalTransition);
 
-        desc._swapchainImage = (description._attachmentsDesc[index]._backbuffer) ? true : false;
-        desc._autoResolve = (description._attachmentsDesc[index]._autoResolve) ? true : false;
+        if (framebufferDesc._imageViews[index]._texture)
+        {
+            desc._swapchainImage = framebufferDesc._imageViews[index]._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) ? true : false;
+            desc._autoResolve = framebufferDesc._imageViews[index]._texture->hasUsageFlag(TextureUsage::TextureUsage_Resolve) ? true : false;
+        }
+        else
+        {
+            desc._swapchainImage = false;
+            desc._autoResolve = false;
+        }
     }
 
-    if (description._hasDepthStencilAttahment)
+    if (renderpassDesc._hasDepthStencilAttachment)
     {
         VulkanRenderPass::VulkanAttachmentDescription& desc = m_descriptions.back();
-        desc._format = VulkanImage::convertImageFormatToVkFormat(description._attachmentsDesc.back()._format);
-        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(description._attachmentsDesc.back()._samples);
-        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._attachmentsDesc.back()._loadOp);
-        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._attachmentsDesc.back()._storeOp);
-        desc._stencilLoadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(description._attachmentsDesc.back()._stencilLoadOp);
-        desc._stensilStoreOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._attachmentsDesc.back()._stencilStoreOp);
-        desc._initialLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._attachmentsDesc.back()._initTransition);
-        desc._finalLayout = VulkanTransitionState::convertTransitionStateToImageLayout(description._attachmentsDesc.back()._finalTransition);
-        desc._layer = AttachmentDesc::uncompressLayer(description._attachmentsDesc.back()._layer);
-        desc._mip = 0;
+        desc._format = VulkanImage::convertImageFormatToVkFormat(renderpassDesc._attachmentsDesc.back()._format);
+        desc._samples = VulkanImage::convertRenderTargetSamplesToVkSampleCount(renderpassDesc._attachmentsDesc.back()._samples);
+        desc._loadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc._attachmentsDesc.back()._loadOp);
+        desc._storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc._attachmentsDesc.back()._storeOp);
+        desc._stencilLoadOp = VulkanRenderPass::convertAttachLoadOpToVkAttachmentLoadOp(renderpassDesc._attachmentsDesc.back()._stencilLoadOp);
+        desc._stensilStoreOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(renderpassDesc._attachmentsDesc.back()._stencilStoreOp);
+        desc._initialLayout = (desc._loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+        desc._layout = VulkanTransitionState::convertTransitionStateToImageLayout(renderpassDesc._attachmentsDesc.back()._transition);
+        desc._finalLayout = VulkanTransitionState::convertTransitionStateToImageLayout(renderpassDesc._attachmentsDesc.back()._finalTransition);
 
-        desc._swapchainImage = false;
-        desc._autoResolve = (description._attachmentsDesc.back()._autoResolve) ? true : false;
+        if (framebufferDesc._imageViews.back()._texture)
+        {
+            desc._swapchainImage = false;
+            desc._autoResolve = framebufferDesc._imageViews.back()._texture->hasUsageFlag(TextureUsage::TextureUsage_Resolve) ? true : false;
+        }
+        else
+        {
+            desc._swapchainImage = false;
+            desc._autoResolve = false;
+        }
     }
 
-    m_viewsMask = description._viewsMask;
+    m_viewsMask = renderpassDesc._viewsMask;
     m_drawingToSwapchain = std::any_of(m_descriptions.cbegin(), m_descriptions.cend(), [](auto& desc)
         {
             return desc._swapchainImage;
@@ -207,7 +221,7 @@ bool VulkanRenderPass::createRenderpass()
             {
                 VkAttachmentReference attachmentReference = {};
                 attachmentReference.attachment = index;
-                attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                attachmentReference.layout = attach._layout;
 
                 dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -264,7 +278,7 @@ bool VulkanRenderPass::createRenderpass()
             {
                 VkAttachmentReference msaaAttachmentReference = {};
                 msaaAttachmentReference.attachment = index;
-                msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                msaaAttachmentReference.layout = attach._layout;
 
                 dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -276,7 +290,7 @@ bool VulkanRenderPass::createRenderpass()
 
                 VkAttachmentReference resolveAttachmentReference = {};
                 resolveAttachmentReference.attachment = index;
-                resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                resolveAttachmentReference.layout = attach._layout;
 
                 m_layout[index] = { resolveAttachmentReference.layout, attach._finalLayout };
                 index++;
@@ -294,7 +308,7 @@ bool VulkanRenderPass::createRenderpass()
                 resolveAttachmentDescription.stencilStoreOp = attach._stensilStoreOp;
 
                 depthStencilAttachmentReferences.attachment = index;
-                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                depthStencilAttachmentReferences.layout = attach._layout;
 
                 dependencyAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 dependencyStageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
@@ -449,7 +463,7 @@ bool VulkanRenderPass::createRenderpass2()
                 attachmentReference.pNext = nullptr;
                 attachmentReference.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
                 attachmentReference.attachment = index;
-                attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                attachmentReference.layout = attach._layout;
 
                 dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -468,7 +482,7 @@ bool VulkanRenderPass::createRenderpass2()
 
                 depthStencilAttachmentReferences.attachment = index;
                 depthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
-                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                depthStencilAttachmentReferences.layout = attach._layout;
 
                 dependencyAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 dependencyStageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
@@ -516,7 +530,7 @@ bool VulkanRenderPass::createRenderpass2()
                 msaaAttachmentReference.pNext = nullptr;
                 msaaAttachmentReference.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
                 msaaAttachmentReference.attachment = index;
-                msaaAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                msaaAttachmentReference.layout = attach._layout;
 
                 dependencyAccessFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                 dependencyStageFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -531,7 +545,7 @@ bool VulkanRenderPass::createRenderpass2()
                 resolveAttachmentReference.pNext = nullptr;
                 resolveAttachmentReference.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
                 resolveAttachmentReference.attachment = index;
-                resolveAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                resolveAttachmentReference.layout = attach._layout;
 
                 m_layout[index] = { resolveAttachmentReference.layout, attach._finalLayout };
                 ++index;
@@ -550,7 +564,7 @@ bool VulkanRenderPass::createRenderpass2()
 
                 depthStencilAttachmentReferences.attachment = index;
                 depthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
-                depthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                depthStencilAttachmentReferences.layout = attach._layout;
 
                 dependencyAccessFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                 dependencyStageFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
@@ -563,7 +577,7 @@ bool VulkanRenderPass::createRenderpass2()
                     depthStencilAutoresolve = true;
 
                     resolveDepthStencilAttachmentReferences.attachment = index;
-                    resolveDepthStencilAttachmentReferences.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    resolveDepthStencilAttachmentReferences.layout = attach._layout;
                     resolveDepthStencilAttachmentReferences.aspectMask = VulkanImage::getImageAspectFlags(attach._format);
 
                     m_layout[index] = { resolveDepthStencilAttachmentReferences.layout, attach._finalLayout };
@@ -685,17 +699,17 @@ VulkanRenderpassManager::~VulkanRenderpassManager()
     VulkanRenderpassManager::clear();
 }
 
-VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDesc& description, const std::string& name)
+VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDesc& renderpassDesc, const FramebufferDesc& framebufferDesc, const std::string& name)
 {
     std::lock_guard lock(m_mutex);
 
-    auto found = m_renderPassList.find(description);
+    auto found = m_renderPassList.find(renderpassDesc);
     if (found != m_renderPassList.cend())
     {
         return found->second;
     }
 
-    VulkanRenderPass* renderpass = V3D_NEW(VulkanRenderPass, memory::MemoryLabel::MemoryRenderCore)(&m_device, description, name);
+    VulkanRenderPass* renderpass = V3D_NEW(VulkanRenderPass, memory::MemoryLabel::MemoryRenderCore)(&m_device, renderpassDesc, framebufferDesc, name);
     if (!renderpass->create())
     {
         renderpass->destroy();
@@ -703,7 +717,7 @@ VulkanRenderPass* VulkanRenderpassManager::acquireRenderpass(const RenderPassDes
         ASSERT(false, "can't create renderpass");
         return nullptr;
     }
-    [[maybe_unused]] auto inserted = m_renderPassList.emplace(description, renderpass);
+    [[maybe_unused]] auto inserted = m_renderPassList.emplace(renderpassDesc, renderpass);
     ASSERT(inserted.second, "must be valid insertion");
 
 

@@ -23,9 +23,6 @@ VkImageLayout VulkanTransitionState::convertTransitionStateToImageLayout(Transit
 {
     switch (state)
     {
-    case TransitionOp::TransitionOp_Undefined:
-        return VK_IMAGE_LAYOUT_UNDEFINED;
-
     case TransitionOp::TransitionOp_ShaderRead:
         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -206,8 +203,7 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
     VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-    //to general
-    if (newLayout == VK_IMAGE_LAYOUT_GENERAL)
+        if (newLayout == VK_IMAGE_LAYOUT_GENERAL) //to general
     {
         dstStage = toCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
         if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
@@ -223,9 +219,7 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
             srcStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
     }
-
-    //to shader read
-    if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    else if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) //to shader read
     {
         dstStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
@@ -233,10 +227,14 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
             srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
-        else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+        else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
         {
             srcStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
             dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+        {
+            int a;
         }
         else if (oldLayout == VK_IMAGE_LAYOUT_GENERAL)
         {
@@ -244,37 +242,30 @@ std::tuple<VkPipelineStageFlags, VkPipelineStageFlags> VulkanTransitionState::ge
             dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
     }
-
-    //to color attachment
-    if (newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    else if (newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)  //to color attachment
     {
         ASSERT(VulkanImage::isColorFormat(vulkanImage->getFormat()), "wrong layout");
         srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    }
 
-    //to depth attachment
-    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+        if (oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        {
+            ASSERT(vulkanImage->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "mast be only swapchain");
+            srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
+    }
+    else if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) //to depth attachment
     {
         ASSERT(!VulkanImage::isColorFormat(vulkanImage->getFormat()), "wrong layout");
         srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
     }
-
-    //to preset form attachment
-    if (newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+    else if (newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) //to preset form attachment
     {
         ASSERT(vulkanImage->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "mast be only swapchain");
         srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    }
-
-    //form present to attachment
-    if (newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-    {
-        ASSERT(vulkanImage->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "mast be only swapchain");
-        srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     }
 
     return { srcStage, dstStage };

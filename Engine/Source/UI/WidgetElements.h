@@ -193,12 +193,12 @@ namespace ui
     {
     public:
 
-        explicit WidgetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::Rect& uv = { 0.0f, 0.0f, 1.0f, 1.0f }) noexcept;
+        explicit WidgetImage(renderer::Texture2D* texture, const math::Dimension2D& size, const math::Rect& uv = { 0.0f, 0.0f, 1.0f, 1.0f }) noexcept;
         WidgetImage(const WidgetImage&) noexcept;
         WidgetImage(WidgetImage&&) noexcept;
         ~WidgetImage();
 
-        WidgetImage& setTexture(const renderer::Texture2D* texture);
+        WidgetImage& setTexture(renderer::Texture2D* texture);
         WidgetImage& setSize(const math::Dimension2D& size);
         WidgetImage& setUVs(const math::Rect& uv);
 
@@ -208,7 +208,7 @@ namespace ui
 
         struct StateImage : StateBase
         {
-            const renderer::Texture2D*  _texture;
+            renderer::Texture2D*        _texture;
             math::Dimension2D           _size;
             math::Rect                  _uv;
             OnWidgetEvent               _onClickedEvent;
@@ -231,7 +231,7 @@ namespace ui
         Widget* copy() const final;
     };
 
-    inline WidgetImage& WidgetImage::setTexture(const renderer::Texture2D* texture)
+    inline WidgetImage& WidgetImage::setTexture(renderer::Texture2D* texture)
     {
         Widget::cast_data<StateType>(m_data)._texture = texture;
         return *this;

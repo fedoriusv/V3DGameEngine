@@ -398,16 +398,13 @@ VkVertexInputRate VulkanGraphicPipeline::covertInputRateToVk(InputRate rate)
 
 }
 
-VulkanGraphicPipeline::VulkanGraphicPipeline(VulkanDevice* device, VulkanRenderpassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager, const std::string& name)
+VulkanGraphicPipeline::VulkanGraphicPipeline(VulkanDevice* device, const std::string& name)
     : RenderPipeline(PipelineType::PipelineType_Graphic)
     , m_device(*device)
     , m_pipeline(VK_NULL_HANDLE)
 
     , m_compatibilityRenderPass(nullptr)
     , m_trackerRenderPass(nullptr, [](const std::vector<renderer::RenderPass*>&) {})
-
-    , m_renderpassManager(renderpassManager)
-    , m_pipelineLayoutManager(pipelineLayoutManager)
 {
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanGraphicPipeline::VulkanGraphicPipeline constructor %llx", this);
@@ -494,7 +491,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
 
     VulkanPipelineLayoutManager::DescriptorSetLayoutCreator layoutDesc(m_device, state.getShaderProgram());
     m_pipelineLayoutDescription = layoutDesc._description;
-    m_pipelineLayout = m_pipelineLayoutManager->acquirePipelineLayout(m_pipelineLayoutDescription);
+    m_pipelineLayout = m_device.getPipelineLayoutManager()->acquirePipelineLayout(m_pipelineLayoutDescription);
     graphicsPipelineCreateInfo.layout = m_pipelineLayout._pipelineLayout;
 
 
@@ -628,7 +625,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
 
     //bool independentBlend = VulkanDeviceCaps::getInstance()->getPhysicalDeviceFeatures().independentBlend;
     std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
-    for (u32 index = 0; index < state.getRenderPassDesc()._countColorAttachments; ++index)
+    for (u32 index = 0; index < state.getRenderPassDesc()._countColorAttachment; ++index)
     {
 #if USE_MULTI_COLOR_BLEND_ATTACMENTS
         const GraphicsPipelineStateDesc::BlendState::ColorBlendAttachmentState& colorBlendState = blendState._colorBlendAttachments[index];
@@ -822,7 +819,7 @@ void VulkanGraphicPipeline::destroy()
         m_trackerRenderPass.release();
         if (!m_compatibilityRenderPass->linked())
         {
-            m_renderpassManager->removeRenderPass(m_compatibilityRenderPass);
+            m_device.getRenderpassManager()->removeRenderPass(m_compatibilityRenderPass);
         }
         m_compatibilityRenderPass = nullptr;
     }
@@ -931,7 +928,8 @@ void VulkanGraphicPipeline::deleteShaderModules()
 bool VulkanGraphicPipeline::createCompatibilityRenderPass(const RenderPassDesc& renderpassDesc, VulkanRenderPass* &compatibilityRenderPass)
 {
     RenderPassDesc compatibilityRenderpassDesc(RenderPipeline::createCompatibilityRenderPassDescription(renderpassDesc));
-    compatibilityRenderPass = m_renderpassManager->acquireRenderpass(compatibilityRenderpassDesc);
+    FramebufferDesc compatibilityFramebuffer;
+    compatibilityRenderPass = m_device.getRenderpassManager()->acquireRenderpass(compatibilityRenderpassDesc, compatibilityFramebuffer);
     if (!compatibilityRenderPass)
     {
         LOG_ERROR("VulkanGraphicPipeline::createCompatibilityRenderPass couldn't create renderpass for pipline");
@@ -1023,7 +1021,7 @@ VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(cons
         return found->second;
     }
 
-    VulkanGraphicPipeline* pipeline = V3D_NEW(VulkanGraphicPipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, m_device.getRenderpassManager(), m_device.getPipelineLayoutManager(), state.getName());
+    VulkanGraphicPipeline* pipeline = V3D_NEW(VulkanGraphicPipeline, memory::MemoryLabel::MemoryRenderCore)(&m_device, state.getName());
     if (!pipeline->create(state))
     {
         ASSERT(false, "can't create pipeline");

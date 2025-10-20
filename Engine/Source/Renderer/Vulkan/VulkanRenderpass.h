@@ -40,18 +40,15 @@ namespace vk
             VkAttachmentStoreOp   _storeOp;
             VkAttachmentLoadOp    _stencilLoadOp;
             VkAttachmentStoreOp   _stensilStoreOp;
-
             VkImageLayout         _initialLayout;
+            VkImageLayout         _layout;
             VkImageLayout         _finalLayout;
-
-            u32                   _layer;
-            u32                   _mip;
 
             bool                  _autoResolve;
             bool                  _swapchainImage;
         };
 
-        explicit VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& description, const std::string& name = "") noexcept;
+        explicit VulkanRenderPass(VulkanDevice* device, const RenderPassDesc& renderpassDesc, const FramebufferDesc& framebufferDesc, const std::string& name = "") noexcept;
         ~VulkanRenderPass();
 
         VkRenderPass getHandle() const;
@@ -129,7 +126,7 @@ namespace vk
         explicit VulkanRenderpassManager(VulkanDevice* device) noexcept;
         ~VulkanRenderpassManager();
 
-        [[nodiscard]] VulkanRenderPass* acquireRenderpass(const RenderPassDesc& description, const std::string& name = "");
+        [[nodiscard]] VulkanRenderPass* acquireRenderpass(const RenderPassDesc& renderpassDesc, const FramebufferDesc& framebufferDesc, const std::string& name = "");
         bool removeRenderPass(VulkanRenderPass* renderPass);
 
         void clear();

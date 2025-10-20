@@ -174,7 +174,7 @@ void RenderPipelineZPrepassStage::createRenderTarget(renderer::Device* device, s
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+            renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
         });
 
     scene.m_globalResources.bind("depth_stencil", depthStencilAttachment);

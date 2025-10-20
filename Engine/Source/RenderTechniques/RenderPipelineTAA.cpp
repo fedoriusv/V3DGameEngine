@@ -39,7 +39,7 @@ void RenderPipelineTAAStage::create(renderer::Device* device, scene::SceneData& 
         "taa.hlsl", "main_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
     renderer::RenderPassDesc desc{};
-    desc._countColorAttachments = 1;
+    desc._countColorAttachment = 1;
     desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
 
     m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), desc, 
@@ -158,7 +158,7 @@ void RenderPipelineTAAStage::createRenderTarget(renderer::Device* device, scene:
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 }
 

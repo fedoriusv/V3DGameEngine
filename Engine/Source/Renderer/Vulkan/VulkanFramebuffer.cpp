@@ -16,11 +16,10 @@ namespace renderer
 namespace vk
 {
 
-VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device, const std::vector<TextureHandle>& images, const math::Dimension2D& size, const std::string& name) noexcept
+VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device, const std::vector<std::tuple<VulkanImage*, RenderTexture::Subresource>>& images, const VkRect2D& renderArea, const std::string& name) noexcept
     : m_device(*device)
+    , m_renderArea(renderArea)
     , m_images(images)
-    , m_size(size)
-
     , m_framebuffer(VK_NULL_HANDLE)
 {
 #if VULKAN_DEBUG
@@ -44,15 +43,17 @@ VulkanFramebuffer::~VulkanFramebuffer()
 bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
 {
     ASSERT(!m_framebuffer, "framebuffer is not nullptr");
-    ASSERT(m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferWidth >= m_size._width &&
-        m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferHeight >= m_size._height, "maxFramebufferSize is over range");
+    ASSERT(m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferWidth >= m_renderArea.extent.width &&
+        m_device.getVulkanDeviceCaps().getPhysicalDeviceLimits().maxFramebufferHeight >= m_renderArea.extent.height, "maxFramebufferSize is over range");
 
-    m_imageViews.reserve(pass->getCountAttachments());
+    std::vector<VkImageView> imageViews;
+    u32 layers = 1;
+    imageViews.reserve(pass->getCountAttachments());
     for (u32 attach = 0; attach < pass->getCountAttachments(); ++attach)
     {
-        const VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(m_images[attach]));
-        const VulkanRenderPass::VulkanAttachmentDescription& desc = pass->getAttachmentDescription(attach);
-        m_imageViews.push_back(vkImage->getImageView(VulkanImage::makeVulkanImageSubresource(vkImage, desc._layer, desc._mip)));
+        auto& [vkImage, subresource] = m_images[attach];
+        layers = std::max(layers, subresource._layers);
+        imageViews.push_back(vkImage->getImageView(subresource));
 #if VULKAN_DEBUG
         LOG_DEBUG("VulkanFramebuffer::create Framebuffer area (width %u, height %u), image (width %u, height %u)", m_size.m_width, m_size.m_height, vkImage->getSize().width, vkImage->getSize().height);
 #endif
@@ -63,7 +64,7 @@ bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
             {
                 ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
                 const VulkanImage* vkResolveImage = vkImage->getResolveImage();
-                m_imageViews.push_back(vkResolveImage->getImageView(VulkanImage::makeVulkanImageSubresource(vkImage, desc._layer, desc._mip)));
+                imageViews.push_back(vkResolveImage->getImageView(subresource));
             }
         }
         else
@@ -72,7 +73,7 @@ bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
             {
                 ASSERT(vkImage->getSampleCount() > VK_SAMPLE_COUNT_1_BIT, "wrong sample count");
                 const VulkanImage* vkResolveImage = vkImage->getResolveImage();
-                m_imageViews.push_back(vkResolveImage->getImageView(VulkanImage::makeVulkanImageSubresource(vkImage, desc._layer, desc._mip)));
+                imageViews.push_back(vkResolveImage->getImageView(subresource));
             }
         }
     }
@@ -82,11 +83,11 @@ bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
     framebufferCreateInfo.pNext = nullptr;
     framebufferCreateInfo.flags = 0;
     framebufferCreateInfo.renderPass = pass->getHandle();
-    framebufferCreateInfo.attachmentCount = static_cast<u32>(m_imageViews.size());
-    framebufferCreateInfo.pAttachments = m_imageViews.data();
-    framebufferCreateInfo.width = m_size._width;
-    framebufferCreateInfo.height = m_size._height;
-    framebufferCreateInfo.layers = 1; //TODO: fill count layers
+    framebufferCreateInfo.attachmentCount = static_cast<u32>(imageViews.size());
+    framebufferCreateInfo.pAttachments = imageViews.data();
+    framebufferCreateInfo.width = std::max(m_renderArea.extent.width - m_renderArea.offset.x, 1U);
+    framebufferCreateInfo.height = std::max(m_renderArea.extent.height - m_renderArea.offset.x, 1U);
+    framebufferCreateInfo.layers = layers;
 
     ASSERT(m_framebuffer == VK_NULL_HANDLE, "not empty");
     VkResult result = VulkanWrapper::CreateFramebuffer(m_device.getDeviceInfo()._device, &framebufferCreateInfo, VULKAN_ALLOCATOR, &m_framebuffer);
@@ -118,8 +119,7 @@ bool VulkanFramebuffer::create(const VulkanRenderPass* pass)
 
 void VulkanFramebuffer::destroy()
 {
-    m_imageViews.clear();
-
+    m_images.clear();
     if (m_framebuffer)
     {
         VulkanWrapper::DestroyFramebuffer(m_device.getDeviceInfo()._device, m_framebuffer, VULKAN_ALLOCATOR);
@@ -139,17 +139,29 @@ VulkanFramebufferManager::~VulkanFramebufferManager()
     VulkanFramebufferManager::clear();
 }
 
-std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffer(const VulkanRenderPass* renderpass, const FramebufferDesc& description, const std::string& name)
+std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffer(const VulkanRenderPass* renderpass, const FramebufferDesc& framebufferDesc, const std::string& name)
 {
-    std::vector<TextureHandle> images;
+    std::vector<std::tuple<VulkanImage*, RenderTexture::Subresource>> images;
     images.reserve(renderpass->getCountAttachments());
     auto buildFramebufferDescription = [&](VulkanFramebufferDesc& desc) -> void
         {
             for (u32 index = 0; index < renderpass->getCountAttachments(); ++index)
             {
-                TextureHandle image = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? description._images[index] : description._images.back();
-                desc._renderTargetsIDs[index] = objectFromHandle<RenderTexture>(image)->ID();
-                images.push_back(image);
+                Texture* texture = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? framebufferDesc._imageViews[index]._texture : framebufferDesc._imageViews.back()._texture;
+                VulkanImage* vkImage = nullptr;
+                const RenderTexture::Subresource& subresource = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? framebufferDesc._imageViews[index]._subresource : framebufferDesc._imageViews.back()._subresource;
+                if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+                {
+                    VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(texture->getTextureHandle()));
+                    vkImage = swapchain->getCurrentSwapchainImage();
+                }
+                else
+                {
+                    vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+                }
+
+                desc._renderTargets[index] = std::make_tuple(vkImage->ID(), subresource);
+                images.emplace_back(vkImage, subresource);
             }
         };
 
@@ -165,7 +177,8 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
         return std::make_tuple(found->second, false);
     }
 
-    VulkanFramebuffer* framebuffer = V3D_NEW(VulkanFramebuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, images, description._renderArea, name);
+    VkRect2D renderArea{ { 0, 0 }, { framebufferDesc._renderArea._width, framebufferDesc._renderArea._height } };
+    VulkanFramebuffer* framebuffer = V3D_NEW(VulkanFramebuffer, memory::MemoryLabel::MemoryRenderCore)(&m_device, images, renderArea, name);
     if (!framebuffer->create(renderpass))
     {
         framebuffer->destroy();

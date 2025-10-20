@@ -113,7 +113,7 @@ Widget* WidgetButton::copy() const
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WidgetImage::WidgetImage(const renderer::Texture2D* texture, const math::Dimension2D& size, const math::Rect& uv) noexcept
+WidgetImage::WidgetImage(renderer::Texture2D* texture, const math::Dimension2D& size, const math::Rect& uv) noexcept
     : WidgetBase<WidgetImage>(V3D_NEW(StateType, memory::MemoryLabel::MemoryUI)())
 {
     setTexture(texture);

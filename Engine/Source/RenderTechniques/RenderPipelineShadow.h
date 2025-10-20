@@ -8,6 +8,7 @@ namespace v3d
 namespace renderer
 {
     class Device;
+    class Texture2D;
     class RenderTargetState;
     class GraphicsPipelineState;
 } // namespace renderer
@@ -19,12 +20,12 @@ namespace scene
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class RenderPipelineGBufferStage : public RenderPipelineStage
+    class RenderPipelineShadowStage : public RenderPipelineStage
     {
     public:
 
-        explicit  RenderPipelineGBufferStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
-        ~RenderPipelineGBufferStage();
+        explicit  RenderPipelineShadowStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
+        ~RenderPipelineShadowStage();
 
         void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
         void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
@@ -36,27 +37,22 @@ namespace scene
 
         struct MaterialParameters
         {
-            SHADER_PARAMETER(cb_Viewport);
-            SHADER_PARAMETER(cb_Model);
-            SHADER_PARAMETER(s_SamplerState);
-            SHADER_PARAMETER(t_TextureAlbedo);
-            SHADER_PARAMETER(t_TextureNormal);
-            SHADER_PARAMETER(t_TextureMaterial);
-            SHADER_PARAMETER(t_TextureMetalness);
-            SHADER_PARAMETER(t_TextureRoughness);
-            SHADER_PARAMETER(t_TextureHeight);
+            SHADER_PARAMETER(cb_ShadowBuffer);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
 
-        scene::ModelHandler* m_modelHandler;
+        static void calculateShadowCascades(const scene::SceneData& data, const math::Vector3D& lightDirection, LightNodeEntry& entry);
 
-        renderer::RenderTargetState* m_GBufferRenderTarget;
-        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipeline;
-        std::vector<MaterialParameters> m_parameters;
+        scene::ModelHandler* const m_modelHandler;
+
+        std::vector<renderer::RenderTargetState*> m_cascadeRenderTargets;
+        renderer::Texture2D* m_cascadeTextureArray;
+
+        renderer::GraphicsPipelineState* m_pipeline;
+        MaterialParameters m_parameters;
     };
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

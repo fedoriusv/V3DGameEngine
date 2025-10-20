@@ -36,7 +36,7 @@ namespace vk
         static VkSampleCountFlagBits convertRenderTargetSamplesToVkSampleCount(TextureSamples samples);
 
         static RenderTexture::Subresource makeVulkanImageSubresource(const VulkanImage* image, u32 layer = k_generalLayer, u32 mip = k_allMipmapsLevels);
-        static VkImageSubresourceRange makeImageSubresourceRange(const VulkanImage* image, const RenderTexture::Subresource& resource);
+        static VkImageSubresourceRange makeImageSubresourceRange(const RenderTexture::Subresource& resource, VkImageAspectFlags aspectMask);
 
         static std::string imageFormatStringVK(VkFormat format);
         static std::string imageTypeStringVK(VkImageType format);
@@ -91,8 +91,6 @@ namespace vk
         VulkanImage() = delete;
         VulkanImage(const VulkanImage&) = delete;
 
-        static VkImageSubresourceRange makeImageSubresourceRangeWithAspect(const VulkanImage* image, const RenderTexture::Subresource& resource, VkImageAspectFlags aspect);
-
         bool createViewImage();
         bool internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
@@ -124,6 +122,38 @@ namespace vk
         std::string                             m_debugName;
 #endif //VULKAN_DEBUG_MARKERS
     };
+
+    inline RenderTexture::Subresource VulkanImage::makeVulkanImageSubresource(const VulkanImage* image, u32 layer, u32 mip)
+    {
+        ASSERT(image, "nullptr");
+        RenderTexture::Subresource resource = { layer, 1, mip, 1 };
+
+        if (layer == k_generalLayer)
+        {
+            resource._baseLayer = 0;
+            resource._layers = image->m_arrayLayers;
+        }
+
+        if (mip == k_allMipmapsLevels)
+        {
+            resource._baseMip = 0;
+            resource._mips = image->m_mipLevels;
+        }
+
+        return resource;
+    }
+
+    inline VkImageSubresourceRange VulkanImage::makeImageSubresourceRange(const RenderTexture::Subresource& resource, VkImageAspectFlags aspectMask)
+    {
+        VkImageSubresourceRange imageSubresourceRange = {};
+        imageSubresourceRange.aspectMask = aspectMask;
+        imageSubresourceRange.baseArrayLayer = resource._baseLayer;
+        imageSubresourceRange.layerCount = resource._layers;
+        imageSubresourceRange.baseMipLevel = resource._baseMip;
+        imageSubresourceRange.levelCount = resource._mips;
+
+        return imageSubresourceRange;
+    }
 
     inline VkImageAspectFlags VulkanImage::getImageAspectFlags() const
     {

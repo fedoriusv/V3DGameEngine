@@ -2,6 +2,7 @@
 
 #include "Object.h"
 #include "Render.h"
+#include "Texture.h"
 #include "ObjectTracker.h"
 
 namespace v3d
@@ -11,12 +12,6 @@ namespace renderer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Device;
-    class Texture;
-    class Texture2D;
-    class Texture3D;
-    class TextureCube;
-    class Texture2DArray;
-    class SwapchainTexture;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,22 +33,9 @@ namespace renderer
         RenderTargetLoadOp    _stencilLoadOp    : 2;
         RenderTargetStoreOp   _stencilStoreOp   : 2;
         TextureSamples        _samples          : 3;
-        TransitionOp          _initTransition   : 3;
+        TransitionOp          _transition       : 3;
         TransitionOp          _finalTransition  : 3;
-        u32                   _backbuffer       : 1;
-        u32                   _autoResolve      : 1;
-        u32                   _layer            : 3;
-        u32                   _unused           : 2;
-
-        [[nodiscard]] static s32 uncompressLayer(u32 layer)
-        {
-            return (layer == 0x07) ? k_generalLayer : static_cast<s32>(layer);
-        }
-
-        [[nodiscard]] static u32 compressLayer(s32 layer)
-        {
-            return static_cast<u32>(layer);
-        }
+        u32                   _unused           : 7;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,8 +82,8 @@ namespace renderer
         }
 
         std::array<AttachmentDesc, k_maxColorAttachments + 1>   _attachmentsDesc;
-        u32                                                     _countColorAttachments      : 4;
-        u32                                                     _hasDepthStencilAttahment   : 1;
+        u32                                                     _countColorAttachment       : 4;
+        u32                                                     _hasDepthStencilAttachment  : 1;
         u32                                                     _viewsMask                  : 16;
         u32                                                     _unused                     : 11;
     };
@@ -118,13 +100,12 @@ namespace renderer
             memset(this, 0, sizeof(FramebufferDesc));
         }
 
-        std::array<TextureHandle, k_maxColorAttachments + 1>    _images;
-        std::array<u32, k_maxColorAttachments + 1>              _layers;
-        math::Dimension2D                                       _renderArea;
-        std::array<color::Color, k_maxColorAttachments>         _clearColorValues;
-        f32                                                     _clearDepthValue;
-        u32                                                     _clearStencilValue;
-        u32                                                     _viewsMask;
+        std::array<TextureView, k_maxColorAttachments + 1> _imageViews;
+        math::Dimension2D                                  _renderArea;
+        std::array<color::Color, k_maxColorAttachments>    _clearColorValues;
+        f32                                                _clearDepthValue;
+        u32                                                _clearStencilValue : 16;
+        u32                                                _viewsMask         : 16;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,54 +194,35 @@ namespace renderer
         */
         struct TransitionState
         {
-            TransitionState(TransitionOp initialState, TransitionOp finalState) noexcept
-                : _initialState(initialState)
+            TransitionState(TransitionOp state, TransitionOp finalState) noexcept
+                : _state(state)
                 , _finalState(finalState)
             {
             }
 
-            TransitionOp _initialState  : 16;
-            TransitionOp _finalState    : 16;
+            TransitionOp _state      : 16;
+            TransitionOp _finalState : 16;
         };
 
         /**
         * @brief setColorTexture method. Used to adding a color attachment to a render target
         *
         * @param u32 index [required]. Attaches the texture to index slot in a shader
-        * @param TTexture* colorTexture [required]
+        * @param const TextureView& colorTextureView [required]
         * @param RenderTargetLoadOp loadOp [optional]
         * @param RenderTargetStoreOp storeOp [optional]
         * @param const color::Color& clearColor [optional]
         *
         * @return true if compatibility is successed
         */
-        template<class TTexture>
-        bool setColorTexture(u32 index, TTexture* colorTexture,
+        bool setColorTexture(u32 index, const TextureView& colorTextureView,
             RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
             const color::Color& clearColor = color::Color(0.f));
-
-        /**
-        * @brief setColorTexture method. Used to adding a layer of color attachment to render target
-        *
-        * @param u32 index [required]. Attaches the cubemap texture to index slot in a shader
-        * @param TTexture* colorTexture [required]
-        * @param s32 layer [required]
-        * @param RenderTargetLoadOp loadOp [optional]
-        * @param RenderTargetStoreOp storeOp [optional]
-        * @param const color::Color& clearColor [optional]
-        *
-        * @return true if compatibility is successed
-        */
-        template<class TTexture>
-        bool setColorTexture(u32 index, TTexture* colorTexture, s32 layer,
-            RenderTargetLoadOp loadOp = RenderTargetLoadOp::LoadOp_Clear, RenderTargetStoreOp storeOp = RenderTargetStoreOp::StoreOp_Store,
-            const color::Color& clearColor = color::Color(0.f));
-
 
         /**
         * @brief setDepthStencilTexture method. Used to adding a depth-stencil attachment to a render target
         *
-        * @param TTexture* depthStencilTexture [required]
+        * @param const TextureView& depthStencilTextureView [required]
         * @param RenderTargetLoadOp depthLoadOp [optional]
         * @param RenderTargetStoreOp depthStoreOp [optional]
         * @param f32 clearDepth [optional]
@@ -270,29 +232,7 @@ namespace renderer
         * 
         * @return true if compatibility is successed
         */
-        template<class TTexture>
-        bool setDepthStencilTexture(TTexture* depthStencilTexture,
-            RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
-            f32 clearDepth = 0.f,
-            RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
-            u32 clearStencil = 0);
-
-        /**
-        * @brief setDepthStencilTexture method. Used to adding a layer of depth-stencil attachment to a render target
-        *
-        * @param TTexture* depthStencilTexture [required]
-        * @param s32 layer [required]
-        * @param RenderTargetLoadOp depthLoadOp [optional]
-        * @param RenderTargetStoreOp depthStoreOp [optional]
-        * @param f32 clearDepth [optional]
-        * @param RenderTargetLoadOp stencilLoadOp [optional]
-        * @param RenderTargetStoreOp stencilStoreOp [optional]
-        * @param f32 clearStencil [optional]
-        *
-        * @return true if compatibility is successed
-        */
-        template<class TTexture>
-        bool setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer,
+        bool setDepthStencilTexture(const TextureView& depthStencilTextureView,
             RenderTargetLoadOp depthLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp depthStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
             f32 clearDepth = 0.f,
             RenderTargetLoadOp stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare, RenderTargetStoreOp stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare,
@@ -302,37 +242,21 @@ namespace renderer
         * @brief setColorTexture method. Used to adding a color attachment to a render target
         *
         * @param u32 index [required]. Attaches the texture to index slot in a shader
-        * @param TTexture* colorTexture [required]
+        * @param const TextureView& colorTextureView [required]
         * @param const ColorOpState& colorOpState [required]
         * @param const TransitionState& tansitionState [required]
+        * @param const color::Color& clearColor [optional]
         * @see TransitionState
         *
         * @return true if compatibility is successed
         */
-        template<class TTexture>
-        bool setColorTexture(u32 index, TTexture* colorTexture,
-            const ColorOpState& colorOpState, const TransitionState& tansitionState);
-
-        /**
-        * @brief setColorTexture method. Used to adding a layer of color attachment to a render target
-        *
-        * @param u32 index [required]. Attaches the texture to index slot in a shader
-        * @param TTexture* colorTexture [required]
-        * @param s32 layer [required]
-        * @param const ColorOpState& colorOpState [required]
-        * @param const TransitionState& tansitionState [required]
-        * @see TransitionState
-        *
-        * @return true if compatibility is successed
-        */
-        template<class TTexture>
-        bool setColorTexture(u32 index, TTexture* colorTexture, s32 layer,
+        bool setColorTexture(u32 index, const TextureView& colorTextureView,
             const ColorOpState& colorOpState, const TransitionState& tansitionState);
 
         /**
         * @brief setDepthStencilTexture method. Used to adding a depth-stencil attachment to a render target
         *
-        * @param TTexture* depthStencilTexture [required]
+        * @param const TextureView& depthStencilTextureView [required]
         * @param const DepthOpState& depthOpState [required]
         * @param const StencilOpState& stencilOpState [required]
         * @param const TransitionState& tansitionState [required]
@@ -340,24 +264,7 @@ namespace renderer
         *
         * @return true if compatibility is successed
         */
-        template<class TTexture>
-        bool setDepthStencilTexture(TTexture* depthStencilTexture,
-            const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
-
-        /**
-        * @brief setDepthStencilTexture method. Used to adding a layer of depth-stencil attachment to a render target
-        *
-        * @param TTexture* depthStencilTexture [required]
-        * @param s32 layer [required]
-        * @param const DepthOpState& depthOpState [required]
-        * @param const StencilOpState& stencilOpState [required]
-        * @param const TransitionState& tansitionState [required]
-        * @see TransitionState
-        *
-        * @return true if compatibility is successed
-        */
-        template<class TTexture>
-        bool setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer,
+        bool setDepthStencilTexture(const TextureView& depthStencilTextureView,
             const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
 
         /**
@@ -405,7 +312,7 @@ namespace renderer
         * @param u32 viewsMask [optional]. Use 0 if only one view or mask by bits if multiview feature is supported.
         * @param const std::string& name [optional]
         */
-        explicit RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacments = 1U, u32 viewsMask = 0U, const std::string& name = "") noexcept;
+        explicit RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacment = 1U, u32 viewsMask = 0U, const std::string& name = "") noexcept;
 
         /**
         * @brief RenderTargetState desctructor
@@ -422,121 +329,35 @@ namespace renderer
         RenderTargetState() = delete;
         RenderTargetState(const RenderTargetState&) = delete;
 
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor);
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor);
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState);
-        bool setColorTexture_Impl(u32 index, Texture* colorTexture, s32 layer, const ColorOpState& colorOpState, const TransitionState& tansitionState);
-
-        bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor);
-        bool setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState);
-
-        bool setDepthStencilTexture_Impl(Texture* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil);
-        bool setDepthStencilTexture_Impl(Texture* depthStencilTexture, u32 layer, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil);
-        bool setDepthStencilTexture_Impl(Texture* depthStencilTexture, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
-        bool setDepthStencilTexture_Impl(Texture* depthStencilTexture, s32 layer, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
-
-        bool checkCompatibility(Texture* texture, AttachmentDesc& desc);
+        bool checkCompatibility(const TextureView& textureView, AttachmentDesc& desc);
         void destroyFramebuffers(const std::vector<Framebuffer*>& framebuffers);
         void destroyRenderPasses(const std::vector<RenderPass*>& renderPasses);
 
-        Device* const                                   m_device;
-        std::array<Texture*, k_maxColorAttachments + 1> m_renderTargets;
+        Device* const               m_device;
+        RenderPassDesc              m_renderpassDesc;
+        FramebufferDesc             m_attachmentsDesc;
+        const std::string           m_name;
 
     public:
 
-        RenderPassDesc              m_renderpassDesc;
-        FramebufferDesc             m_attachmentsDesc;
         ObjectTracker<Framebuffer>  m_trackerFramebuffer;
         ObjectTracker<RenderPass>   m_trackerRenderpass;
-
-        const std::string           m_name;
     };
 
-
     template<class TTexture>
-    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
+    inline TTexture* RenderTargetState::getColorTexture(u32 index) const
     {
-        static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, SwapchainTexture>(), "wrong type");
-        if constexpr (std::is_same<TTexture, SwapchainTexture>())
-        {
-            return setSwapchainTexture_Impl(index, colorTexture, loadOp, storeOp, clearColor);
-        }
-        else
-        {
-            return setColorTexture_Impl(index, colorTexture, loadOp, storeOp, clearColor);
-        }
-    }
-
-    template<class TTexture>
-    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
-    {
-        static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
-        return setColorTexture_Impl(index, colorTexture, layer, loadOp, storeOp, clearColor);
-    }
-
-    template<class TTexture>
-    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState)
-    {
-        static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, SwapchainTexture>(), "wrong type");
-        if constexpr (std::is_same<TTexture, SwapchainTexture>())
-        {
-            return setSwapchainTexture_Impl(index, colorTexture, colorOpState, tansitionState);
-        }
-        else
-        {
-            return setColorTexture_Impl(index, colorTexture, colorOpState, tansitionState);
-        }
-    }
-
-    template<class TTexture>
-    inline bool RenderTargetState::setColorTexture(u32 index, TTexture* colorTexture, s32 layer, const ColorOpState& colorOpState, const TransitionState& tansitionState)
-    {
-        static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
-        return setColorTexture_Impl(index, colorTexture, layer, colorOpState, tansitionState);
-    }
-
-    template<class TTexture>
-    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
-    {
-        static_assert(std::is_same<TTexture, Texture2D>(), "wrong type");
-        return setDepthStencilTexture_Impl(depthStencilTexture, depthLoadOp, depthStoreOp, clearDepth, stencilLoadOp, stencilStoreOp, clearStencil);
-    }
-
-    template<class TTexture>
-    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
-    {
-        static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
-        return setDepthStencilTexture_Impl(depthStencilTexture, layer, depthLoadOp, depthStoreOp, clearDepth, stencilLoadOp, stencilStoreOp, clearStencil);
-    }
-
-    template<class TTexture>
-    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
-    {
-        static_assert(std::is_same<TTexture, Texture2D>() || std::is_same<TTexture, TextureCube>() || std::is_same<TTexture, Texture2DArray>(), "wrong type");
-        return setDepthStencilTexture_Impl(depthStencilTexture, depthOpState, stencilOpState, tansitionState);
-    }
-
-    template<class TTexture>
-    inline bool RenderTargetState::setDepthStencilTexture(TTexture* depthStencilTexture, s32 layer, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
-    {
-        static_assert(std::is_same<TTexture, Texture2DArray>() || std::is_same<TTexture, TextureCube>(), "wrong type");
-        return setDepthStencilTexture_Impl(depthStencilTexture, layer, depthOpState, stencilOpState, tansitionState);
-    }
-
-    template<class TTexture>
-    TTexture* RenderTargetState::getColorTexture(u32 index) const
-    {
-        ASSERT(index < m_renderpassDesc._countColorAttachments, "out of range");
+        ASSERT(index < m_renderpassDesc._countColorAttachment, "out of range");
 
         static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
-        return static_cast<TTexture*>(m_renderTargets[index]);
+        return static_cast<TTexture*>(m_attachmentsDesc._imageViews[index]._texture);
     }
 
     template<class TTexture>
     inline TTexture* RenderTargetState::getDepthStencilTexture() const
     {
         static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
-        return static_cast<TTexture*>(m_renderTargets.back());
+        return static_cast<TTexture*>(m_attachmentsDesc._imageViews.back()._texture);
     }
 
     inline const math::Dimension2D& RenderTargetState::getRenderArea() const
@@ -546,12 +367,12 @@ namespace renderer
 
     inline u32 RenderTargetState::getColorTextureCount() const
     {
-        return m_renderpassDesc._countColorAttachments;
+        return m_renderpassDesc._countColorAttachment;
     }
 
     inline bool RenderTargetState::hasDepthStencilTexture() const
     {
-        return m_renderpassDesc._hasDepthStencilAttahment;
+        return m_renderpassDesc._hasDepthStencilAttachment;
     }
 
     inline const RenderPassDesc& RenderTargetState::getRenderPassDesc() const

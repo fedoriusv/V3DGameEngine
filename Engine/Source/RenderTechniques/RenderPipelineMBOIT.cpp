@@ -103,7 +103,7 @@ void RenderPipelineMBOITStage::create(renderer::Device* device, scene::SceneData
 
     {
         renderer::RenderPassDesc desc{};
-        desc._countColorAttachments = 1;
+        desc._countColorAttachment = 1;
         desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -375,7 +375,7 @@ void RenderPipelineMBOITStage::createRenderTarget(renderer::Device* device, scen
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 
     m_rt[Pass::MBOIT_Pass1]->setColorTexture(1, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
@@ -384,7 +384,7 @@ void RenderPipelineMBOITStage::createRenderTarget(renderer::Device* device, scen
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 
     m_rt[Pass::MBOIT_Pass1]->setDepthStencilTexture(depthStencilTexture,
@@ -408,7 +408,7 @@ void RenderPipelineMBOITStage::createRenderTarget(renderer::Device* device, scen
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 
     m_rt[Pass::MBOIT_Pass2]->setColorTexture(1, materialTexture,
@@ -447,7 +447,7 @@ void RenderPipelineMBOITStage::createRenderTarget(renderer::Device* device, scen
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 }
 

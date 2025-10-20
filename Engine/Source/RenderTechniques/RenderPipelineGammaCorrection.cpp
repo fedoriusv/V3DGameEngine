@@ -127,7 +127,7 @@ void RenderPipelineGammaCorrectionStage::createRenderTarget(renderer::Device* de
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead
         });
 
     data.m_globalResources.bind("final", gamma);

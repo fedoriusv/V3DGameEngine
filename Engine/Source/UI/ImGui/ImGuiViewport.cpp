@@ -168,7 +168,7 @@ void ImGuiWidgetViewportEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_Present
         }
     );
 
@@ -228,7 +228,7 @@ void ImGuiWidgetViewportEvents::ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, 
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_Present
         }
     );
 }

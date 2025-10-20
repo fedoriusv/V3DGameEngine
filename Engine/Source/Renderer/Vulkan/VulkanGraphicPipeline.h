@@ -32,7 +32,7 @@ namespace vk
     {
     public:
 
-        VulkanGraphicPipeline(VulkanDevice* device, VulkanRenderpassManager* renderpassManager, VulkanPipelineLayoutManager* pipelineLayoutManager, const std::string& name = "");
+        VulkanGraphicPipeline(VulkanDevice* device, const std::string& name = "");
         ~VulkanGraphicPipeline();
 
         static VkPolygonMode convertPolygonModeToVk(PolygonMode mode);
@@ -69,8 +69,6 @@ namespace vk
 
 
         VulkanDevice&                                               m_device;
-        VulkanRenderpassManager* const                              m_renderpassManager;
-        VulkanPipelineLayoutManager* const                          m_pipelineLayoutManager;
 
         VkPipeline                                                  m_pipeline;
         VulkanRenderPass*                                           m_compatibilityRenderPass;

@@ -70,10 +70,13 @@ namespace vk
 
             _graphicPipeline = other._graphicPipeline;
             _computePipeline = other._computePipeline;
-
+#if !DYNAMIC_RENDERING
             _renderpass = other._renderpass;
             _framebuffer = other._framebuffer;
-            _renderArea = other._renderArea;
+#else
+            _renderpassDesc = other._renderpassDesc;
+            _framebufferDesc = other._framebufferDesc;
+#endif
             std::swap(_clearValues, other._clearValues);
             _insideRenderpass = other._insideRenderpass;
 
@@ -95,7 +98,7 @@ namespace vk
         }
 
         void addImageBarrier(VulkanImage* texture, const RenderTexture::Subresource& subresource, VkImageLayout layout);
-        void flushBarriers(VulkanCommandBuffer* cmdBuffer);
+        void flushBarriers(VulkanCommandBuffer* currentCmdBuffer, VulkanCommandBuffer* cmdBuffer = nullptr);
 
         void bind(BindingType type, u32 slot, u32 set, u32 binding, VulkanBuffer* buffer, u32 offset, u32 range);
         void bind(BindingType type, u32 slot, u32 set, u32 binding, u32 arrayIndex, VulkanImage* image, const RenderTexture::Subresource& subresource);
@@ -119,9 +122,13 @@ namespace vk
         VulkanGraphicPipeline*         _graphicPipeline = nullptr;
         VulkanComputePipeline*         _computePipeline = nullptr;
 
+#if !DYNAMIC_RENDERING
         VulkanRenderPass*              _renderpass = nullptr;
         VulkanFramebuffer*             _framebuffer = nullptr;
-        VkRect2D                       _renderArea = {};
+#else
+        RenderPassDesc                 _renderpassDesc = {};
+        FramebufferDesc                _framebufferDesc = {};
+#endif
         std::vector<VkClearValue>      _clearValues;
         bool                           _insideRenderpass = false;
 
@@ -185,6 +192,10 @@ namespace vk
     {
         ASSERT(type == BindingType::Texture || type == BindingType::RWTexture, "wrong type");
         VkImageLayout layout = (type == BindingType::RWTexture) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        if (image->isDepthStencilFormat(image->getFormat()))
+        {
+            layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        }
 
         BindingInfo& bindingInfo = _boundSetInfo[set]._bindings[slot];
         bindingInfo._binding = binding;

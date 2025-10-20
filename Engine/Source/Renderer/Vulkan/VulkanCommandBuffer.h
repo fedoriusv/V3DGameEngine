@@ -68,8 +68,10 @@ namespace vk
         void beginCommandBuffer();
         void endCommandBuffer();
 
-        void cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, const VkRect2D& area, const std::vector<VkClearValue>& clearValues);
+        void cmdBeginRenderpass(VulkanRenderPass* pass, VulkanFramebuffer* framebuffer, const std::vector<VkClearValue>& clearValues);
         void cmdEndRenderPass();
+        void cmdBeginRendering(const RenderPassDesc& passDesc, const FramebufferDesc& framebufferDesc, const std::vector<VkClearValue>& clearValues);
+        void cmdEndRendering(const RenderPassDesc& passDesc, const FramebufferDesc& framebufferDesc);
         bool isInsideRenderPass() const;
 
         //dynamic states

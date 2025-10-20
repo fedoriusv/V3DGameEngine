@@ -443,7 +443,13 @@ namespace renderer
     */
     struct TextureView
     {
-        TextureView(const Texture* texture, u32 layer = k_generalLayer, u32 mip = k_allMipmapsLevels) noexcept
+        TextureView() noexcept
+            : _texture(nullptr)
+            , _subresource({ k_generalLayer, 1, k_allMipmapsLevels, 1 })
+        {
+        }
+
+        TextureView(Texture* texture, u32 layer = k_generalLayer, u32 mip = k_allMipmapsLevels) noexcept
             : _texture(texture)
             , _subresource({ layer, 1, mip, 1 })
         {
@@ -461,14 +467,28 @@ namespace renderer
             }
         }
 
-        TextureView(const Texture* texture, u32 baseLayer, u32 layers, u32 baseMip, u32 mips) noexcept
+        TextureView(Texture* texture, u32 baseLayer, u32 layers, u32 baseMip, u32 mips) noexcept
             : _texture(texture)
             , _subresource({ baseLayer, layers, baseMip, mips })
         {
             ASSERT(texture, "nullptr");
         }
 
-        const Texture* const       _texture;
+        TextureView(const TextureView& view) noexcept
+            : _texture(view._texture)
+            , _subresource(view._subresource)
+        {
+        }
+
+        TextureView& operator=(const TextureView& view)
+        {
+            _texture = view._texture;
+            _subresource = view._subresource;
+
+            return *this;
+        }
+
+        Texture*                   _texture;
         RenderTexture::Subresource _subresource;
     };
 

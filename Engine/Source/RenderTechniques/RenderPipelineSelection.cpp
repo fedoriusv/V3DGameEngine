@@ -165,7 +165,7 @@ void RenderPipelineSelectionStage::createRenderTarget(renderer::Device* device, 
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead
         });
 
     data.m_globalResources.bind("selected_objects", m_renderTarget->getColorTexture<renderer::Texture2D>(0));

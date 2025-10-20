@@ -82,7 +82,7 @@ namespace ui
 
         bool renderDrawData(ImGuiWidgetViewportData* viewportData, ImDrawData* drawData);
 
-        std::vector<const renderer::Texture2D*>             m_activeTextures;
+        std::vector<renderer::Texture2D*>                   m_activeTextures;
         std::array<ImFont*, WidgetLayout::FontSize_Count>   m_fonts;
         renderer::Texture2D*                                m_fontAtlas;
         renderer::SamplerState*                             m_imageSampler;

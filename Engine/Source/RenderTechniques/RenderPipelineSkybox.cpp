@@ -44,9 +44,9 @@ void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneDat
             "skybox.hlsl", "skybox_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::RenderPassDesc desc{};
-        desc._countColorAttachments = 1;
+        desc._countColorAttachment = 1;
         desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
-        desc._hasDepthStencilAttahment = true;
+        desc._hasDepthStencilAttachment = true;
         desc._attachmentsDesc.back()._format = scene.m_settings._depthFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
@@ -81,9 +81,9 @@ void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneDat
             "skybox.hlsl", "skybox_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::RenderPassDesc desc{};
-        desc._countColorAttachments = 1;
+        desc._countColorAttachment = 1;
         desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
-        desc._hasDepthStencilAttahment = true;
+        desc._hasDepthStencilAttachment = true;
         desc._attachmentsDesc.back()._format = scene.m_settings._depthFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
@@ -184,7 +184,7 @@ void RenderPipelineSkyboxStage::execute(renderer::Device* device, scene::SceneDa
                 renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
             },
             {
-                renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+                renderer::TransitionOp::TransitionOp_DepthStencilReadOnly, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
             });
 
         cmdList->beginRenderTarget(*m_renderTarget);

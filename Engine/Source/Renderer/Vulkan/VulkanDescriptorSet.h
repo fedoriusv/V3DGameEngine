@@ -198,13 +198,13 @@ namespace vk
         if (image)
         {
             const VulkanImage* vkImage = (image->getResolveImage()) ? image->getResolveImage() : image;
-            if (vkImage->getImageAspectFlags() & VK_IMAGE_ASPECT_DEPTH_BIT)
+            if (VulkanImage::isColorFormat(image->getFormat()))
             {
-                descriptorImageInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_DEPTH_BIT);
+                descriptorImageInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_COLOR_BIT);
             }
             else
             {
-                descriptorImageInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_COLOR_BIT);
+                descriptorImageInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_DEPTH_BIT);
             }
         }
 

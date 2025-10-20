@@ -160,7 +160,7 @@ inline void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout
     ASSERT((image->getImageAspectFlags() & VK_IMAGE_ASPECT_COLOR_BIT) == VK_IMAGE_ASPECT_COLOR_BIT, " image is not VK_IMAGE_ASPECT_COLOR_BIT");
 
     VulkanCommandBuffer::captureResource(image);
-    VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image, VulkanImage::makeVulkanImageSubresource(image));
+    VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(image), image->getImageAspectFlags());
     VulkanWrapper::CmdClearColorImage(m_commands, image->getHandle(), imageLayout, pColor, 1, &imageSubresourceRange);
 
     if (image->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
@@ -173,10 +173,10 @@ inline void VulkanCommandBuffer::cmdClearImage(VulkanImage* image, VkImageLayout
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!isInsideRenderPass(), "outside render pass");
-    ASSERT(image->getImageAspectFlags() & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), " image is not VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT");
+    ASSERT(image->getImageAspectFlags() & VK_IMAGE_ASPECT_DEPTH_BIT || image->getImageAspectFlags() & VK_IMAGE_ASPECT_STENCIL_BIT, " image is not VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT");
 
     VulkanCommandBuffer::captureResource(image);
-    VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(image, VulkanImage::makeVulkanImageSubresource(image));
+    VkImageSubresourceRange imageSubresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(image), image->getImageAspectFlags());
     VulkanWrapper::CmdClearDepthStencilImage(m_commands, image->getHandle(), imageLayout, pDepthStencil, 1, &imageSubresourceRange);
 }
 
@@ -284,10 +284,9 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const Re
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.image = image->getHandle();
-    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image, resource);
+    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(resource, image->getImageAspectFlags());
 
     VulkanWrapper::CmdPipelineBarrier(m_commands, srcStageMask, dstStageMask, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-
     m_resourceStates.setLayout(image, layout, resource);
 }
 
@@ -296,11 +295,15 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const Re
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(!VulkanCommandBuffer::isInsideRenderPass(), "can't be inside render pass");
 
+    if (oldLayout == newLayout)
+    {
+        return;
+    }
+
     VulkanCommandBuffer::captureResource(image);
 
     auto [srcAccessMasks, dstAccessMasks] = VulkanTransitionState::getAccessFlagsFromImageLayout(oldLayout, newLayout);
     auto [srcStage, dstStage] = VulkanTransitionState::getPipelineStageFlagsFromImageLayout(image, oldLayout, newLayout);
-
     VkImageMemoryBarrier imageMemoryBarrier = {};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageMemoryBarrier.pNext = nullptr;
@@ -311,7 +314,7 @@ inline void VulkanCommandBuffer::cmdPipelineBarrier(VulkanImage* image, const Re
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.image = image->getHandle();
-    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(image, resource);
+    imageMemoryBarrier.subresourceRange = VulkanImage::makeImageSubresourceRange(resource, image->getImageAspectFlags());
 
     VulkanWrapper::CmdPipelineBarrier(m_commands, srcStage, dstStage, VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 }

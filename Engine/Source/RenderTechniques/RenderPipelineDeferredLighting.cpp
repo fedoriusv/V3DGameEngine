@@ -50,7 +50,7 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-    m_pipeline->setStencilTest(true);
+    m_pipeline->setStencilTest(false);
     m_pipeline->setStencilCompareOp(renderer::CompareOperation::NotEqual, 0x0);
     m_pipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
 
@@ -99,7 +99,6 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
     ASSERT(depth_stencil_h.isValid(), "must be valid");
     renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(depth_stencil_h);
 
-    cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_ShaderRead);
     cmdList->beginRenderTarget(*m_deferredRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
@@ -164,7 +163,6 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
     cmdList->endRenderTarget();
-    cmdList->transition(depthStencilTexture, renderer::TransitionOp::TransitionOp_DepthStencilAttachment);
 
     scene.m_globalResources.bind("render_target", m_deferredRenderTarget->getColorTexture<renderer::Texture2D>(0));
 }
@@ -180,22 +178,22 @@ void RenderPipelineDeferredLightingStage::createRenderTarget(renderer::Device* d
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 
-    //ObjectHandle depth_stencil = data.m_globalResources.get("depth_stencil");
-    //ASSERT(depth_stencil.isValid(), "must be valid");
-    //renderer::Texture2D* depthAttachment = objectFromHandle<renderer::Texture2D>(depth_stencil);
-    //m_deferredRenderTarget->setDepthStencilTexture(depthAttachment,
-    //    {
-    //        renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
-    //    },
-    //{
-    //    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
-    //},
-    //{
-    //    renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-    //});
+    ObjectHandle depth_stencil = data.m_globalResources.get("depth_stencil");
+    ASSERT(depth_stencil.isValid(), "must be valid");
+    renderer::Texture2D* depthAttachment = objectFromHandle<renderer::Texture2D>(depth_stencil);
+    m_deferredRenderTarget->setDepthStencilTexture(depthAttachment,
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
+        },
+        {
+            renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
+        },
+        {
+            renderer::TransitionOp::TransitionOp_DepthStencilReadOnly, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+        });
 }
 
 void RenderPipelineDeferredLightingStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)

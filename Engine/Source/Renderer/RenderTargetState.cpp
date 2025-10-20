@@ -10,7 +10,7 @@ namespace v3d
 namespace renderer
 {
 
-RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacments, u32 viewsMask, const std::string& name) noexcept
+RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacment, u32 viewsMask, const std::string& name) noexcept
     : m_device(device)
     , m_name(name)
 
@@ -19,12 +19,10 @@ RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& si
 {
     LOG_DEBUG("RenderTargetState::RenderTargetState constructor %llx", this);
 
-    ASSERT(countAttacments < m_device->getDeviceCaps()._maxColorAttachments, "index >= maxColorattachments");
-    m_renderpassDesc._countColorAttachments = countAttacments;
+    ASSERT(countAttacment < m_device->getDeviceCaps()._maxColorAttachments, "index >= maxColorattachments");
+    m_renderpassDesc._countColorAttachment = countAttacment;
     m_attachmentsDesc._renderArea = size;
     m_attachmentsDesc._viewsMask = viewsMask;
-
-    m_renderTargets.fill(nullptr);
 }
 
 RenderTargetState::~RenderTargetState()
@@ -34,388 +32,134 @@ RenderTargetState::~RenderTargetState()
     m_trackerRenderpass.release();
 }
 
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
+bool RenderTargetState::setColorTexture(u32 index, const TextureView& colorTextureView, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
 {
-    ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
-    if (colorTexture) [[likely]]
+    ASSERT(index < m_renderpassDesc._countColorAttachment, "index >= count of attachments");
+    if (colorTextureView._texture) [[likely]]
     {
         AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc[index];
-        attachmentDesc._format = colorTexture->getFormat();
-        attachmentDesc._samples = colorTexture->getSamples();
+        attachmentDesc._format = colorTextureView._texture->getFormat();
+        attachmentDesc._samples = colorTextureView._texture->getSamples();
         attachmentDesc._loadOp = loadOp;
         attachmentDesc._storeOp = storeOp;
         attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
         attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
-        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
+        attachmentDesc._transition = TransitionOp::TransitionOp_ColorAttachment;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
-        m_attachmentsDesc._images[index] = colorTexture->m_texture;
-        m_attachmentsDesc._layers[index] = k_generalLayer;
+        m_attachmentsDesc._imageViews[index] = colorTextureView;
         m_attachmentsDesc._clearColorValues[index] = clearColor;
-        m_renderTargets[index] = colorTexture;
 
-        return checkCompatibility(colorTexture, attachmentDesc);
+        return checkCompatibility(colorTextureView, attachmentDesc);
     }
     else
     {
         m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers[index] = 0;
-        m_renderTargets[index] = nullptr;
+        m_attachmentsDesc._imageViews[index] = TextureView();
     }
 
     return false;
 }
 
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, u32 layer, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
+bool RenderTargetState::setDepthStencilTexture(const TextureView& depthStencilTextureView, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
 {
-    ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
-    ASSERT(colorTexture->getTarget() == TextureTarget::TextureCubeMap && layer < 6U, "index >= max 6 sides for cubemap");
-    if (colorTexture) [[likely]]
-    {
-        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc[index];
-        attachmentDesc._format = colorTexture->getFormat();
-        attachmentDesc._samples = colorTexture->getSamples();
-        attachmentDesc._loadOp = loadOp;
-        attachmentDesc._storeOp = storeOp;
-        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
-        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
-        attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
-        m_attachmentsDesc._images[index] = colorTexture->m_texture;
-        m_attachmentsDesc._layers[index] = k_generalLayer;
-        m_attachmentsDesc._clearColorValues[index] = clearColor;
-        m_renderTargets[index] = colorTexture;
-
-        return checkCompatibility(colorTexture, attachmentDesc);
-    }
-    else
-    {
-        m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers[index] = 0;
-        m_renderTargets[index] = nullptr;
-    }
-
-    return false;
-}
-
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState)
-{
-    ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
-    if (colorTexture) [[likely]]
-    {
-        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc[index];
-        attachmentDesc._format = colorTexture->getFormat();
-        attachmentDesc._samples = colorTexture->getSamples();
-        attachmentDesc._loadOp = colorOpState._loadOp;
-        attachmentDesc._storeOp = colorOpState._storeOp;
-        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
-        attachmentDesc._initTransition = tansitionState._initialState;
-        attachmentDesc._finalTransition = tansitionState._finalState;
-        m_attachmentsDesc._images[index] = colorTexture->m_texture;
-        m_attachmentsDesc._layers[index] = k_generalLayer;
-        m_attachmentsDesc._clearColorValues[index] = colorOpState._clearColor;
-        m_renderTargets[index] = colorTexture;
-
-        return checkCompatibility(colorTexture, attachmentDesc);
-    }
-    else
-    {
-        m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers[index] = 0;
-        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
-        m_renderTargets[index] = nullptr;
-    }
-
-    return false;
-}
-
-bool RenderTargetState::setColorTexture_Impl(u32 index, Texture* colorTexture, s32 layer, const ColorOpState& colorOpState, const TransitionState& tansitionState)
-{
-    ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
-    ASSERT(colorTexture->getTarget() == TextureTarget::TextureCubeMap && layer < 6U, "index >= max 6 sides for cubemap");
-    if (colorTexture) [[likely]]
-    {
-        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc[index];
-        attachmentDesc._format = colorTexture->getFormat();
-        attachmentDesc._samples = colorTexture->getSamples();
-        attachmentDesc._loadOp = colorOpState._loadOp;
-        attachmentDesc._storeOp = colorOpState._storeOp;
-        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(colorTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
-        attachmentDesc._initTransition = tansitionState._initialState;
-        attachmentDesc._finalTransition = tansitionState._finalState;
-        m_attachmentsDesc._images[index] = colorTexture->m_texture;
-        m_attachmentsDesc._layers[index] = 0;
-        m_attachmentsDesc._clearColorValues[index] = colorOpState._clearColor;
-        m_renderTargets[index] = colorTexture;
-
-        return checkCompatibility(colorTexture, attachmentDesc);
-    }
-    else
-    {
-        m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers[index] = 0;
-        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
-        m_renderTargets[index] = nullptr;
-    }
-
-    return false;
-}
-
-bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, RenderTargetLoadOp loadOp, RenderTargetStoreOp storeOp, const color::Color& clearColor)
-{
-    ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
-    if (swapchainTexture) [[likely]]
-    {
-        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc[index];
-        attachmentDesc._format = swapchainTexture->getFormat();
-        attachmentDesc._samples = swapchainTexture->getSamples();
-        attachmentDesc._loadOp = loadOp;
-        attachmentDesc._storeOp = storeOp;
-        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        attachmentDesc._backbuffer = true;
-        attachmentDesc._autoResolve = false;
-        attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
-        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
-        attachmentDesc._finalTransition = TransitionOp::TransitionOp_ColorAttachment;
-        m_attachmentsDesc._images[index] = TextureHandle(swapchainTexture->m_swapchain);
-        m_attachmentsDesc._layers[index] = k_generalLayer;
-        m_attachmentsDesc._clearColorValues[index] = clearColor;
-        m_renderTargets[index] = swapchainTexture;
-
-        return checkCompatibility(swapchainTexture, attachmentDesc);
-    }
-    else
-    {
-        m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers[index] = 0;
-        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
-        m_renderTargets[index] = nullptr;
-    }
-
-    return false;
-}
-
-bool RenderTargetState::setSwapchainTexture_Impl(u32 index, SwapchainTexture* swapchainTexture, const ColorOpState& colorOpState, const TransitionState& tansitionState)
-{
-    ASSERT(index < m_renderpassDesc._countColorAttachments, "index >= count of attachments");
-    if (swapchainTexture) [[likely]]
-    {
-        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc[index];
-        attachmentDesc._format = swapchainTexture->getFormat();
-        attachmentDesc._samples = swapchainTexture->getSamples();
-        attachmentDesc._loadOp = colorOpState._loadOp;
-        attachmentDesc._storeOp = colorOpState._storeOp;
-        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
-        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
-        attachmentDesc._backbuffer = true;
-        attachmentDesc._autoResolve = false;
-        attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
-        attachmentDesc._initTransition = tansitionState._initialState;
-        attachmentDesc._finalTransition = tansitionState._finalState;
-        m_attachmentsDesc._images[index] = TextureHandle(swapchainTexture->m_swapchain);
-        m_attachmentsDesc._layers[index] = k_generalLayer;
-        m_attachmentsDesc._clearColorValues[index] = colorOpState._clearColor;
-        m_renderTargets[index] = swapchainTexture;
-
-        return checkCompatibility(swapchainTexture, attachmentDesc);
-    }
-    else
-    {
-        m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
-        m_attachmentsDesc._images[index] = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers[index] = 0;
-        m_attachmentsDesc._clearColorValues[index] = color::Color(0);
-        m_renderTargets[index] = nullptr;
-    }
-
-    return false;
-}
-
-bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
-{
-    if (depthStencilTexture) [[likely]]
+    if (depthStencilTextureView._texture) [[likely]]
     {
         AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc.back();
-        attachmentDesc._format = depthStencilTexture->getFormat();
-        attachmentDesc._samples = depthStencilTexture->getSamples();
+        attachmentDesc._format = depthStencilTextureView._texture->getFormat();
+        attachmentDesc._samples = depthStencilTextureView._texture->getSamples();
         attachmentDesc._loadOp = depthLoadOp;
         attachmentDesc._storeOp = depthStoreOp;
         attachmentDesc._stencilLoadOp = stencilLoadOp;
         attachmentDesc._stencilStoreOp = stencilStoreOp;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
-        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
+        attachmentDesc._transition = TransitionOp::TransitionOp_DepthStencilAttachment;
         attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
-        m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
-        m_attachmentsDesc._layers.back() = k_generalLayer;
+        m_attachmentsDesc._imageViews.back() = depthStencilTextureView;
         m_attachmentsDesc._clearDepthValue = clearDepth;
         m_attachmentsDesc._clearStencilValue = clearStencil;
-        m_renderTargets.back() = depthStencilTexture;
+        m_renderpassDesc._hasDepthStencilAttachment = true;
 
-        m_renderpassDesc._hasDepthStencilAttahment = true;
-
-        return checkCompatibility(depthStencilTexture, attachmentDesc);
+        return checkCompatibility(depthStencilTextureView, attachmentDesc);
     }
     else
     {
         m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers.back() = 0;
-        m_renderTargets.back() = nullptr;
+        m_attachmentsDesc._imageViews.back() = TextureView();
 
-        m_renderpassDesc._hasDepthStencilAttahment = false;
+        m_renderpassDesc._hasDepthStencilAttachment = false;
     }
 
     return false;
 }
 
-bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture, u32 layer, RenderTargetLoadOp depthLoadOp, RenderTargetStoreOp depthStoreOp, f32 clearDepth, RenderTargetLoadOp stencilLoadOp, RenderTargetStoreOp stencilStoreOp, u32 clearStencil)
+bool RenderTargetState::setColorTexture(u32 index, const TextureView& colorTextureView, const ColorOpState& colorOpState, const TransitionState& tansitionState)
 {
-    ASSERT(depthStencilTexture->getTarget() == TextureTarget::TextureCubeMap && layer < 6U, "index >= max 6 sides for cubemap");
-    if (depthStencilTexture) [[likely]]
+    ASSERT(index < m_renderpassDesc._countColorAttachment, "index >= count of attachments");
+    if (colorTextureView._texture) [[likely]]
     {
-        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc.back();
-        attachmentDesc._format = depthStencilTexture->getFormat();
-        attachmentDesc._samples = depthStencilTexture->getSamples();
-        attachmentDesc._loadOp = depthLoadOp;
-        attachmentDesc._storeOp = depthStoreOp;
-        attachmentDesc._stencilLoadOp = stencilLoadOp;
-        attachmentDesc._stencilStoreOp = stencilStoreOp;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
-        attachmentDesc._initTransition = TransitionOp::TransitionOp_Undefined;
-        attachmentDesc._finalTransition = TransitionOp::TransitionOp_DepthStencilAttachment;
-        m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
-        m_attachmentsDesc._layers.back() = layer;
-        m_attachmentsDesc._clearDepthValue = clearDepth;
-        m_attachmentsDesc._clearStencilValue = clearStencil;
-        m_renderTargets.back() = depthStencilTexture;
+        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc[index];
+        attachmentDesc._format = colorTextureView._texture->getFormat();
+        attachmentDesc._samples = colorTextureView._texture->getSamples();
+        attachmentDesc._loadOp = colorOpState._loadOp;
+        attachmentDesc._storeOp = colorOpState._storeOp;
+        attachmentDesc._stencilLoadOp = RenderTargetLoadOp::LoadOp_DontCare;
+        attachmentDesc._stencilStoreOp = RenderTargetStoreOp::StoreOp_DontCare;
+        attachmentDesc._transition = tansitionState._state;
+        attachmentDesc._finalTransition = tansitionState._finalState;
+        m_attachmentsDesc._imageViews[index] = colorTextureView;
+        m_attachmentsDesc._clearColorValues[index] = colorOpState._clearColor;
 
-        m_renderpassDesc._hasDepthStencilAttahment = true;
-
-        return checkCompatibility(depthStencilTexture, attachmentDesc);
+        return checkCompatibility(colorTextureView, attachmentDesc);
     }
     else
     {
-        m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers.back() = 0;
-        m_renderTargets.back() = nullptr;
-
-        m_renderpassDesc._hasDepthStencilAttahment = false;
+        m_renderpassDesc._attachmentsDesc[index] = AttachmentDesc();
+        m_attachmentsDesc._imageViews[index] = TextureView();
     }
 
     return false;
 }
 
-bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
+bool RenderTargetState::setDepthStencilTexture(const TextureView& depthStencilTextureView, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
 {
-    if (depthStencilTexture) [[likely]]
+    if (depthStencilTextureView._texture) [[likely]]
     {
         AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc.back();
-        attachmentDesc._format = depthStencilTexture->getFormat();
-        attachmentDesc._samples = depthStencilTexture->getSamples();
+        attachmentDesc._format = depthStencilTextureView._texture->getFormat();
+        attachmentDesc._samples = depthStencilTextureView._texture->getSamples();
         attachmentDesc._loadOp = depthOpState._loadOp;
         attachmentDesc._storeOp = depthOpState._storeOp;
         attachmentDesc._stencilLoadOp = stencilOpState._loadOp;
         attachmentDesc._stencilStoreOp = stencilOpState._storeOp;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(k_generalLayer);
-        attachmentDesc._initTransition = tansitionState._initialState;
+        attachmentDesc._transition = tansitionState._state;
         attachmentDesc._finalTransition = tansitionState._finalState;
-        m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
-        m_attachmentsDesc._layers.back() = k_generalLayer;
+        m_attachmentsDesc._imageViews.back() = depthStencilTextureView;
         m_attachmentsDesc._clearDepthValue = depthOpState._clearDepth;
         m_attachmentsDesc._clearStencilValue = stencilOpState._clearStencil;
-        m_renderTargets.back() = depthStencilTexture;
 
-        m_renderpassDesc._hasDepthStencilAttahment = true;
+        m_renderpassDesc._hasDepthStencilAttachment = true;
 
-        return checkCompatibility(depthStencilTexture, attachmentDesc);
+        return checkCompatibility(depthStencilTextureView, attachmentDesc);
     }
     else
     {
         m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers.back() = 0;
-        m_renderTargets.back() = nullptr;
+        m_attachmentsDesc._imageViews.back() = TextureView();
 
-        m_renderpassDesc._hasDepthStencilAttahment = false;
+        m_renderpassDesc._hasDepthStencilAttachment = false;
     }
 
     return false;
 }
 
-bool RenderTargetState::setDepthStencilTexture_Impl(Texture* depthStencilTexture, s32 layer, const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState)
+bool RenderTargetState::checkCompatibility(const TextureView& texture, AttachmentDesc& desc)
 {
-    if (depthStencilTexture) [[likely]]
-    {
-        AttachmentDesc& attachmentDesc = m_renderpassDesc._attachmentsDesc.back();
-        attachmentDesc._format = depthStencilTexture->getFormat();
-        attachmentDesc._samples = depthStencilTexture->getSamples();
-        attachmentDesc._loadOp = depthOpState._loadOp;
-        attachmentDesc._storeOp = depthOpState._storeOp;
-        attachmentDesc._stencilLoadOp = stencilOpState._loadOp;
-        attachmentDesc._stencilStoreOp = stencilOpState._storeOp;
-        attachmentDesc._backbuffer = false;
-        attachmentDesc._autoResolve = objectFromHandle<RenderTexture>(depthStencilTexture->m_texture)->hasUsageFlag(TextureUsage::TextureUsage_Resolve);
-        attachmentDesc._layer = AttachmentDesc::compressLayer(layer);
-        attachmentDesc._initTransition = tansitionState._initialState;
-        attachmentDesc._finalTransition = tansitionState._finalState;
-        m_attachmentsDesc._images.back() = depthStencilTexture->m_texture;
-        m_attachmentsDesc._layers.back() = layer;
-        m_attachmentsDesc._clearDepthValue = depthOpState._clearDepth;
-        m_attachmentsDesc._clearStencilValue = stencilOpState._clearStencil;
-        m_renderTargets.back() = depthStencilTexture;
-
-        m_renderpassDesc._hasDepthStencilAttahment = true;
-
-        return checkCompatibility(depthStencilTexture, attachmentDesc);
-    }
-    else
-    {
-        m_renderpassDesc._attachmentsDesc.back() = AttachmentDesc();
-        m_attachmentsDesc._images.back() = makeObjectHandle<RenderTexture>(nullptr);
-        m_attachmentsDesc._layers.back() = 0;
-        m_renderTargets.back() = nullptr;
-
-        m_renderpassDesc._hasDepthStencilAttahment = false;
-    }
-
-    return false;
-}
-
-bool RenderTargetState::checkCompatibility(Texture* texture, AttachmentDesc& desc)
-{
-    s32 layer = AttachmentDesc::uncompressLayer(desc._layer);
-    if (layer != k_generalLayer && static_cast<u32>(layer) >= texture->getLayersCount())
+    s32 layer = texture._subresource._baseLayer;
+    if (layer != k_generalLayer && static_cast<u32>(layer) >= texture._texture->getLayersCount())
     {
         return false;
     }
 
-    if (desc._backbuffer) //backbuffer
+    if (texture._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer)) //backbuffer
     {
         if (desc._storeOp != RenderTargetStoreOp::StoreOp_Store) //backbuffer must be stored
         {
@@ -432,7 +176,7 @@ bool RenderTargetState::checkCompatibility(Texture* texture, AttachmentDesc& des
         }
     }
 
-    if (countLayers > texture->getLayersCount())
+    if (countLayers > texture._texture->getLayersCount())
     {
         return false;
     }

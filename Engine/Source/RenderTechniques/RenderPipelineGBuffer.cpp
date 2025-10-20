@@ -78,6 +78,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureNormal);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMetalness);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureRoughness);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureHeight);
 
         m_pipeline.emplace_back(pipeline);
         m_parameters.emplace_back(parameters);
@@ -268,6 +269,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                     renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), m_parameters[itemMesh.pipelineID].t_TextureNormal),
                     renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Roughness"))), m_parameters[itemMesh.pipelineID].t_TextureRoughness),
                     renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Metalness"))), m_parameters[itemMesh.pipelineID].t_TextureMetalness),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Displacement"))), m_parameters[itemMesh.pipelineID].t_TextureHeight),
                 });
         }
         else if (material.getShadingModel() == scene::MaterialShadingModel::PBR_Specular)
@@ -279,6 +281,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                     renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Diffuse"))), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
                     renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), m_parameters[itemMesh.pipelineID].t_TextureNormal),
                     renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Specular"))), m_parameters[itemMesh.pipelineID].t_TextureMaterial),
+                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Displacement"))), m_parameters[itemMesh.pipelineID].t_TextureHeight),
                 });
         }
         else
@@ -359,7 +362,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead
         }
     );
 
@@ -370,7 +373,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         }
     );
 
@@ -381,7 +384,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         }
     );
 
@@ -392,7 +395,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ColorAttachment
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         }
     );
 
