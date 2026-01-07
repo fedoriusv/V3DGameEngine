@@ -312,7 +312,7 @@ namespace renderer
         * @param u32 viewsMask [optional]. Use 0 if only one view or mask by bits if multiview feature is supported.
         * @param const std::string& name [optional]
         */
-        explicit RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacment = 1U, u32 viewsMask = 0U, const std::string& name = "") noexcept;
+        explicit RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacment = 1U, u32 viewsMask = 0U) noexcept;
 
         /**
         * @brief RenderTargetState desctructor
@@ -322,7 +322,6 @@ namespace renderer
 
         const RenderPassDesc& getRenderPassDesc() const;
         const FramebufferDesc& getFramebufferDesc() const;
-        const std::string& getName() const;
 
     private:
 
@@ -336,7 +335,6 @@ namespace renderer
         Device* const               m_device;
         RenderPassDesc              m_renderpassDesc;
         FramebufferDesc             m_attachmentsDesc;
-        const std::string           m_name;
 
     public:
 
@@ -350,14 +348,14 @@ namespace renderer
         ASSERT(index < m_renderpassDesc._countColorAttachment, "out of range");
 
         static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
-        return static_cast<TTexture*>(m_attachmentsDesc._imageViews[index]._texture);
+        return static_cast<TTexture*>(const_cast<Texture*>(m_attachmentsDesc._imageViews[index]._texture));
     }
 
     template<class TTexture>
     inline TTexture* RenderTargetState::getDepthStencilTexture() const
     {
         static_assert(std::is_base_of<Texture, TTexture>(), "wrong type");
-        return static_cast<TTexture*>(m_attachmentsDesc._imageViews.back()._texture);
+        return static_cast<TTexture*>(const_cast<Texture*>(m_attachmentsDesc._imageViews.back()._texture));
     }
 
     inline const math::Dimension2D& RenderTargetState::getRenderArea() const
@@ -383,11 +381,6 @@ namespace renderer
     inline const FramebufferDesc& RenderTargetState::getFramebufferDesc() const
     {
         return m_attachmentsDesc;
-    }
-
-    inline const std::string& RenderTargetState::getName() const
-    {
-        return m_name;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

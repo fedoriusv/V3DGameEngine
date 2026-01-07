@@ -1526,10 +1526,10 @@ void VulkanCmdList::beginRenderTarget(RenderTargetState& rendertarget)
     }
     else
     {
-        VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(renderpassDesc, framebufferDesc, rendertarget.getName());
+        VulkanRenderPass* renderpass = m_device.m_renderpassManager->acquireRenderpass(renderpassDesc, framebufferDesc);
         rendertarget.m_trackerRenderpass.attach(renderpass);
 
-        auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, framebufferDesc, rendertarget.getName());
+        auto [framebuffer, isNew] = m_device.m_framebufferManager->acquireFramebuffer(renderpass, framebufferDesc);
         rendertarget.m_trackerFramebuffer.attach(framebuffer);
 
         m_pendingRenderState._renderpass = renderpass;

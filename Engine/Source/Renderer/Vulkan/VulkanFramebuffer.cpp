@@ -147,7 +147,7 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
         {
             for (u32 index = 0; index < renderpass->getCountAttachments(); ++index)
             {
-                Texture* texture = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? framebufferDesc._imageViews[index]._texture : framebufferDesc._imageViews.back()._texture;
+                const Texture* texture = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? framebufferDesc._imageViews[index]._texture : framebufferDesc._imageViews.back()._texture;
                 VulkanImage* vkImage = nullptr;
                 const RenderTexture::Subresource& subresource = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? framebufferDesc._imageViews[index]._subresource : framebufferDesc._imageViews.back()._subresource;
                 if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))

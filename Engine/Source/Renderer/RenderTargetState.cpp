@@ -10,9 +10,8 @@ namespace v3d
 namespace renderer
 {
 
-RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacment, u32 viewsMask, const std::string& name) noexcept
+RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacment, u32 viewsMask) noexcept
     : m_device(device)
-    , m_name(name)
 
     , m_trackerFramebuffer(this, std::bind(&RenderTargetState::destroyFramebuffers, this, std::placeholders::_1))
     , m_trackerRenderpass(this, std::bind(&RenderTargetState::destroyRenderPasses, this, std::placeholders::_1))

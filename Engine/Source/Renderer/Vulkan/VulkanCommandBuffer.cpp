@@ -452,7 +452,7 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
         renderingAttachmentInfo.storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(description._storeOp);
         renderingAttachmentInfo.imageView = vkImage->getImageView(subresource, VK_IMAGE_ASPECT_COLOR_BIT);
         renderingAttachmentInfo.imageLayout = newLayout;
-        renderingAttachmentInfo.clearValue = clearValues[color];
+        renderingAttachmentInfo.clearValue.color = clearValues[color].color;
         if (texture->hasUsageFlag(TextureUsage::TextureUsage_Resolve))
         {
             renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
@@ -484,7 +484,7 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
             depthAttachment.storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(depthStencilDescription._storeOp);
             depthAttachment.imageView = vkImage->getImageView(subresource);
             depthAttachment.imageLayout = newLayout;
-            depthAttachment.clearValue = clearValues.back();
+            depthAttachment.clearValue.depthStencil = { framebufferDesc._clearDepthValue, framebufferDesc._clearStencilValue };
             if (image->hasUsageFlag(TextureUsage::TextureUsage_Resolve))
             {
                 depthAttachment.resolveMode = VK_RESOLVE_MODE_MAX_BIT;
@@ -501,7 +501,7 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
             stencilAttachment.storeOp = VulkanRenderPass::convertAttachStoreOpToVkAttachmentStoreOp(depthStencilDescription._stencilStoreOp);
             stencilAttachment.imageView = vkImage->getImageView(subresource);
             stencilAttachment.imageLayout = newLayout;
-            stencilAttachment.clearValue = clearValues.back();
+            stencilAttachment.clearValue.depthStencil = { framebufferDesc._clearDepthValue, framebufferDesc._clearStencilValue };
             if (image->hasUsageFlag(TextureUsage::TextureUsage_Resolve))
             {
                 stencilAttachment.resolveMode = VK_RESOLVE_MODE_MAX_BIT;

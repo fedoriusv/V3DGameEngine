@@ -467,7 +467,32 @@ namespace renderer
             }
         }
 
+        TextureView(const Texture* texture, u32 layer = k_generalLayer, u32 mip = k_allMipmapsLevels) noexcept
+            : _texture(texture)
+            , _subresource({ layer, 1, mip, 1 })
+        {
+            ASSERT(texture, "nullptr");
+            if (layer == k_generalLayer)
+            {
+                _subresource._baseLayer = 0;
+                _subresource._layers = _texture->getLayersCount();
+            }
+
+            if (mip == k_allMipmapsLevels)
+            {
+                _subresource._baseMip = 0;
+                _subresource._mips = texture->getMipmapsCount();
+            }
+        }
+
         TextureView(Texture* texture, u32 baseLayer, u32 layers, u32 baseMip, u32 mips) noexcept
+            : _texture(texture)
+            , _subresource({ baseLayer, layers, baseMip, mips })
+        {
+            ASSERT(texture, "nullptr");
+        }
+
+        TextureView(const Texture* texture, u32 baseLayer, u32 layers, u32 baseMip, u32 mips) noexcept
             : _texture(texture)
             , _subresource({ baseLayer, layers, baseMip, mips })
         {
@@ -488,7 +513,7 @@ namespace renderer
             return *this;
         }
 
-        Texture*                   _texture;
+        const Texture*             _texture;
         RenderTexture::Subresource _subresource;
     };
 

@@ -56,7 +56,7 @@ namespace resource
         /**
         * @brief VertexProperies enum
         */
-        enum class VertexProperies : u32
+        enum VertexProperies : u32
         {
             VertexProperies_Empty = 0,
             VertexProperies_Position = 1 << 0,

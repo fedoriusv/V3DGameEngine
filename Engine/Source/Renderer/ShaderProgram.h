@@ -26,6 +26,7 @@ namespace renderer
     {
     public:
 
+        explicit ShaderProgram(Device* device, const VertexShader* vertex) noexcept;
         explicit ShaderProgram(Device* device, const VertexShader* vertex, const FragmentShader* fragment) noexcept;
         explicit ShaderProgram(Device* device, const ComputeShader* compute) noexcept;
 
