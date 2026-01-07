@@ -60,10 +60,21 @@ namespace scene
 
     struct Settings
     {
+        struct ViewportParams
+        {
+            f32 _fov = 60.f;
+            f32 _near = 0.1f;
+            f32 _far = 1000.f;
+        };
+
+        ViewportParams _vewportParams;
+
         renderer::Format _colorFormat = renderer::Format_R16G16B16A16_SFloat;
         renderer::Format _depthFormat = renderer::Format_D24_UNorm_S8_UInt;
         math::Dimension2D _shadowmapSize = { 2048, 2048 };
         u32 _shadowmapCascadeCount = k_maxShadowmapCascadeCount;
+        f32 _shadowmapLongRange = 50.0f;
+        bool _shadowmapDebug = false;
     };
 
     enum class TransformMode
@@ -230,7 +241,7 @@ namespace scene
     {
         Component*                  light = nullptr;
         std::vector<math::Matrix4D> lightSpaceMatrix;
-        std::vector<f32>            casadeSplits;
+        std::vector<f32>            cascadeSplits;
     };
 
     struct SkyboxNodeEntry : NodeEntry

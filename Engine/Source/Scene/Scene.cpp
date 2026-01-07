@@ -109,7 +109,7 @@ void Scene::finalize()
                 entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::DirectionLight);
                 entry->pipelineID = 0;
                 entry->lightSpaceMatrix.resize(m_sceneData.m_settings._shadowmapCascadeCount);
-                entry->casadeSplits.resize(m_sceneData.m_settings._shadowmapCascadeCount);
+                entry->cascadeSplits.resize(m_sceneData.m_settings._shadowmapCascadeCount);
 
                 m_sceneData.m_generalRenderList.push_back(entry);
             }

@@ -19,6 +19,7 @@ Light::Light(renderer::Device* device, Type type) noexcept
     , m_intensity()
     , m_temperature(0)
     , m_attenuation({ 1.f, 1.f, 1.f, 0.f})
+    , m_shadowCaster(true)
 {
 }
 
@@ -29,6 +30,7 @@ Light::Light(renderer::Device* device, const LightHeader& header) noexcept
     , m_intensity()
     , m_temperature(0)
     , m_attenuation({ 1.f, 1.f, 1.f, 0.f })
+    , m_shadowCaster(true)
 {
 }
 

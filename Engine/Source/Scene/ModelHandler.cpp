@@ -26,7 +26,8 @@ void ModelHandler::preUpdate(f32 dt, scene::SceneData& scene)
         {
             if (parent)
             {
-                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(node->m_transform[toEnumType(TransformMode::Local)].getMatrix() * parent->m_transform[toEnumType(TransformMode::Global)].getMatrix());
+                const math::Matrix4D transform = parent->m_transform[toEnumType(TransformMode::Global)].getMatrix() * node->m_transform[toEnumType(TransformMode::Local)].getMatrix();
+                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(transform);
             }
             else
             {

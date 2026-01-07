@@ -76,6 +76,7 @@ namespace scene
         math::float4            m_attenuation;
         f32                     m_intensity;
         f32                     m_temperature;
+        bool                    m_shadowCaster;
 
     private:
 

@@ -73,6 +73,7 @@ namespace scene
         renderer::IndexBuffer*               m_indexBuffer;
         std::vector<renderer::VertexBuffer*> m_vertexBuffer;
         math::AABB                           m_boundingBox;
+        bool                                 m_castShadows;
 
         explicit Mesh(renderer::Device* device, MeshType type) noexcept;
         explicit Mesh(renderer::Device* device, const MeshHeader& header) noexcept;
