@@ -32,7 +32,7 @@ namespace scene
 
         void update(f32 deltaTime) override;
 
-        void handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event);
+        void handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event) override;
 
     private:
 

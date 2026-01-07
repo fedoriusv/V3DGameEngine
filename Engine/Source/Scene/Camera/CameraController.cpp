@@ -121,6 +121,11 @@ void CameraController::update(f32 deltaTime)
     }
 }
 
+void CameraController::handleInputEventCallback(const event::InputEventHandler* handler, const event::InputEvent* event)
+{
+
+}
+
 math::float2 CameraController::calculateJitter(u32 frameID, const math::Dimension2D& viewport)
 {
     static constexpr u32 s_sampleCount = 16;

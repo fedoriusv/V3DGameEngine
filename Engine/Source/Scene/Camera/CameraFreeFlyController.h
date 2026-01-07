@@ -12,17 +12,17 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief CameraFreeFlyHandler class
+    * @brief CameraFreeFlyController class
     */
-    class CameraFreeFlyHandler final : public CameraController
+    class CameraFreeFlyController final : public CameraController
     {
     public:
 
-        CameraFreeFlyHandler() = delete;
-        CameraFreeFlyHandler(const CameraFreeFlyHandler&) = delete;
+        CameraFreeFlyController() = delete;
+        CameraFreeFlyController(const CameraFreeFlyController&) = delete;
 
-        explicit CameraFreeFlyHandler(std::unique_ptr<Camera> camera, const math::Vector3D& position) noexcept;
-        ~CameraFreeFlyHandler();
+        explicit CameraFreeFlyController(std::unique_ptr<Camera> camera) noexcept;
+        ~CameraFreeFlyController();
 
         void setMoveSpeed(f32 speed);
         f32 getMoveSpeed() const;
@@ -32,7 +32,7 @@ namespace scene
 
         void update(f32 deltaTime) override;
 
-        void handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event);
+        void handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event) override;
 
     private:
 

@@ -50,7 +50,6 @@ namespace scene
 
         void setPosition(const math::Vector3D& position);
         void setRotation(const math::Vector3D& rotation);
-        void setScale(const math::Vector3D& scale);
         void setTransform(const math::Matrix4D& transform);
 
         const math::Vector3D& getPosition() const;
@@ -111,6 +110,9 @@ namespace scene
         f32                      m_clipNear;
         f32                      m_clipFar;
         f32                      m_fieldOfView;
+
+    private:
+
         mutable CameraStateFlags m_matricesFlags;
         bool                     m_orthogonal;
 

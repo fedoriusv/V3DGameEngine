@@ -1,4 +1,4 @@
-#include "CameraArcballHandler.h"
+#include "CameraOrbitController.h"
 #include "Camera.h"
 #include "Renderer/DeviceCaps.h"
 
@@ -9,11 +9,10 @@ namespace v3d
 namespace scene
 {
 
-CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance) noexcept
+CameraOrbitController::CameraOrbitController(std::unique_ptr<Camera> camera, f32 distance) noexcept
     : CameraController(std::move(camera))
     , m_distanceLimits({ getNear(), getFar() })
 
-    , m_rotation({ 0.f, 0.f, 0.f })
     , m_deltaRotation({ 0.f, 0.f })
 
     , m_distance(distance)
@@ -21,7 +20,7 @@ CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 d
 {
 }
 
-CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept
+CameraOrbitController::CameraOrbitController(std::unique_ptr<Camera> camera, f32 distance, f32 minDistance, f32 maxDistance) noexcept
     : CameraController(std::move(camera))
     , m_distanceLimits({ minDistance, maxDistance })
 
@@ -30,43 +29,46 @@ CameraArcballHandler::CameraArcballHandler(std::unique_ptr<Camera> camera, f32 d
 {
 }
 
-CameraArcballHandler::~CameraArcballHandler()
+CameraOrbitController::~CameraOrbitController()
 {
 }
 
-void CameraArcballHandler::update(f32 deltaTime)
+void CameraOrbitController::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
-        m_rotation.setX(m_rotation.getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
-        m_rotation.setY(m_rotation.getY() + m_deltaRotation._y * m_rotationSpeed * deltaTime);
+        math::Vector3D rotation;
+        rotation.setX(m_camera->getRotation().getX() + m_deltaRotation._x * m_rotationSpeed * deltaTime);
+        rotation.setY(m_camera->getRotation().getY() + m_deltaRotation._y * m_rotationSpeed * deltaTime);
         m_deltaRotation = { 0.f, 0.f };
 
-
-        m_distance += m_deltaDistance * m_zoomSpeed * deltaTime;
-        m_distance = std::clamp(m_distance, m_distanceLimits._x, m_distanceLimits._y);
+        f32 distance = (m_camera->getTarget() - m_camera->getPosition()).length();
+        distance += m_deltaDistance * m_zoomSpeed * deltaTime;
+        distance = std::clamp(distance, m_distanceLimits._x, m_distanceLimits._y);
         m_deltaDistance = 0.f;
 
-        //TODO
-        math::Matrix4D look = math::SMatrix::lookAtMatrix(math::VectorRegister3D{ 0.0f, 0.0f, 0.0f }, math::VectorRegister3D{ 0.0f, 0.0f, 1.0f }, math::VectorRegister3D{ 0.0f, 1.0f, 0.0f });
-        look.makeInverse();
-        look.setTranslation({ 0.f, 0.f, -m_distance });
+        math::Matrix4D translation;
+        translation.setTranslation({ 0.f, 0.f, -distance });
 
         math::Matrix4D rotate;
-        rotate.setRotation(m_rotation);
+        rotate.setRotation(rotation);
+        rotate.setTranslation(m_camera->getTarget());
 
-        math::Matrix4D view = look * rotate;
-        m_camera->setTransform(view);
+        math::Matrix4D view = rotate * translation;
 
-        view.makeInverse();
-        setViewMatrix(view);
+        m_camera->setRotation(rotation);
+        m_camera->setPosition(view.getTranslation());
+
+        math::Matrix4D transform = m_camera->getTransform();
+        transform.makeInverse();
+        CameraController::setViewMatrix(transform);
 
         CameraController::update(deltaTime);
         m_needUpdate = false;
     }
 }
 
-void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* handler, const event::MouseInputEvent* event)
+void CameraOrbitController::handleMouseCallback(const event::InputEventHandler* handler, const event::MouseInputEvent* event)
 {
     static math::Point2D prevPosition = event->_clientCoordinates;
     math::Point2D positionDelta = prevPosition - event->_clientCoordinates;
@@ -107,7 +109,7 @@ void CameraArcballHandler::handleMouseCallback(v3d::event::InputEventHandler* ha
     prevPosition = event->_clientCoordinates;
 }
 
-void CameraArcballHandler::handleTouchCallback(v3d::event::InputEventHandler* handler, const event::TouchInputEvent* event)
+void CameraOrbitController::handleTouchCallback(const event::InputEventHandler* handler, const event::TouchInputEvent* event)
 {
     static math::Point2D position = event->_position;
 
@@ -144,6 +146,20 @@ void CameraArcballHandler::handleTouchCallback(v3d::event::InputEventHandler* ha
     }
 
     position = event->_position;
+}
+
+void CameraOrbitController::handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event)
+{
+    if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
+    {
+        const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
+        handleMouseCallback(handler, mouseEvent);
+    }
+    else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
+    {
+        const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
+        handleTouchCallback(handler, touchEvent);
+    }
 }
 
 } //namespace scene

@@ -1,4 +1,4 @@
-#include "CameraFreeFlyHandler.h"
+#include "CameraFreeFlyController.h"
 #include "Camera.h"
 
 #include "Platform/Platform.h"
@@ -9,23 +9,22 @@ namespace v3d
 namespace scene
 {
 
-CameraFreeFlyHandler::CameraFreeFlyHandler(std::unique_ptr<Camera> camera, const math::Vector3D& position) noexcept
+CameraFreeFlyController::CameraFreeFlyController(std::unique_ptr<Camera> camera) noexcept
     : CameraController(std::move(camera))
-    , m_distanceLimits({ -10, 10 })
-
     , m_moveSpeed(1.f)
     , m_accelerationSpeed(1.f)
     , m_rotationSpeed(1.0f)
 
+    , m_deltaRotation({ 0.f, 0.f })
     , m_deltaDistance(0.f)
 {
 }
 
-CameraFreeFlyHandler::~CameraFreeFlyHandler()
+CameraFreeFlyController::~CameraFreeFlyController()
 {
 }
 
-void CameraFreeFlyHandler::update(f32 deltaTime)
+void CameraFreeFlyController::update(f32 deltaTime)
 {
     if (m_needUpdate)
     {
@@ -55,56 +54,59 @@ void CameraFreeFlyHandler::update(f32 deltaTime)
     }
 }
 
-void CameraFreeFlyHandler::handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event)
+void CameraFreeFlyController::handleInputEventCallback(const v3d::event::InputEventHandler* handler, const event::InputEvent* event)
 {
     static math::Point2D prevCursorPosition = {};
     math::Point2D positionDelta = prevCursorPosition - handler->getRelativeCursorPosition();
 
-    m_deltaRotation._x = -positionDelta._y;
-    m_deltaRotation._y = -positionDelta._x;
+    if (handler->isRightMousePressed())
+    {
+        m_deltaRotation._x = -positionDelta._y;
+        m_deltaRotation._y = -positionDelta._x;
 
-    f32 directionFwd = 0.f;
-    if (handler->isKeyPressed(event::KeyCode::KeyKey_W))
-    {
-        directionFwd = 1.0f;
-    }
-    else if (handler->isKeyPressed(event::KeyCode::KeyKey_S))
-    {
-        directionFwd = -1.0f;
-    }
+        f32 directionFwd = 0.f;
+        if (handler->isKeyPressed(event::KeyCode::KeyKey_W))
+        {
+            directionFwd = 1.0f;
+        }
+        else if (handler->isKeyPressed(event::KeyCode::KeyKey_S))
+        {
+            directionFwd = -1.0f;
+        }
 
-    f32 directionSide = 0.f;
-    if (handler->isKeyPressed(event::KeyCode::KeyKey_A))
-    {
-        directionSide = -1.0f;
-    }
-    else if (handler->isKeyPressed(event::KeyCode::KeyKey_D))
-    {
-        directionSide = 1.0f;
-    }
-    m_direction = { directionSide, 0.f, directionFwd, 0.f };
+        f32 directionSide = 0.f;
+        if (handler->isKeyPressed(event::KeyCode::KeyKey_A))
+        {
+            directionSide = -1.0f;
+        }
+        else if (handler->isKeyPressed(event::KeyCode::KeyKey_D))
+        {
+            directionSide = 1.0f;
+        }
 
-    m_needUpdate = true;
+        m_direction = { directionSide, 0.f, directionFwd, 0.f };
+        m_needUpdate = true;
+    }
 
     prevCursorPosition = handler->getRelativeCursorPosition();
 }
 
-void CameraFreeFlyHandler::setMoveSpeed(f32 speed)
+void CameraFreeFlyController::setMoveSpeed(f32 speed)
 {
     m_moveSpeed = speed;
 }
 
-f32 CameraFreeFlyHandler::getMoveSpeed() const
+f32 CameraFreeFlyController::getMoveSpeed() const
 {
     return m_moveSpeed;
 }
 
-void CameraFreeFlyHandler::setRotationSpeed(f32 speed)
+void CameraFreeFlyController::setRotationSpeed(f32 speed)
 {
     m_rotationSpeed = speed;
 }
 
-f32 CameraFreeFlyHandler::getRotationSpeed() const
+f32 CameraFreeFlyController::getRotationSpeed() const
 {
     return m_rotationSpeed;
 }

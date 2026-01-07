@@ -21,8 +21,11 @@ Camera::Camera(const math::Vector3D& position, const math::Vector3D& target, boo
 {
     LOG_DEBUG("Camera constructor %llx", this);
     math::Matrix4D view = math::SMatrix::lookAtMatrix(position, m_target, m_up);
-    view.makeInverse();
-    m_transform.setMatrix(view);
+    if (std::abs(view.getDeterminant()) > 1e-6f)
+    {
+        view.makeInverse();
+        m_transform.setMatrix(view);
+    }
 }
 
 Camera::Camera(const CameraHeader& header) noexcept
@@ -83,12 +86,6 @@ void Camera::setPosition(const math::Vector3D& position)
 void Camera::setRotation(const math::Vector3D& rotation)
 {
     m_transform.setRotation(rotation);
-    m_matricesFlags |= CameraState::CameraState_View;
-}
-
-void Camera::setScale(const math::Vector3D& scale)
-{
-    m_transform.setPosition(scale);
     m_matricesFlags |= CameraState::CameraState_View;
 }
 
@@ -159,13 +156,14 @@ void Camera::recalculateProjectionMatrix() const
 {
     if (m_matricesFlags & CameraState::CameraState_Projection)
     {
-        if (Camera::isOrthogonal())
+        if (m_orthogonal)
         {
             m_matrices[Matrix::Matrix_ProjectionMatrix] = math::SMatrix::projectionMatrixOrtho(m_area.getLeftX(), m_area.getRightX(), m_area.getBottomY(), m_area.getTopY(), m_clipNear, m_clipFar);
         }
         else
         {
-            m_matrices[Matrix::Matrix_ProjectionMatrix] = math::SMatrix::projectionMatrixPerspective(m_fieldOfView, m_area.getWidth() / m_area.getHeight(), m_clipNear, m_clipFar);
+            f32 fovY = m_fieldOfView * math::k_degToRad;
+            m_matrices[Matrix::Matrix_ProjectionMatrix] = math::SMatrix::projectionMatrixPerspective(fovY, m_area.getWidth() / m_area.getHeight(), m_clipNear, m_clipFar);
         }
         m_matrices[Matrix::Matrix_ProjectionMatrixInverse] = m_matrices[Matrix::Matrix_ProjectionMatrix].getInversed();
         m_matricesFlags &= ~CameraState::CameraState_Projection;
@@ -199,6 +197,7 @@ bool Camera::load(const stream::Stream* stream, u32 offset)
     stream->read<f32>(m_fieldOfView);
     stream->read<bool>(m_orthogonal);
 
+    m_matricesFlags = CameraState::CameraState_All;
     m_loaded = true;
     return true;
 }

@@ -6,6 +6,11 @@
 
 namespace v3d
 {
+namespace event
+{
+    class InputEvent;
+    class InputEventHandler;
+} //namespace event
 namespace scene
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,6 +55,8 @@ namespace scene
         void setOrtho(const math::Rect& area, f32 zNear, f32 zFar);
 
         virtual void update(f32 deltaTime);
+
+        virtual void handleInputEventCallback(const event::InputEventHandler* handler, const event::InputEvent* event);
 
         static math::float2 calculateJitter(u32 frameID, const math::Dimension2D& viewport);
 

@@ -52,7 +52,7 @@ void CameraEditorHandler::update(f32 deltaTime)
             rotate.setRotation(rotation);
             rotate.setTranslation(m_camera->getTarget());
 
-            math::Matrix4D view = translation * rotate;
+            math::Matrix4D view = rotate * translation;
 
             m_camera->setRotation(rotation);
             m_camera->setPosition(view.getTranslation());
@@ -130,10 +130,8 @@ void CameraEditorHandler::handleInputEventCallback(const v3d::event::InputEventH
         m_freeFlyMode = true;
         m_orbitingMode = false;
 
-
         m_deltaRotation._x = -positionDelta._y;
         m_deltaRotation._y = -positionDelta._x;
-
 
         f32 directionFwd = 0.f;
         if (handler->isKeyPressed(event::KeyCode::KeyKey_W))
@@ -154,8 +152,8 @@ void CameraEditorHandler::handleInputEventCallback(const v3d::event::InputEventH
         {
             directionSide = 1.0f;
         }
-        m_direction = { directionSide, 0.f, directionFwd, 0.f };
 
+        m_direction = { directionSide, 0.f, directionFwd, 0.f };
         m_needUpdate = true;
     }
     else
