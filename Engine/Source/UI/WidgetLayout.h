@@ -12,6 +12,7 @@ namespace ui
     class WidgetHandler;
 
     class WidgetWindow;
+    class WidgetPopup;
     class WidgetMenuBar;
     class WidgetMenu;
     class WidgetTreeNode;
@@ -268,6 +269,7 @@ namespace ui
         using StateType = StateLayout;
 
         friend WidgetWindow;
+        friend WidgetPopup;
         friend WidgetMenuBar;
         friend WidgetMenu;
         friend WidgetTreeNode;

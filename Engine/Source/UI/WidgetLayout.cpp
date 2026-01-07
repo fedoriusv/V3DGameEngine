@@ -76,7 +76,7 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
             }
             else
             {
-                //layoutSize._x = std::max(layoutSize._x, size._x);
+                //layoutSize._x = std::max(layoutSize._x, size._x); ignore horisontal offset
                 layoutSize._y += size._y;
             }
             ++countWidgets;
@@ -91,7 +91,6 @@ bool WidgetLayout::update(WidgetHandler* handler, Widget* parent, Widget* layout
     }
     else
     {
-        //layoutSize._y += drawer->get_WindowPadding()._y * 2.0f;
         layoutSize._y += drawer->get_LayoutPadding()._y * 2.0f;
         layoutSize._y += drawer->get_ItemSpacing()._y * std::clamp<u32>(countWidgets - 1, 0, countWidgets);
     }
@@ -154,7 +153,7 @@ math::float2 WidgetLayout::calculateSize(WidgetHandler* handler, Widget* parent,
             }
             else
             {
-                //layoutSize._x = std::max(layoutSize._x, size._x);
+                layoutSize._x = std::max(layoutSize._x, size._x);
                 layoutSize._y += size._y;
             }
             ++countWidgets;

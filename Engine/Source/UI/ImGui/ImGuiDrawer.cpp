@@ -173,6 +173,71 @@ bool ImGuiWidgetDrawer::draw_Window(Widget* window, Widget::State* state, f32 dt
     return active;
 }
 
+bool ImGuiWidgetDrawer::draw_Popup(Widget* widget, Widget::State* state, f32 dt)
+{
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    WidgetPopup::StatePopup* popupCtx = static_cast<WidgetPopup::StatePopup*>(state);
+
+    if (popupCtx->_isVisible && popupCtx->_stateMask & Widget::State::StateMask::FirstUpdateState)
+    {
+        if (popupCtx->_createFlags & WidgetPopup::PopupFlag::Module)
+        {
+            ImGuiPopupFlags popupFlags = 0;
+            ImGui::OpenPopup(popupCtx->_title.c_str(), popupFlags);
+
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        }
+        else
+        {
+            ImGuiPopupFlags popupFlags = 0;
+            ImGui::OpenPopup(popupCtx->_uid, popupFlags);
+        }
+
+        if (popupCtx->_position._x != 0 || popupCtx->_position._y != 0)
+        {
+            ImGui::SetNextWindowPos(ImVec2(static_cast<f32>(popupCtx->_position._x), static_cast<f32>(popupCtx->_position._y)), ImGuiCond_Appearing);
+        }
+
+        if (popupCtx->_size._width > 0 || popupCtx->_size._height > 0)
+        {
+            ImGui::SetNextWindowSize(ImVec2(static_cast<f32>(popupCtx->_size._width), static_cast<f32>(popupCtx->_size._height)), ImGuiCond_Appearing);
+        }
+
+        popupCtx->_stateMask &= ~Widget::State::StateMask::FirstUpdateState;
+    }
+
+
+    bool active = false;
+    bool open = false;
+    if (popupCtx->_createFlags & WidgetPopup::PopupFlag::Module)
+    {
+        ImGuiWindowFlags winFlags = /*ImGuiWindowFlags_AlwaysAutoResize |*/ ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
+        active = ImGui::BeginPopupModal(popupCtx->_title.c_str(), &open, winFlags);
+
+        //todo
+    }
+    else
+    {
+        ImGuiWindowFlags winFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings;
+        active = ImGui::BeginPopupEx(popupCtx->_uid, winFlags);
+        if (active)
+        {
+            ImGui::SeparatorText(popupCtx->_title.c_str());
+            popupCtx->_layout.update(m_widgetHandler, widget, &popupCtx->_layout, dt);
+
+            ImGui::EndPopup();
+        }
+    }
+
+    if (!active)
+    {
+        popupCtx->_isVisible = false;
+    }
+
+    return active;
+}
+
 bool ImGuiWidgetDrawer::draw_Text(Widget* wiget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state)
 {
     ASSERT(ImGui::GetCurrentContext(), "must be valid");

@@ -27,6 +27,7 @@ namespace ui
         bool draw_TabItem(Widget* wiget, Widget* base, Widget::State* layout, Widget::State* state) override;
 
         bool draw_Window(Widget* wiget, Widget::State* state, f32 dt) override;
+        bool draw_Popup(Widget* widget, Widget::State* state, f32 dt) override;
 
         bool draw_TreeNode(Widget* widget, Widget* base, Widget::State* layout, Widget::State* state, f32 dt) override;
 

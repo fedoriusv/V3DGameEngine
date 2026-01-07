@@ -14,3 +14,4 @@
 #include "WidgetTreeNode.h"
 #include "WidgetWindow.h"
 #include "WidgetMenu.h"
+#include "WidgetPopup.h"

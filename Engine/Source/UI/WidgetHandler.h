@@ -121,6 +121,7 @@ namespace ui
 
         //Windows
         virtual bool draw_Window(Widget* widget, Widget::State* state, f32 dt) = 0;
+        virtual bool draw_Popup(Widget* widget, Widget::State* state, f32 dt) = 0;
 
         //TreeNode
         virtual bool draw_TreeNode(Widget* widget, Widget* baseWidget, Widget::State* layoutBaseState, Widget::State* state, f32 dt) = 0;

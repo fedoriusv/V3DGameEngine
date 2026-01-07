@@ -162,7 +162,7 @@ void ImGuiWidgetViewportEvents::ImGui_Renderer_CreateWindow(ImGuiViewport* vp)
     ImGuiWidgetViewportData* viewportData = V3D_NEW(ImGuiWidgetViewportData, memory::MemoryLabel::MemoryUI);
     viewportData->_swapchain = swapchain;
     viewportData->_cmdList = handler->m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0, "WindowViewport");
+    viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0);
     viewportData->_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
@@ -222,7 +222,7 @@ void ImGuiWidgetViewportEvents::ImGui_Renderer_SetWindowSize(ImGuiViewport* vp, 
     ASSERT(swapchain, "swapchain is nullptr");
 
     viewportData->_swapchain = swapchain;
-    viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0, "WindowViewport");
+    viewportData->_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryUI)(handler->m_device, swapchain->getBackbufferSize(), 1, 0);
     viewportData->_renderTarget->setColorTexture(0, swapchain->getBackbuffer(),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
