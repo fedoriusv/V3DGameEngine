@@ -58,7 +58,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
@@ -102,7 +102,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
@@ -135,7 +135,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
@@ -168,7 +168,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
@@ -289,7 +289,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
             ASSERT(false, "");
         }
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
         ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
         renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
         cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
@@ -341,7 +341,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                 renderer::Descriptor(renderer::TextureView(noiseTexture, 0, 0), 6),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
         ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
         renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
         cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
@@ -353,7 +353,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
 void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, scene::SceneData& state)
 {
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
-    m_GBufferRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, state.m_viewportState._viewpotSize, 4, 0, "gbuffer_pass");
+    m_GBufferRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, state.m_viewportState._viewpotSize, 4, 0);
 
     renderer::Texture2D* albedoAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R8G8B8A8_UNorm, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_albedo");

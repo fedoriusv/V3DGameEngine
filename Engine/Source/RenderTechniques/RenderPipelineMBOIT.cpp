@@ -45,7 +45,7 @@ void RenderPipelineMBOITStage::create(renderer::Device* device, scene::SceneData
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::Less);
@@ -83,7 +83,7 @@ void RenderPipelineMBOITStage::create(renderer::Device* device, scene::SceneData
         pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::Less);

@@ -53,7 +53,7 @@ void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_Back);
         pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);

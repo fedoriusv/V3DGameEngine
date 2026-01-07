@@ -21,7 +21,7 @@ namespace v3d
 namespace scene
 {
 
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
     f32 k_clearValue = 0.0f;
 #else
     f32 k_clearValue = 1.0f;
@@ -55,7 +55,7 @@ void RenderPipelineZPrepassStage::create(renderer::Device* device, scene::SceneD
    m_depthPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
    m_depthPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
    m_depthPipeline->setCullMode(renderer::CullMode::CullMode_None);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
    m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
    m_depthPipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
@@ -162,7 +162,7 @@ void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::Scene
 void RenderPipelineZPrepassStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene)
 {
     ASSERT(m_depthRenderTarget == nullptr, "must be nullptr");
-    m_depthRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportState._viewpotSize, 0, 0, "zprepass");
+    m_depthRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportState._viewpotSize, 0, 0);
 
     renderer::Texture2D* depthStencilAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         scene.m_settings._depthFormat, scene.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "depth_stencil");

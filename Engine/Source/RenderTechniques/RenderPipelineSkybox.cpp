@@ -56,7 +56,7 @@ void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneDat
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
         pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
@@ -93,7 +93,7 @@ void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneDat
         pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         pipeline->setCullMode(renderer::CullMode::CullMode_None);
         pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
         pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);

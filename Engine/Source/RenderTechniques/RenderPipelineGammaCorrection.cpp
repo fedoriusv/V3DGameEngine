@@ -117,7 +117,7 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
 void RenderPipelineGammaCorrectionStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_gammaRenderTarget == nullptr, "must be nullptr");
-    m_gammaRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0, "gamma_pass");
+    m_gammaRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0);
 
     renderer::Texture2D* gamma = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gamma");

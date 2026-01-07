@@ -49,7 +49,7 @@ void RenderPipelineSelectionStage::create(renderer::Device* device, scene::Scene
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
     m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-#if ENABLE_REVERSED_Z
+#if REVERSED_DEPTH
     m_pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
     m_pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);

@@ -11,7 +11,7 @@
 * @brief Reserved Z
 * @see https://developer.nvidia.com/content/depth-precision-visualized
 */
-#define ENABLE_REVERSED_Z 1
+#define REVERSED_DEPTH 1
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
