@@ -74,7 +74,7 @@ namespace math
     inline TMatrixRegister<T, Rows, Cols>& TMatrixRegister<T, Rows, Cols>::operator*=(const TMatrixRegister<T, Rows, Cols>& other)
     {
         TMatrixRegister<T, Rows, Cols> m;
-        _m = DirectX::XMMatrixMultiply(_m, other._m);
+        _m = DirectX::XMMatrixMultiply(other._m, _m);
         return *this;
     }
 
@@ -83,7 +83,7 @@ namespace math
     inline TMatrixRegister<T, Rows, Cols> TMatrixRegister<T, Rows, Cols>::operator*(const TMatrixRegister<T, Rows, Cols>& other) const
     {
         TMatrixRegister<T, Rows, Cols> m;
-        m._m = DirectX::XMMatrixMultiply(_m, other._m);
+        m._m = DirectX::XMMatrixMultiply(other._m, _m);
         return m;
     }
 
