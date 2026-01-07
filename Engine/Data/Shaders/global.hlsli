@@ -9,7 +9,13 @@
 #define GLSL 0
 #define GL_FORMAT 0
 
+#ifndef REVERSED_DEPTH
 #define REVERSED_DEPTH 1
+#endif
+
+#ifndef SHADER_DEBUG
+#define SHADER_DEBUG 0
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -40,11 +46,11 @@ struct VS_SIMPLE_INPUT
 
 struct VS_SIMPLE_OUTPUT
 {
-    float4                     Position  : SV_POSITION;
-    [[vk::location(0)]] float4 ClipPos   : CLIPPOS;
-    [[vk::location(2)]] float3 WorldPos  : WORLDPOS;
-    [[vk::location(3)]] float3 Normal    : NORMAL;
-    [[vk::location(6)]] float2 UV        : TEXTURE;
+    float4                     Position : SV_POSITION;
+    [[vk::location(0)]] float4 ClipPos  : CLIPPOS;
+    [[vk::location(2)]] float3 WorldPos : WORLDPOS;
+    [[vk::location(3)]] float3 Normal   : NORMAL;
+    [[vk::location(6)]] float2 UV       : TEXTURE;
 };
 
 typedef VS_SIMPLE_OUTPUT PS_SIMPLE_INPUT;

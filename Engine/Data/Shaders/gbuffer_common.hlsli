@@ -3,16 +3,17 @@
 
 #include "global.hlsli"
 #include "viewport.hlsli"
+#include "lighting_common.hlsli"
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
 struct VS_GBUFFER_STANDARD_INPUT
 {
-    [[vk::location(0)]] float3 Position     : IN_POSITION;
-    [[vk::location(1)]] float3 Normal       : IN_NORMAL;
-    [[vk::location(2)]] float3 Tangent      : IN_TANGENT;
-    [[vk::location(3)]] float3 Bitangent    : IN_BITANGENT;
-    [[vk::location(4)]] float2 UV           : IN_TEXTURE;
+    [[vk::location(0)]] float3 Position    : IN_POSITION;
+    [[vk::location(1)]] float3 Normal      : IN_NORMAL;
+    [[vk::location(2)]] float3 Tangent     : IN_TANGENT;
+    [[vk::location(3)]] float3 Bitangent   : IN_BITANGENT;
+    [[vk::location(4)]] float2 UV          : IN_TEXTURE;
 };
 
 struct VS_GBUFFER_STANDARD_OUTPUT
@@ -33,10 +34,10 @@ typedef VS_GBUFFER_STANDARD_OUTPUT PS_GBUFFER_STANDARD_INPUT;
 
 struct PS_GBUFFER_STRUCT
 {
-    [[vk::location(0)]] float4 BaseColor : SV_TARGET0; // RGB = BaseColor, A = unused
-    [[vk::location(1)]] float4 Normal    : SV_TARGET1; // RGB = Normal (world), A = unused
-    [[vk::location(2)]] float4 Material  : SV_TARGET2; // R = Roughness, G = Metalness, B = ObjectID, A = unused
-    [[vk::location(3)]] float2 Velocity  : SV_TARGET3; // RG = Velocity
+    [[vk::location(0)]] float4 BaseColor   : SV_TARGET0; // RGB = BaseColor, A = Opacity
+    [[vk::location(1)]] float4 Normal      : SV_TARGET1; // RGB = Normal (world), A = unused
+    [[vk::location(2)]] float4 Material    : SV_TARGET2; // R = Roughness, G = Metalness, B = ObjectID, A = unused
+    [[vk::location(3)]] float2 Velocity    : SV_TARGET3; // RG = Velocity
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////

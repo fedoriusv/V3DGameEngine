@@ -35,9 +35,20 @@ namespace scene
 
     private:
 
-        struct MaterialParameters
+        struct MaterialCascadeShadowsParameters
         {
             SHADER_PARAMETER(cb_ShadowBuffer);
+        };
+
+        struct MaterialScreenSpaceShadowsParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_CascadeShadowBuffer);
+            SHADER_PARAMETER(s_SamplerState);
+            SHADER_PARAMETER(s_ShadowSamplerState);
+            SHADER_PARAMETER(t_TextureDepth);
+            SHADER_PARAMETER(t_TextureNormals);
+            SHADER_PARAMETER(t_CascadeShadows);
         };
 
         void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
@@ -49,9 +60,13 @@ namespace scene
 
         std::vector<renderer::RenderTargetState*> m_cascadeRenderTargets;
         renderer::Texture2D* m_cascadeTextureArray;
+        renderer::SamplerState* m_shadowSamplerState;
+        renderer::GraphicsPipelineState* m_cascadeShadowPipeline;
+        MaterialCascadeShadowsParameters m_cascadeShadowParameters;
 
-        renderer::GraphicsPipelineState* m_pipeline;
-        MaterialParameters m_parameters;
+        renderer::RenderTargetState* m_SSShadowsRenderTarget;
+        renderer::GraphicsPipelineState* m_SSShadowsPipeline;
+        MaterialScreenSpaceShadowsParameters m_SSCascadeShadowParameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

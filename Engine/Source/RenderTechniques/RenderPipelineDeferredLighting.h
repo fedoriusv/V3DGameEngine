@@ -40,6 +40,7 @@ namespace scene
             SHADER_PARAMETER(t_TextureNormal);
             SHADER_PARAMETER(t_TextureMaterial);
             SHADER_PARAMETER(t_TextureDepth);
+            SHADER_PARAMETER(t_TextureScreenSpaceShadows);
         };
 
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);

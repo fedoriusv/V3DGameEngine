@@ -16,6 +16,8 @@ namespace v3d
 namespace scene
 {
 
+constexpr bool k_debugShadow = false;
+
 RenderPipelineDeferredLightingStage::RenderPipelineDeferredLightingStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "DeferredLighting")
     , m_deferredRenderTarget(nullptr)
@@ -33,6 +35,7 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene
 
     const renderer::Shader::DefineList defines =
     {
+        {"DEBUG_SHADOWMAP", std::to_string(k_debugShadow)},
     };
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -61,6 +64,7 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureNormal);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureMaterial);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureDepth);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureScreenSpaceShadows);
 }
 
 void RenderPipelineDeferredLightingStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -98,6 +102,10 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
     ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
     ASSERT(depth_stencil_h.isValid(), "must be valid");
     renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(depth_stencil_h);
+
+    ObjectHandle screen_space_shadow_h = scene.m_globalResources.get("screen_space_shadow");
+    ASSERT(screen_space_shadow_h.isValid(), "must be valid");
+    renderer::Texture2D* screenspaceShadowTexture = objectFromHandle<renderer::Texture2D>(screen_space_shadow_h);
 
     cmdList->beginRenderTarget(*m_deferredRenderTarget);
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
@@ -159,6 +167,7 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, scen
             renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters.t_TextureNormal),
             renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters.t_TextureMaterial),
             renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters.t_TextureDepth),
+            renderer::Descriptor(renderer::TextureView(screenspaceShadowTexture, 0, 0), m_parameters.t_TextureScreenSpaceShadows),
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);

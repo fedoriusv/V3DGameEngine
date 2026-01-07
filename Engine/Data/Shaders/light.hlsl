@@ -3,17 +3,22 @@
 #include "offscreen_common.hlsli"
 #include "lighting_common.hlsli"
 
+#ifndef DEBUG_SHADOWMAP
+#define DEBUG_SHADOWMAP 0
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
-[[vk::binding(0, 0)]] ConstantBuffer<Viewport> cb_Viewport : register(b0, space0);
+[[vk::binding(0, 0)]] ConstantBuffer<Viewport> cb_Viewport  : register(b0, space0);
 
-[[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> cb_Model : register(b1, space1);
-[[vk::binding(2, 1)]] ConstantBuffer<LightBuffer> cb_Light : register(b2, space1);
-[[vk::binding(3, 1)]] SamplerState s_SamplerState          : register(s0, space1);
-[[vk::binding(4, 1)]] Texture2D t_TextureBaseColor         : register(t0, space1);
-[[vk::binding(5, 1)]] Texture2D t_TextureNormal            : register(t1, space1);
-[[vk::binding(6, 1)]] Texture2D t_TextureMaterial          : register(t2, space1);
-[[vk::binding(7, 1)]] Texture2D t_TextureDepth             : register(t3, space1);
+[[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> cb_Model  : register(b1, space1);
+[[vk::binding(2, 1)]] ConstantBuffer<LightBuffer> cb_Light  : register(b2, space1);
+[[vk::binding(3, 1)]] SamplerState s_SamplerState           : register(s0, space1);
+[[vk::binding(4, 1)]] Texture2D t_TextureBaseColor          : register(t0, space1);
+[[vk::binding(5, 1)]] Texture2D t_TextureNormal             : register(t1, space1);
+[[vk::binding(6, 1)]] Texture2D t_TextureMaterial           : register(t2, space1);
+[[vk::binding(7, 1)]] Texture2D t_TextureDepth              : register(t3, space1);
+[[vk::binding(8, 1)]] Texture2D t_TextureScreenSpaceShadows : register(t4, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -44,14 +49,36 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
     float metallic = material.g;
     
     float depth = t_TextureDepth.SampleLevel(s_SamplerState, Input.UV, 0).r;
-    if (depth > 0.0)
+    if (depth > 0.0) //TODO move to stencil test
     {
         float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, Input.UV, depth);
         
         EnvironmentBuffer environment;
         environment.wetness = 0.0f;
+        environment.shadowSaturation = 0.01f; //temp
     
         float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction_range.xyz, 0.0, albedo, normals, roughness, metallic, depth);
+        float shadow = t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).r;
+#if DEBUG_SHADOWMAP
+        uint cascade = (uint)t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).g;
+        switch (cascade)
+        {
+            case 0:
+                color.rgb = lerp(color.rgb, float3(1.0, 0.0, 0.0), shadow);
+                break;
+            case 1:
+                color.rgb = lerp(color.rgb, float3(0.0, 1.0, 0.0), shadow);
+                break;
+            case 2:
+                color.rgb = lerp(color.rgb, float3(0.0, 0.0, 1.0), shadow);
+                break;
+            case 3:
+                color.rgb = lerp(color.rgb, float3(1.0, 1.0, 0.0), shadow);
+                break;
+        }
+#else
+        color.rgb = lerp(color.rgb, albedo * environment.shadowSaturation, shadow);
+#endif
         return float4(color.rgb, 1.0);
     }
     
@@ -86,3 +113,5 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
     
     return float4(0.0, 0.0, 0.0, 1.0);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
