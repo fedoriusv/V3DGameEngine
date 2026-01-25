@@ -44,7 +44,7 @@ namespace resource
             SeperatePositionStream  = 1 << 4,   //Save Position data to saparate stream
 
             FlipYPosition           = 1 << 5,   //Flip Y position
-            FlipYTextureCoord       = 1 << 6,   //Flip Y texture coordinage
+            FlipYTextureCoord       = 1 << 6,   //Flip Y texture coordinate
 
             LocalTransform          = 1 << 7,   //Ignore all releative transforms
             Optimization            = 1 << 8,

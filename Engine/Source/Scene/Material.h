@@ -21,7 +21,7 @@ namespace scene
     {
         Unlit,
         PBR_MetallicRoughness,
-        PBR_Specular,
+        PBR_Specular, //TODO implement shaders
         Custom,
     };
 

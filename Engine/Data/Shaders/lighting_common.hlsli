@@ -182,14 +182,9 @@ float4 cook_torrance_BRDF(
     float kQuadratic = Light.attenuation.z;
     float attenuation = 1.0 / max(kConstant + kLinear * Distance + kQuadratic * (Distance * Distance), 1e-5);
     
-    // Range clamping (if lightRange > 0)
-    float lightRange = Light.attenuation.w;
-    if (lightRange > 0.0)
-    {
-        // smooth fade to zero near range (optional)
-        float rangeFactor = saturate(1.0 - (Distance / lightRange));
-        attenuation *= rangeFactor * rangeFactor; // sharper falloff near the end
-    }
+    // Smooth fade to zero near range 
+    float rangeFactor = saturate(1.0 - (Distance / max(Light.attenuation.w, 0.01)));
+    attenuation *= rangeFactor * rangeFactor; // sharper falloff near the end
     
     float3 lightColor = temperature_RGB(Light.temperature) * Light.color.rgb * Light.intensity;
     float3 radiance = lightColor * attenuation;
@@ -198,10 +193,18 @@ float4 cook_torrance_BRDF(
     
     // Ambient / IBL (simple ambient approximation)
     float3 ao = float3(1.0, 1.0, 1.0);
-    float3 ambient = float3(0.03, 0.03, 0.03) * Albedo * ao;
+    float3 ambient = float3(0.03, 0.03, 0.03) * Albedo * ao * radiance;
     
     float4 color = float4(Lo + ambient, 1.0);
     return color;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+float2 parallax_mapping(in float Height, in float Bump, in float2 UV, in float3 View)
+{
+    float2 P = View.xy/* / View.z*/ * (Height/* * Bump*/);
+    return UV + P;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

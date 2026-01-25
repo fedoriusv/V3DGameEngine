@@ -77,11 +77,6 @@ namespace scene
         f32                     m_intensity;
         f32                     m_temperature;
         bool                    m_shadowCaster;
-
-    private:
-
-        bool load(const stream::Stream* stream, u32 offset = 0) override;
-        bool save(stream::Stream* stream, u32 offset = 0) const override;
     };
 
     inline void Light::setColor(const color::ColorRGBAF& color)
@@ -141,7 +136,11 @@ namespace scene
         explicit DirectionalLight(renderer::Device* device) noexcept;
         explicit DirectionalLight(renderer::Device* device, const LightHeader& header) noexcept;
         ~DirectionalLight();
+
     private:
+
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
 
         friend LightHelper;
     };
@@ -164,6 +163,9 @@ namespace scene
 
     private:
 
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
+
         f32 m_radius;
 
         friend LightHelper;
@@ -179,7 +181,6 @@ namespace scene
         return m_radius;
     }
 
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -193,9 +194,10 @@ namespace scene
         explicit SpotLight(renderer::Device* device, const LightHeader& header) noexcept;
         ~SpotLight();
 
-
-
     private:
+
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
 
         f32 m_innerAngle;
         f32 m_outerAngle;

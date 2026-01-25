@@ -38,33 +38,6 @@ Light::~Light()
 {
 }
 
-bool Light::load(const stream::Stream* stream, u32 offset)
-{
-    if (m_loaded)
-    {
-        LOG_WARNING("Light::load: the light %llx is already loaded", this);
-        return true;
-    }
-
-    ASSERT(stream, "nullptr");
-    stream->seekBeg(offset);
-    ASSERT(offset == m_header._offset, "wrong offset");
-
-    stream->read<color::ColorRGBAF>(m_color);
-    stream->read<f32>(m_intensity);
-    stream->read<f32>(m_temperature);
-    stream->read<math::float4>(m_attenuation);
-
-    m_loaded = true;
-    return true;
-}
-
-bool Light::save(stream::Stream* stream, u32 offset) const
-{
-    ASSERT(false, "not impl");
-    return false;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DirectionalLight::DirectionalLight(renderer::Device* device) noexcept
@@ -85,6 +58,34 @@ DirectionalLight::~DirectionalLight()
     LOG_DEBUG("DirectionalLight::DirectionalLight destructor %llx", this);
 }
 
+bool DirectionalLight::load(const stream::Stream* stream, u32 offset)
+{
+    if (m_loaded)
+    {
+        LOG_WARNING("DirectionalLight::load: the light %llx is already loaded", this);
+        return true;
+    }
+
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+    ASSERT(offset == m_header._offset, "wrong offset");
+
+    stream->read<color::ColorRGBAF>(m_color);
+    stream->read<f32>(m_intensity);
+    stream->read<f32>(m_temperature);
+    stream->read<math::float4>(m_attenuation);
+    stream->read<bool>(m_shadowCaster);
+
+    m_loaded = true;
+    return true;
+}
+
+bool DirectionalLight::save(stream::Stream* stream, u32 offset) const
+{
+    ASSERT(false, "not impl");
+    return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PointLight::PointLight(renderer::Device* device) noexcept
@@ -96,6 +97,7 @@ PointLight::PointLight(renderer::Device* device) noexcept
 
 PointLight::PointLight(renderer::Device* device, const LightHeader& header) noexcept
     : ComponentBase<PointLight, Light>(device, header)
+    , m_radius(1.f)
 {
     ASSERT(header.getResourceSubType<Type>() == Type::PointLight, "must be PointLight");
     LOG_DEBUG("PointLight::PointLight constructor %llx", this);
@@ -106,16 +108,49 @@ PointLight::~PointLight()
     LOG_DEBUG("PointLight::PointLight destructor %llx", this);
 }
 
+bool PointLight::load(const stream::Stream* stream, u32 offset)
+{
+    if (m_loaded)
+    {
+        LOG_WARNING("PointLight::load: the light %llx is already loaded", this);
+        return true;
+    }
+
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+    ASSERT(offset == m_header._offset, "wrong offset");
+
+    stream->read<color::ColorRGBAF>(m_color);
+    stream->read<f32>(m_intensity);
+    stream->read<f32>(m_temperature);
+    stream->read<math::float4>(m_attenuation);
+    stream->read<bool>(m_shadowCaster);
+    stream->read<f32>(m_radius);
+
+    m_loaded = true;
+    return true;
+}
+
+bool PointLight::save(stream::Stream* stream, u32 offset) const
+{
+    ASSERT(false, "not impl");
+    return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SpotLight::SpotLight(renderer::Device* device) noexcept
     : ComponentBase<SpotLight, Light>(device, Type::SpotLight)
+    , m_innerAngle(0.0f)
+    , m_outerAngle(0.0f)
 {
     LOG_DEBUG("SpotLight::SpotLight constructor %llx", this);
 }
 
 SpotLight::SpotLight(renderer::Device* device, const LightHeader& header) noexcept
     : ComponentBase<SpotLight, Light>(device, header)
+    , m_innerAngle(0.0f)
+    , m_outerAngle(0.0f)
 {
     ASSERT(header.getResourceSubType<Type>() == Type::SpotLight, "must be SpotLight");
     LOG_DEBUG("SpotLight::SpotLight constructor %llx", this);
@@ -124,6 +159,36 @@ SpotLight::SpotLight(renderer::Device* device, const LightHeader& header) noexce
 SpotLight::~SpotLight()
 {
     LOG_DEBUG("SpotLight::SpotLight destructor %llx", this);
+}
+
+bool SpotLight::load(const stream::Stream* stream, u32 offset)
+{
+    if (m_loaded)
+    {
+        LOG_WARNING("SpotLight::load: the light %llx is already loaded", this);
+        return true;
+    }
+
+    ASSERT(stream, "nullptr");
+    stream->seekBeg(offset);
+    ASSERT(offset == m_header._offset, "wrong offset");
+
+    stream->read<color::ColorRGBAF>(m_color);
+    stream->read<f32>(m_intensity);
+    stream->read<f32>(m_temperature);
+    stream->read<math::float4>(m_attenuation);
+    stream->read<bool>(m_shadowCaster);
+    stream->read<f32>(m_innerAngle);
+    stream->read<f32>(m_outerAngle);
+
+    m_loaded = true;
+    return true;
+}
+
+bool SpotLight::save(stream::Stream* stream, u32 offset) const
+{
+    ASSERT(false, "not impl");
+    return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

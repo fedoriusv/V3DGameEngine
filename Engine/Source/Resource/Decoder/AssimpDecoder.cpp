@@ -1233,27 +1233,10 @@ u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream, Mod
         aiLight* light = scene->mLights[i];
         std::string name = light->mName.C_Str();
 
-        scene::Light::Type type;
-        if (light->mType == aiLightSourceType::aiLightSource_DIRECTIONAL)
-        {
-            type = scene::Light::Type::DirectionalLight;
-        }
-        else if (light->mType == aiLightSourceType::aiLightSource_POINT)
-        {
-            type = scene::Light::Type::PointLight;
-        }
-        else if (light->mType == aiLightSourceType::aiLightSource_SPOT)
-        {
-            type = scene::Light::Type::SpotLight;
-        }
-        else
-        {
-            ASSERT(false, "not supported");
-        }
-
         f32 intensity = std::max(light->mColorDiffuse.r, std::max(light->mColorDiffuse.g, light->mColorDiffuse.b));
-        f32 temperature = 1.0;
+        f32 temperature = 2500.0f;
         math::float4 attenuation = { light->mAttenuationConstant, light->mAttenuationLinear, light->mAttenuationQuadratic };
+        bool shadowCast = true;
 
         color::ColorRGBAF color;
         color._x = light->mColorDiffuse.r / intensity;
@@ -1261,20 +1244,68 @@ u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream, Mod
         color._z = light->mColorDiffuse.b / intensity;
         color._w = 1.f;
 
-        u32 colorStreamSize = 
-            sizeof(color) + 
-            sizeof(intensity) + 
-            sizeof(temperature) + 
-            sizeof(attenuation);
+        u32 colorStreamSize =
+            sizeof(color) +
+            sizeof(intensity) +
+            sizeof(temperature) +
+            sizeof(attenuation) +
+            sizeof(shadowCast);
 
-        scene::Light::LightHeader header(type);
-        resource::ResourceHeader::fill(&header, name, colorStreamSize, mainStreamOffset + sizeof(ResourceHeader));
+        scene::Light::Type type;
+        if (light->mType == aiLightSourceType::aiLightSource_DIRECTIONAL)
+        {
+            type = scene::Light::Type::DirectionalLight;
 
-        lightsStreamSize += header >> stream;
-        lightsStreamSize += stream->write<color::ColorRGBAF>(color);
-        lightsStreamSize += stream->write<f32>(intensity);
-        lightsStreamSize += stream->write<f32>(temperature);
-        lightsStreamSize += stream->write<math::float4>(attenuation);
+            scene::Light::LightHeader header(type);
+            resource::ResourceHeader::fill(&header, name, colorStreamSize, mainStreamOffset + sizeof(ResourceHeader));
+
+            lightsStreamSize += header >> stream;
+            lightsStreamSize += stream->write<color::ColorRGBAF>(color);
+            lightsStreamSize += stream->write<f32>(intensity);
+            lightsStreamSize += stream->write<f32>(temperature);
+            lightsStreamSize += stream->write<math::float4>(attenuation);
+            lightsStreamSize += stream->write<bool>(shadowCast);
+        }
+        else if (light->mType == aiLightSourceType::aiLightSource_POINT)
+        {
+            type = scene::Light::Type::PointLight;
+
+            f32 radius = std::max(light->mSize.x, 1.0f);
+            colorStreamSize += sizeof(radius);
+
+            scene::Light::LightHeader header(type);
+            resource::ResourceHeader::fill(&header, name, colorStreamSize, mainStreamOffset + sizeof(ResourceHeader));
+
+            lightsStreamSize += header >> stream;
+            lightsStreamSize += stream->write<color::ColorRGBAF>(color);
+            lightsStreamSize += stream->write<f32>(intensity);
+            lightsStreamSize += stream->write<f32>(temperature);
+            lightsStreamSize += stream->write<math::float4>(attenuation);
+            lightsStreamSize += stream->write<bool>(shadowCast);
+            lightsStreamSize += stream->write<f32>(radius);
+        }
+        else if (light->mType == aiLightSourceType::aiLightSource_SPOT)
+        {
+            type = scene::Light::Type::SpotLight;
+            colorStreamSize += sizeof(f32) + sizeof(f32); //Angles
+
+            scene::Light::LightHeader header(type);
+            resource::ResourceHeader::fill(&header, name, colorStreamSize, mainStreamOffset + sizeof(ResourceHeader));
+
+            lightsStreamSize += header >> stream;
+            lightsStreamSize += stream->write<color::ColorRGBAF>(color);
+            lightsStreamSize += stream->write<f32>(intensity);
+            lightsStreamSize += stream->write<f32>(temperature);
+            lightsStreamSize += stream->write<math::float4>(attenuation);
+            lightsStreamSize += stream->write<bool>(shadowCast);
+            lightsStreamSize += stream->write<f32>(light->mAngleInnerCone);
+            lightsStreamSize += stream->write<f32>(light->mAngleOuterCone);
+        }
+        else
+        {
+            ASSERT(false, "not supported");
+        }
+
         mainStreamOffset += colorStreamSize + sizeof(ResourceHeader);
     }
 
