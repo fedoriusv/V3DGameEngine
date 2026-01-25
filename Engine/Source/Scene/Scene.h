@@ -78,6 +78,7 @@ namespace scene
             std::array<f32, k_maxShadowmapCascadeCount> _cascadeSlopeBias = { 0.0, 0.0, 0.0, 0.0 };
             u32                                         _cascadeCount = k_maxShadowmapCascadeCount;
             f32                                         _longRange = 50.0f;
+            f32                                         _splitFactor = 0.90f;
             bool                                        _debug = false;
         } _shadowsParams;
 
@@ -102,6 +103,8 @@ namespace scene
     class SceneNode : public utils::ResourceID<SceneNode, u64>
     {
     public:
+
+        SceneNode() noexcept;
 
         void addChild(SceneNode* node);
         void addComponent(Component* component, bool owner = true);
@@ -153,7 +156,6 @@ namespace scene
 
     protected:
 
-        SceneNode() noexcept;
         SceneNode(const SceneNode& node) noexcept;
         virtual ~SceneNode();
 

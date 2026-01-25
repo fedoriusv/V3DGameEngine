@@ -58,7 +58,7 @@ void EditorViewScreen::build()
 {
     ui::WidgetPopup& popup = *m_popup;
     popup
-        .setSize({ 350, 600 })
+        .setSize({ 350, 700 })
 
         //Camera
         .addWidget(ui::WidgetLayout()
@@ -174,6 +174,16 @@ void EditorViewScreen::build()
                         m_sceneData->m_settings._tonemapParams._gamma = gamma;
                     })
             )
+            .addWidget(ui::WidgetText("EV100 "))
+            .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._tonemapParams._ev100)
+            .setRange(0.1f, 1000.f)
+            .setStep(0.1f)
+            .setSize({ 50, 20 })
+            .setOnChangedValueEvent([this](ui::Widget* w, f32 ev)
+                {
+                    m_sceneData->m_settings._tonemapParams._ev100 = ev;
+                })
+            )
         )
         // Tonemap
 
@@ -192,11 +202,21 @@ void EditorViewScreen::build()
         )
         .addWidget(ui::WidgetHorizontalLayout()
             .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentLeft)
-            .addWidget(ui::WidgetText("Shadow long range "))
+            .addWidget(ui::WidgetText("Split factor "))
+            .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._shadowsParams._splitFactor)
+            .setRange(0.01f, 1.0f)
+            .setStep(0.01f)
+            .setSize({ 80, 20 })
+            .setOnChangedValueEvent([this](ui::Widget* w, f32 value)
+                {
+                    m_sceneData->m_settings._shadowsParams._splitFactor = value;
+                })
+            )
+            .addWidget(ui::WidgetText("Long range "))
             .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._shadowsParams._longRange)
             .setRange(1.0f, 10000.f)
             .setStep(1.0f)
-            .setSize({ 100, 20 })
+            .setSize({ 80, 20 })
             .setOnChangedValueEvent([this](ui::Widget* w, f32 value)
                 {
                     m_sceneData->m_settings._shadowsParams._longRange = value;

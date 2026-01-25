@@ -69,7 +69,7 @@ void RenderPipelineShadowStage::create(renderer::Device* device, scene::SceneDat
         m_cascadeShadowPipeline->setDepthWrite(true);
         m_cascadeShadowPipeline->setDepthTest(true);
         m_cascadeShadowPipeline->setColorMask(0, renderer::ColorMask::ColorMask_None);
-        //m_cascadeShadowPipeline->setDepthBias(0.0f, 0.0f, -2.5f);
+        //m_cascadeShadowPipeline->setDepthBias(0.0f, 0.0f, -2.5f); Apply inside the shader
 
         BIND_SHADER_PARAMETER(m_cascadeShadowPipeline, m_cascadeShadowParameters, cb_ShadowBuffer);
     }
@@ -258,10 +258,6 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
                     f32           _pad[3];
                 } cascadeShadowBuffer;
 
-                //TODO
-                f32 baseBias[4] = { -0.0003, -0.0007, -0.0015, -0.0030 };
-                f32 slopeBias[4] = { -1.0, -1.5, -2.0, -3.0 };
-
                 for (u32 id = 0; id < lightSpaceMatrix.size(); ++id)
                 {
                     cascadeShadowBuffer.cascade[id].lightSpaceMatrix = lightSpaceMatrix[id];
@@ -386,7 +382,7 @@ void RenderPipelineShadowStage::calculateShadowCascades(const scene::SceneData& 
     v3d::scene::Camera& camera = data.m_viewportState._camera->getCamera();
     const u32 cascadeCount = data.m_settings._shadowsParams._cascadeCount;
 
-    const f32 cascadeSplitLambda = 0.90f;
+    const f32 cascadeSplitLambda = data.m_settings._shadowsParams._splitFactor;
     f32 cameraNear = camera.getNear();
     f32 cameraFar = std::min(camera.getFar(), data.m_settings._shadowsParams._longRange);
     f32 clipRange = cameraFar - cameraNear;
