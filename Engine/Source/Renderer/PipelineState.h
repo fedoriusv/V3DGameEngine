@@ -178,6 +178,7 @@ namespace renderer
                 , _frontFace(FrontFace::FrontFace_Clockwise)
                 , _cullMode(CullMode::CullMode_None)
                 , _discardRasterization(false)
+                , _depthClampEnable(false)
                 , _unused(0)
 
                 , _depthBiasConstant(0.f)
@@ -195,6 +196,7 @@ namespace renderer
                         && _frontFace == other._frontFace
                         && _cullMode == other._cullMode
                         && _discardRasterization == other._discardRasterization
+                        && _depthClampEnable == other._depthClampEnable
                         && _depthBiasConstant == other._depthBiasConstant
                         && _depthBiasClamp == other._depthBiasClamp
                         && _depthBiasSlope == other._depthBiasSlope;
@@ -207,7 +209,8 @@ namespace renderer
             FrontFace   _frontFace              : 1;
             CullMode    _cullMode               : 3;
             u32         _discardRasterization   : 1;
-            u32         _unused                 : 25;
+            u32         _depthClampEnable       : 1;
+            u32         _unused                 : 24;
 
             f32         _depthBiasConstant;
             f32         _depthBiasClamp;
@@ -488,6 +491,12 @@ namespace renderer
         void setDepthBias(f32 constantFactor, f32 clamp, f32 slopeFactor);
 
         /**
+        * @brief setDepthClapmp method. Rasterization state
+        * @param bool disabled [required]
+        */
+        void setDepthClamp(bool enable);
+
+        /**
         * @brief setDisacardRasterization method. Rasterization state
         * @param bool disabled [required]
         */
@@ -580,18 +589,90 @@ namespace renderer
         */
         bool isStencilTestEnable() const;
 
+        /**
+        * @brief setBlendEnable method. Blend state
+        * @param u32 index [required]
+        * @param bool enable [required]
+        */
         void setBlendEnable(u32 index, bool enable);
+
+        /**
+        * @brief setColorBlendFactor method. Blend state
+        * @param u32 index [required]
+        * @param BlendFactor src [required]
+        * @param BlendFactor dst [required]
+        */
         void setColorBlendFactor(u32 index, BlendFactor src, BlendFactor dst);
+
+        /**
+        * @brief setColorBlendOp method. Blend state
+        * @param u32 index [required]
+        * @param BlendOperation op [required]
+        */
         void setColorBlendOp(u32 index,BlendOperation op);
+
+        /**
+        * @brief setAlphaBlendFactor method. Blend state
+        * @param u32 index [required]
+        * @param BlendFactor src [required]
+        * @param BlendFactor dst [required]
+        */
         void setAlphaBlendFactor(u32 index, BlendFactor src, BlendFactor dst);
+
+        /**
+        * @brief setAlphaBlendOp method. Blend state
+        * @param u32 index [required]
+        * @param BlendOperation op [required]
+        */
         void setAlphaBlendOp(u32 index, BlendOperation op);
 
+        /**
+        * @brief isBlendEnable method. Blend state
+        * @param u32 index [required]
+        * @return bool
+        */
         bool isBlendEnable(u32 index) const;
+
+        /**
+        * @brief getSrcColorBlendFactor method. Blend state
+        * @param u32 index [required]
+        * @return BlendFactor
+        */
         BlendFactor getSrcColorBlendFactor(u32 index) const;
+
+        /**
+        * @brief getDstColorBlendFactor method. Blend state
+        * @param u32 index [required]
+        * @return BlendFactor
+        */
         BlendFactor getDstColorBlendFactor(u32 index) const;
+
+        /**
+        * @brief getColorBlendOp method. Blend state
+        * @param u32 index [required]
+        * @return BlendOperation
+        */
         BlendOperation getColorBlendOp(u32 index) const;
+
+        /**
+        * @brief getSrcAlphaBlendFactor method. Blend state
+        * @param u32 index [required]
+        * @return BlendFactor
+        */
         BlendFactor getSrcAlphaBlendFactor(u32 index) const;
+
+        /**
+        * @brief getDstAlphaBlendFactor method. Blend state
+        * @param u32 index [required]
+        * @return BlendFactor
+        */
         BlendFactor getDstAlphaBlendFactor(u32 index) const;
+
+        /**
+        * @brief getAlphaBlendOp method. Blend state
+        * @param u32 index [required]
+        * @return BlendOperation
+        */
         BlendOperation getAlphaBlendOp(u32 index) const;
 
         void setColorMask(u32 index, ColorMaskFlags colormask);
@@ -673,6 +754,11 @@ namespace renderer
         m_pipelineStateDesc._rasterizationState._depthBiasConstant = constantFactor;
         m_pipelineStateDesc._rasterizationState._depthBiasClamp = clamp;
         m_pipelineStateDesc._rasterizationState._depthBiasSlope = slopeFactor;
+    }
+
+    inline void GraphicsPipelineState::setDepthClamp(bool enable)
+    {
+        m_pipelineStateDesc._rasterizationState._depthClampEnable = enable;
     }
 
     inline void GraphicsPipelineState::setDisacardRasterization(bool disabled)

@@ -536,7 +536,7 @@ bool VulkanGraphicPipeline::create(const GraphicsPipelineState& state)
     rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizationStateCreateInfo.pNext = nullptr; //VkPipelineRasterizationStateStreamCreateInfoEXT, VkPipelineRasterizationConservativeStateCreateInfoEXT
     rasterizationStateCreateInfo.flags = 0;
-    rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+    rasterizationStateCreateInfo.depthClampEnable = rasterizationState._depthClampEnable ? VK_TRUE : VK_FALSE;
     rasterizationStateCreateInfo.rasterizerDiscardEnable = rasterizationState._discardRasterization ? VK_TRUE : VK_FALSE;
     rasterizationStateCreateInfo.polygonMode = VulkanGraphicPipeline::convertPolygonModeToVk(rasterizationState._polygonMode);
     rasterizationStateCreateInfo.cullMode = VulkanGraphicPipeline::convertCullModeToVk(rasterizationState._cullMode);
