@@ -11,7 +11,7 @@
 #include "Events/Input/InputEventTouch.h"
 #include "Events/Input/InputEventHandler.h"
 #include "TextureRender.h"
-#include "Scene/Camera/CameraArcballHandler.h"
+#include "Scene/Camera/CameraOrbitController.h"
 
 namespace app
 {
@@ -26,8 +26,7 @@ public:
     void Run(v3d::f32 dt);
     void SendExitSignal();
 
-    static void MouseCallback(Scene* scene, v3d::event::InputEventHandler* handler, const v3d::event::MouseInputEvent* event);
-    static void TouchCallback(Scene* scene, v3d::event::InputEventHandler* handler, const v3d::event::TouchInputEvent* event);
+    static void HandleCallback(Scene* scene, v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
 private:
 
@@ -50,8 +49,8 @@ private:
     void Draw(v3d::f32 dt);
     void Exit();
 
-    v3d::scene::CameraArcballHandler* m_Camera;
-    app::TextureRender*               m_Render;
+    v3d::scene::CameraOrbitController* m_Camera;
+    app::TextureRender*                m_Render;
 
     struct Model
     {

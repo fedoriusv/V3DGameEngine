@@ -1,13 +1,14 @@
 #include "Scene.h"
-#include "Resource/Model.h"
 #include "Resource/Bitmap.h"
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ImageFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
 #include "Scene/ModelHandler.h"
+#include "Scene/Model.h"
 #include "Scene/Geometry/Mesh.h"
-#include "Scene/Camera/CameraArcballHandler.h"
+#include "Scene/Camera/CameraOrbitController.h"
+#include "Scene/Geometry/StaticMesh.h"
 
 #define VULKAN_GLSL 0
 
@@ -80,9 +81,8 @@ void Scene::SendExitSignal()
 void Scene::Init()
 {
     //init camera
-    m_Camera = new scene::CameraArcballHandler(std::make_unique<scene::Camera>(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 80.0f);
+    m_Camera = new scene::CameraOrbitController(std::make_unique<scene::Camera>(math::Vector3D(0.0f, 0.0f, 0.0f), math::Vector3D(0.0f, 1.0f, 0.0f)), 8.0f, 4.0f, 80.0f);
     m_Camera->setPerspective(45.0f, m_Swapchain->getBackbufferSize(), 1.f, 50.f);
-    //m_Camera->setRotation(math::Vector3D(0.0f, -90.0f, 0.0f));
 }
 
 void Scene::Load()
@@ -111,45 +111,42 @@ void Scene::LoadVoyager()
         resource::Image* image = resource::ResourceManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("models/voyager/voyager_astc_8x8_unorm.ktx");
         voyager->m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 #else
-        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::ImageFileLoader>("models/voyager/voyager_bc3_unorm.ktx");
+        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::BitmapFileLoader>("models/voyager/voyager_bc3_unorm.ktx");
         voyager->m_Sampler = new renderer::SamplerState(m_Device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 #endif
         voyager->m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
         voyager->m_Texture = new renderer::Texture2D(m_Device, renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write,
             image->getFormat(), math::Dimension2D(image->getDimension()._width, image->getDimension()._height), image->getMipmapsCount());
-        m_CmdList->uploadData(voyager->m_Texture.get(), image->getSize(), image->getBitmap());
+        m_CmdList->upload(voyager->m_Texture.get(), image->getSize(), image->getBitmap());
     }
 
     {
-        resource::ModelResource* modelRes = resource::ResourceManager::getInstance()->load<resource::ModelResource, resource::ModelFileLoader>("models/voyager/voyager.dae",
-            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipTangentAndBitangent | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterial);
+        resource::ModelFileLoader::ModelPolicy policy;
+        policy.scaleFactor = 1.0f;
+        policy.vertexProperies = resource::ModelFileLoader::VertexProperies_Position | resource::ModelFileLoader::VertexProperies_Normals | resource::ModelFileLoader::VertexProperies_TextCoord0;
 
-        scene::Model* model = scene::ModelHelper::createModel(m_Device, m_CmdList, modelRes);
+        scene::Model* model = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_Device, "models/voyager/voyager.dae", policy,
+            resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterial | resource::ModelFileLoader::ModelLoaderFlag::Optimization);
         voyager->m_Model = model;
-        for (auto& geom : model->m_geometry)
-        {
-            scene::Mesh* mesh = geom._LODs[0]; //first lod only
-            if (mesh->m_indexBuffer)
-            {
-                v3d::renderer::GeometryBufferDesc desc(mesh->m_indexBuffer, 0, mesh->m_vertexBuffer[0], 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride, 0);
-                app::DrawProperties prop{ 0, mesh->m_indexBuffer->getIndicesCount(), 0, 1, true };
-                voyager->m_Props.emplace_back(std::move(desc), prop);
-                voyager->m_InputAttrib = mesh->getVertexAttribDesc();
-            }
-            else
-            {
-                v3d::renderer::GeometryBufferDesc desc(mesh->m_vertexBuffer[0], 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride);
-                app::DrawProperties prop{ 0, mesh->m_vertexBuffer[0]->getVerticesCount(), 0, 1, false };
-                voyager->m_Props.emplace_back(std::move(desc), prop);
-                voyager->m_InputAttrib = mesh->getVertexAttribDesc();
-            }
-        }
 
-        resource::ResourceManager::getInstance()->remove(modelRes);
+        scene::Mesh* mesh = (*model->m_children.begin())->getComponentByType<scene::Mesh>();
+        if (mesh->getIndexBuffer())
+        {
+            v3d::renderer::GeometryBufferDesc desc(mesh->getIndexBuffer(), 0, mesh->getVertexBuffer(0), 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride, 0);
+            app::DrawProperties prop{ 0, mesh->getIndexBuffer()->getIndicesCount(), 0, 1, true};
+            voyager->m_Props.emplace_back(std::move(desc), prop);
+            voyager->m_InputAttrib = mesh->getVertexAttribDesc();
+        }
+        else
+        {
+            v3d::renderer::GeometryBufferDesc desc(mesh->getVertexBuffer(0), 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride);
+            app::DrawProperties prop{ 0, mesh->getVertexBuffer(0)->getVerticesCount(), 0, 1, false };
+            voyager->m_Props.emplace_back(std::move(desc), prop);
+            voyager->m_InputAttrib = mesh->getVertexAttribDesc();
+        }
     }
 
     m_Models.push_back(voyager);
-
     m_Device->submit(m_CmdList, true);
 }
 
@@ -193,7 +190,7 @@ void Scene::Exit()
 
     for (auto& model : m_Models)
     {
-        delete model->m_Model;
+        resource::ResourceManager::getInstance()->remove(model->m_Model);
         delete model;
     }
     m_Models.clear();
@@ -211,19 +208,11 @@ void Scene::Exit()
     }
 }
 
-void Scene::MouseCallback(Scene* scene, event::InputEventHandler* handler, const event::MouseInputEvent* event)
+void Scene::HandleCallback(Scene* scene, event::InputEventHandler* handler, const event::InputEvent* event)
 {
     if (scene->m_Camera)
     {
-        scene->m_Camera->handleMouseCallback(handler, event);
-    }
-}
-
-void Scene::TouchCallback(Scene* scene, event::InputEventHandler* handler, const event::TouchInputEvent* event)
-{
-    if (scene->m_Camera)
-    {
-        scene->m_Camera->handleTouchCallback(handler, event);
+        scene->m_Camera->handleInputEventCallback(handler, event);
     }
 }
 

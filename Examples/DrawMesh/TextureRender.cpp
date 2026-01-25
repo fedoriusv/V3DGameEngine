@@ -28,7 +28,7 @@ void TextureUniformParameters::bindUniformParameters(renderer::CmdListRender& cm
     renderer::Descriptor texture(renderer::TextureView(_texture), 2);
     renderer::Descriptor fsCBO({ &_constantBufferFS, 0, sizeof(_constantBufferFS) }, 3);
 
-    cmdList.bindDescriptorSet(0, { vsCBO, fsCBO, texture, sampler });
+    cmdList.bindDescriptorSet(program, 0, { vsCBO, fsCBO, texture, sampler });
 }
 
 
@@ -48,7 +48,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
                 },
                 {
-                    renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_ShaderRead
+                    renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
                 });
 
 #if defined(PLATFORM_ANDROID)
@@ -66,7 +66,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U
                 },
                 {
-                    renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+                    renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
                 });
 
             m_pipelineMSAA = new renderer::GraphicsPipelineState(device, vertex, m_renderTargetMSAA->getRenderPassDesc(), m_program.get());
@@ -74,7 +74,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
             m_pipelineMSAA->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineMSAA->setCullMode(renderer::CullMode::CullMode_None);
             m_pipelineMSAA->setColorMask(0, renderer::ColorMask::ColorMask_All);
-            m_pipelineMSAA->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+            m_pipelineMSAA->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
             m_pipelineMSAA->setDepthWrite(true);
             m_pipelineMSAA->setDepthTest(true);
         }
@@ -144,7 +144,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
                 },
                 {
-                    renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+                    renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_Present
                 });
 
             m_pipelineBackbuffer = new renderer::GraphicsPipelineState(device, renderer::VertexInputAttributeDesc(), m_renderTargetBackbuffer->getRenderPassDesc(), m_programBackbuffer.get(), "Backbuffer");
@@ -152,7 +152,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
             m_pipelineBackbuffer->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
             m_pipelineBackbuffer->setCullMode(renderer::CullMode::CullMode_Back);
             m_pipelineBackbuffer->setColorMask(0, renderer::ColorMask::ColorMask_All);
-            m_pipelineBackbuffer->setDepthCompareOp(renderer::CompareOperation::CompareOp_Always);
+            m_pipelineBackbuffer->setDepthCompareOp(renderer::CompareOperation::Always);
             m_pipelineBackbuffer->setDepthWrite(false);
             m_pipelineBackbuffer->setDepthTest(false);
         }
@@ -167,7 +167,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_Present
         });
 #if defined(PLATFORM_ANDROID)
         m_depthAttachment = new renderer::Texture2D(device, renderer::TextureUsage::TextureUsage_Attachment,
@@ -183,7 +183,7 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
         m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
         m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
         m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-        m_pipeline->setDepthCompareOp(renderer::CompareOperation::CompareOp_GreaterOrEqual);
+        m_pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
         m_pipeline->setDepthWrite(true);
         m_pipeline->setDepthTest(true);
     }
@@ -237,9 +237,9 @@ void TextureRender::process(renderer::CmdListRender& cmdList, const std::vector<
 
         renderer::Descriptor colorTexture(m_renderTargetMSAA->getColorTexture<renderer::Texture2D>(0), 0);
         renderer::Descriptor colorSampler(m_sampler.get(), 1);
-        cmdList.bindDescriptorSet(0, { colorSampler, colorTexture });
+        cmdList.bindDescriptorSet(m_program.get(), 0, { colorSampler, colorTexture });
 
-        cmdList.draw(renderer::GeometryBufferDesc(nullptr, 0, 0), 0, 3, 0, 1);
+        cmdList.draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
 
         cmdList.endRenderTarget();
     }

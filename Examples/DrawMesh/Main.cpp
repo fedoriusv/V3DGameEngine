@@ -83,12 +83,12 @@ private:
     {
         m_InputEventHandler->bind([this](const MouseInputEvent* event)
             {
-                app::Scene::MouseCallback(m_Scene, m_InputEventHandler, event);
+                app::Scene::HandleCallback(m_Scene, m_InputEventHandler, event);
             });
 
         m_InputEventHandler->bind([this](const TouchInputEvent* event)
             {
-                app::Scene::TouchCallback(m_Scene, m_InputEventHandler, event);
+                app::Scene::HandleCallback(m_Scene, m_InputEventHandler, event);
             });
 
         m_InputEventHandler->bind([this](const SystemEvent* event)
