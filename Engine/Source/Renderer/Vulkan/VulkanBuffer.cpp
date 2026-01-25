@@ -248,7 +248,7 @@ bool VulkanBuffer::upload(VulkanCommandBuffer* cmdBuffer, u32 offset, u64 size, 
     }
 
     const u32 k_updateBuffer_MaxSize = 65'536;
-    if (m_size <= k_updateBuffer_MaxSize)
+    if (m_size <= k_updateBuffer_MaxSize && false)
     {
         ASSERT(!VulkanResource::isUsed(), "still submitted");
         cmdBuffer->cmdUpdateBuffer(this, offset, m_size, data);
