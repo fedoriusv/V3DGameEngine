@@ -601,8 +601,26 @@ bool ImGuiWidgetDrawer::draw_ComboBox(Widget* wiget, Widget* baseWidget, Widget:
 
 math::float2 ImGuiWidgetDrawer::calculate_ComboBoxSize(Widget* wiget, Widget::State* layoutBaseState, Widget::State* state)
 {
-    //TODO
-    return {};
+    ASSERT(ImGui::GetCurrentContext(), "must be valid");
+    ImGuiStyle& style = ImGui::GetStyle();
+    WidgetComboBox::StateComboBox* cbCtx = static_cast<WidgetComboBox::StateComboBox*>(state);
+    WidgetLayout::StateLayoutBase* layoutCtx = static_cast<WidgetLayout::StateLayoutBase*>(layoutBaseState);
+
+    ImVec2 alignmentSize{ 0.f, 0.f };
+    ASSERT(layoutCtx->_fontSize < m_widgetHandler->m_fonts.size(), "range out");
+    ImGui::PushFont(m_widgetHandler->m_fonts[layoutCtx->_fontSize]);
+    for (auto& item : cbCtx->_list)
+    {
+        ImVec2 alignmentStr = ImGui::CalcTextSize(item.c_str());
+        alignmentSize.x = std::max(alignmentSize.x, alignmentStr.x);
+        alignmentSize.y = alignmentStr.y;
+    }
+    ImGui::PopFont();
+
+    alignmentSize.x += style.FramePadding.x * 2.0f;
+    alignmentSize.y += style.FramePadding.y * 2.0f;
+
+    return { alignmentSize.x, alignmentSize.y };
 }
 
 bool ImGuiWidgetDrawer::draw_ListBox(Widget* wiget, Widget* base, Widget::State* layoutBaseState, Widget::State* state)
