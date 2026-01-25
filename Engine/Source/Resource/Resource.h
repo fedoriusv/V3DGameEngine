@@ -116,8 +116,6 @@ namespace resource
     {
     public:
 
-        virtual ~Resource() = default;
-
         virtual bool load(const stream::Stream* stream, u32 offset = 0) = 0;
         virtual bool save(stream::Stream* stream, u32 offset = 0) const = 0;
 
@@ -126,6 +124,11 @@ namespace resource
         Resource() noexcept = default;
         Resource(const Resource&) = delete;
         Resource& operator=(const Resource&) = delete;
+
+        virtual ~Resource() = default;
+
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
 
         bool m_loaded = false;
     };

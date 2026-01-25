@@ -89,8 +89,11 @@ namespace resource
         * @param Resource* resource [required]
         * @retrun true if resurce has bound and deleted
         */
-        bool remove(Resource* resource);
-        bool remove(const Resource* resource);
+        template<class TResource>
+        bool remove(TResource* resource);
+
+        template<class TResource>
+        bool remove(const TResource* resource);
 
         void addPath(const std::string& path);
         void removePath(const std::string& path);
@@ -266,11 +269,12 @@ namespace resource
         m_resources.clear();
     }
 
-    inline bool ResourceManager::remove(Resource* resource)
+    template<class TResource>
+    inline bool ResourceManager::remove(TResource* resource)
     {
         for (auto& iter : m_resources)
         {
-            Resource* res = iter.second;
+            TResource* res = static_cast<TResource*>(iter.second);
             if (resource == res)
             {
                 ResourceReport report;
@@ -279,7 +283,6 @@ namespace resource
                 res->notify(report);
 
                 V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
-
                 m_resources.erase(iter.first);
 
                 return true;
@@ -289,11 +292,12 @@ namespace resource
         return false;
     }
 
-    inline bool ResourceManager::remove(const Resource* resource)
+    template<class TResource>
+    inline bool ResourceManager::remove(const TResource* resource)
     {
         for (auto& iter : m_resources)
         {
-            const Resource* res = iter.second;
+            const TResource* res = static_cast<const TResource*>(iter.second);
             if (resource == res)
             {
                 ResourceReport report;
@@ -302,7 +306,6 @@ namespace resource
                 res->notify(report);
 
                 V3D_DELETE(res, memory::MemoryLabel::MemoryObject);
-
                 m_resources.erase(iter.first);
 
                 return true;

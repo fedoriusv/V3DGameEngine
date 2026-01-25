@@ -17,7 +17,7 @@ namespace scene
     /**
     * @brief Billboard class
     */
-    class Billboard : public Object, public resource::Resource, public ComponentBase<Billboard, Component>
+    class Billboard : /*public Object,*/ public resource::Resource, public ComponentBase<Billboard, Component>
     {
     public:
 
@@ -34,17 +34,18 @@ namespace scene
 
         explicit Billboard(renderer::Device* device) noexcept;
         explicit Billboard(renderer::Device* device, const BillboardHeader& header) noexcept;
-        ~Billboard();
 
         const std::string_view getName() const;
 
     private:
 
-        BillboardHeader         m_header;
-        renderer::Device* const m_device;
+        virtual ~Billboard();
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
+
+        BillboardHeader         m_header;
+        renderer::Device* const m_device;
     };
 
     inline const std::string_view Billboard::getName() const

@@ -15,7 +15,7 @@ namespace scene
     * @brief Camera class. Component, Resource. Game side.
     * Calculates View and Projection matrices
     */
-    class Camera : public Object, public resource::Resource, public ComponentBase<Camera, Component>
+    class Camera : /*public Object,*/ public resource::Resource, public ComponentBase<Camera, Component>
     {
     public:
 
@@ -77,6 +77,9 @@ namespace scene
 
     protected:
 
+        bool load(const stream::Stream* stream, u32 offset = 0) override;
+        bool save(stream::Stream* stream, u32 offset = 0) const override;
+
         enum Matrix
         {
             Matrix_ViewMatrix = 0,
@@ -110,18 +113,12 @@ namespace scene
         f32                      m_clipNear;
         f32                      m_clipFar;
         f32                      m_fieldOfView;
-
-    private:
-
         mutable CameraStateFlags m_matricesFlags;
         bool                     m_orthogonal;
 
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
         friend class CameraController;
-
-    private:
-
-        bool load(const stream::Stream* stream, u32 offset = 0) override;
-        bool save(stream::Stream* stream, u32 offset = 0) const override;
     };
 
     inline bool Camera::isOrthogonal() const

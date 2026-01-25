@@ -29,6 +29,9 @@ namespace scene
 
         Component() noexcept = default;
         virtual ~Component() = default;
+
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
     };
 
     inline bool Component::isBaseOfType(TypePtr type) const

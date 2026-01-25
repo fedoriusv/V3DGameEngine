@@ -25,7 +25,7 @@ namespace scene
     /**
     * @brief Mesh interface. Single geometry, Resource, Scene component
     */
-    class Mesh : public Object, public resource::Resource, public ComponentBase<Mesh, Component>
+    class Mesh : /*public Object,*/ public resource::Resource, public ComponentBase<Mesh, Component>
     {
     public:
 
@@ -52,8 +52,6 @@ namespace scene
             }
         };
 
-        virtual ~Mesh();
-
         renderer::IndexBuffer* getIndexBuffer() const;
         renderer::VertexBuffer* getVertexBuffer(u32 stream) const;
 
@@ -67,6 +65,10 @@ namespace scene
 
     protected:
 
+        explicit Mesh(renderer::Device* device, MeshType type) noexcept;
+        explicit Mesh(renderer::Device* device, const MeshHeader& header) noexcept;
+        virtual ~Mesh();
+
         using BaseType = Component;
 
         MeshHeader                           m_header;
@@ -78,9 +80,8 @@ namespace scene
         math::AABB                           m_boundingBox;
         bool                                 m_castShadows;
 
-        explicit Mesh(renderer::Device* device, MeshType type) noexcept;
-        explicit Mesh(renderer::Device* device, const MeshHeader& header) noexcept;
-
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
         friend class MeshHelper;
     };
 

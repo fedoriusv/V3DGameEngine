@@ -38,6 +38,8 @@ Model::Model(const Model& model) noexcept
 
     , m_meshes(model.m_meshes)
     , m_materials(model.m_materials)
+    , m_lights(model.m_lights)
+    , m_cameras(model.m_cameras)
 {
     LOG_DEBUG("Model copy constructor %llx", this);
 }
@@ -45,6 +47,31 @@ Model::Model(const Model& model) noexcept
 Model::~Model()
 {
     LOG_DEBUG("Model destructor %llx", this);
+
+    for (auto& mesh : m_meshes)
+    {
+        V3D_DELETE(mesh, memory::MemoryLabel::MemoryObject);
+    }
+
+    for (auto& material : m_materials)
+    {
+        V3D_DELETE(material, memory::MemoryLabel::MemoryObject);
+    }
+
+    for (auto& light : m_lights)
+    {
+        V3D_DELETE(light, memory::MemoryLabel::MemoryObject);
+    }
+
+    for (auto& camera : m_cameras)
+    {
+        V3D_DELETE(camera, memory::MemoryLabel::MemoryObject);
+    }
+
+    m_meshes.clear();
+    m_materials.clear();
+    m_lights.clear();
+    m_cameras.clear();
 }
 
 bool Model::load(const stream::Stream* stream, u32 offset)
@@ -157,7 +184,7 @@ bool Model::loadNode(SceneNode* node, const stream::Stream* stream, u32 offset)
         u32 lightID;
         stream->read<u32>(lightID);
 
-        node->addComponent(m_lights[lightID]);
+        node->addComponent(m_lights[lightID], false);
     }
 
     u32 numLODs = 0;
@@ -177,10 +204,10 @@ bool Model::loadNode(SceneNode* node, const stream::Stream* stream, u32 offset)
         u32 materialID = 0;
         stream->read<u32>(materialID);
 
-        node->addComponent(mesh);
+        node->addComponent(mesh, false);
         if (!m_materials.empty())
         {
-            node->addComponent(m_materials[materialID]);
+            node->addComponent(m_materials[materialID], false);
         }
 
         m_meshes.push_back(mesh);

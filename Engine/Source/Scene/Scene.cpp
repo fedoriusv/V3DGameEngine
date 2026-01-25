@@ -22,6 +22,20 @@ SceneNode::SceneNode(const SceneNode& node) noexcept
 
 SceneNode::~SceneNode()
 {
+    for (auto& component : m_components)
+    {
+        if (std::get<1>(component))
+        {
+            V3D_DELETE(std::get<0>(component), memory::MemoryLabel::MemoryObject);
+        }
+    }
+    m_components.clear();
+
+    for (auto& child : m_children)
+    {
+        V3D_DELETE(child, memory::MemoryLabel::MemoryObject);
+    }
+    m_children.clear();
 }
 
 void SceneNode::addChild(SceneNode* node)

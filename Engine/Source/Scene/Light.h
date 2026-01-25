@@ -25,7 +25,7 @@ namespace scene
     /**
     * @brief Light interface
     */
-    class Light : public Object, public resource::Resource, public ComponentBase<Light, Component>
+    class Light : /*public Object,*/ public resource::Resource, public ComponentBase<Light, Component>
     {
     public:
 
@@ -52,8 +52,6 @@ namespace scene
             }
         };
 
-        virtual ~Light();
-
         void setIntensity(f32 intensity);
         void setColor(const color::ColorRGBAF& color);
         void setTemperature(f32 temperature);
@@ -69,6 +67,7 @@ namespace scene
 
         explicit Light(renderer::Device* device, Type type) noexcept;
         explicit Light(renderer::Device* device, const LightHeader& header) noexcept;
+        virtual ~Light();
 
         LightHeader             m_header;
         renderer::Device* const m_device;
@@ -77,6 +76,9 @@ namespace scene
         f32                     m_intensity;
         f32                     m_temperature;
         bool                    m_shadowCaster;
+
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
     };
 
     inline void Light::setColor(const color::ColorRGBAF& color)
@@ -135,9 +137,10 @@ namespace scene
 
         explicit DirectionalLight(renderer::Device* device) noexcept;
         explicit DirectionalLight(renderer::Device* device, const LightHeader& header) noexcept;
-        ~DirectionalLight();
 
     private:
+
+        ~DirectionalLight();
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
@@ -156,12 +159,13 @@ namespace scene
 
         explicit PointLight(renderer::Device* device) noexcept;
         explicit PointLight(renderer::Device* device, const LightHeader& header) noexcept;
-        ~PointLight();
 
         void setRadius(f32 radius);
         f32 getRadius() const;
 
     private:
+
+        ~PointLight();
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
@@ -192,9 +196,10 @@ namespace scene
 
         explicit SpotLight(renderer::Device* device) noexcept;
         explicit SpotLight(renderer::Device* device, const LightHeader& header) noexcept;
-        ~SpotLight();
 
     private:
+
+        ~SpotLight();
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;

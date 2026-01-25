@@ -30,7 +30,7 @@ namespace scene
     /**
     * @brief Material class
     */
-    class Material : public Object, public resource::Resource, public ComponentBase<Material, Component>
+    class Material : /*public Object,*/ public resource::Resource, public ComponentBase<Material, Component>
     {
     public:
 
@@ -47,7 +47,6 @@ namespace scene
 
         explicit Material(renderer::Device* device, MaterialShadingModel shadingModel = MaterialShadingModel::Custom) noexcept;
         explicit Material(renderer::Device* device, const MaterialHeader& header) noexcept;
-        virtual ~Material() = default;
 
         MaterialShadingModel getShadingModel() const;
 
@@ -61,6 +60,8 @@ namespace scene
 
     private:
 
+        virtual ~Material() = default;
+
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
@@ -70,6 +71,9 @@ namespace scene
         renderer::Device* const                             m_device;
         std::unordered_map<std::string, Property>           m_properties;
         MaterialShadingModel                                m_shadingModel;
+
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
     };
 
     inline MaterialShadingModel Material::getShadingModel() const

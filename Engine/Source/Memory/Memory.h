@@ -57,7 +57,7 @@ namespace memory
                 uintptr_t* vtable_ptr = *(uintptr_t**)ptr;
                 v3d::s64 offset = vtable_ptr[-2];
                 //assert(offset == 0);
-                //ptr += offset;
+                int bp = 0;
             }
             ::operator delete(const_cast<std::remove_const<T>::type*>(ptr), label, alignof(T), file, line);
         }

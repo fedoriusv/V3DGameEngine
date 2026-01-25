@@ -20,7 +20,11 @@ namespace scene
 
         explicit StaticMesh(renderer::Device* device) noexcept;
         explicit StaticMesh(renderer::Device* device, const MeshHeader& header) noexcept;
-        ~StaticMesh();
+
+
+    protected:
+
+        virtual ~StaticMesh();
 
     private:
 

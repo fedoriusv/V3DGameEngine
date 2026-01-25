@@ -17,7 +17,7 @@ namespace scene
     /**
     * @brief Skybox class
     */
-    class Skybox : public Object, public resource::Resource, public ComponentBase<Skybox, Component>
+    class Skybox : /*public Object,*/ public resource::Resource, public ComponentBase<Skybox, Component>
     {
     public:
 
@@ -34,11 +34,12 @@ namespace scene
 
         explicit Skybox(renderer::Device* device) noexcept;
         explicit Skybox(renderer::Device* device, const SkyboxHeader& header) noexcept;
-        ~Skybox();
 
         const std::string_view getName() const;
 
     private:
+
+        virtual ~Skybox();
 
         SkyboxHeader            m_header;
         renderer::Device* const m_device;

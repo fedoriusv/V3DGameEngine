@@ -24,6 +24,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     class Component;
+    class Model;
     class ModelHandler;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,16 +103,13 @@ namespace scene
     {
     public:
 
-        explicit SceneNode() noexcept;
-        virtual ~SceneNode();
-
         void addChild(SceneNode* node);
-        void addComponent(Component* component);
+        void addComponent(Component* component, bool owner = true);
 
         template<class TComponent>
         TComponent* getComponentByType()
         {
-            for (Component* component : m_components)
+            for (auto& [component, owner] : m_components)
             {
                 if (component->isBaseOfType<TComponent>())
                 {
@@ -136,13 +134,14 @@ namespace scene
         const Transform& getTransform() const;
         const Transform& getPrevTransform() const;
         const Transform& getTransform(TransformMode mode) const;
+
     public:
 
-        SceneNode*            m_parent;
-        std::list<SceneNode*> m_children;
-        std::list<Component*> m_components;
-        std::string           m_name;
-        bool                  m_visible = true;
+        SceneNode*                              m_parent;
+        std::list<SceneNode*>                   m_children;
+        std::list<std::tuple<Component*, bool>> m_components;
+        std::string                             m_name;
+        bool                                    m_visible = true;
 
     private:
 
@@ -154,14 +153,19 @@ namespace scene
 
     protected:
 
-        friend ModelHandler;
-
+        SceneNode() noexcept;
         SceneNode(const SceneNode& node) noexcept;
+        virtual ~SceneNode();
+
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
+        friend Model;
+        friend ModelHandler;
     };
 
-    inline void SceneNode::addComponent(Component* component)
+    inline void SceneNode::addComponent(Component* component, bool owner)
     {
-        m_components.push_back(component);
+        m_components.emplace_back(component, owner);
     }
 
     inline void SceneNode::setPosition(TransformMode mode, const math::Vector3D& position)

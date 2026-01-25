@@ -38,7 +38,7 @@ namespace scene
     /**
     * @brief Model class. Resource
     */
-    class Model final : /*private*/public SceneNode, public Object, public resource::Resource
+    class Model final : /*private*/public SceneNode,/* public Object,*/ public resource::Resource
     {
     public:
 
@@ -55,11 +55,11 @@ namespace scene
 
         explicit Model(renderer::Device* device) noexcept;
         explicit Model(renderer::Device* device, const ModelHeader& header) noexcept;
-        ~Model() noexcept;
 
     private:
 
         Model(const Model& model) noexcept;
+        ~Model() noexcept;
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
@@ -73,6 +73,9 @@ namespace scene
         std::vector<Material*>          m_materials;
         std::vector<Light*>             m_lights;
         std::vector<Camera*>            m_cameras;
+
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
