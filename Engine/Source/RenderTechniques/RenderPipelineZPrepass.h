@@ -8,6 +8,7 @@ namespace v3d
 namespace renderer
 {
     class Device;
+    class CmdListRender;
     class RenderTargetState;
     class GraphicsPipelineState;
 } // namespace renderer
@@ -43,11 +44,12 @@ namespace scene
         void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
 
-        scene::ModelHandler* const m_modelHandler;
+        scene::ModelHandler* const       m_modelHandler;
+        renderer::CmdListRender*         m_cmdList;
 
-        renderer::RenderTargetState* m_depthRenderTarget;
+        renderer::RenderTargetState*     m_depthRenderTarget;
         renderer::GraphicsPipelineState* m_depthPipeline;
-        MaterialParameters m_depthParameters;
+        MaterialParameters               m_depthParameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

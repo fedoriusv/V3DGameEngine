@@ -33,9 +33,9 @@ namespace renderer
 
         struct ConstantBuffer
         {
-            void*   _data = nullptr;
-            u32     _offset = 0;
-            u32     _size = 0;
+            const void* _data = nullptr;
+            u32         _offset = 0;
+            u32         _size = 0;
         };
 
         Descriptor(const ConstantBuffer& CBO, u32 binding) noexcept

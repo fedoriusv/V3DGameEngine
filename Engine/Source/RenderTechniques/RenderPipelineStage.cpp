@@ -5,8 +5,11 @@ namespace v3d
 namespace scene
 {
 
+static const u32 k_countRenderTasks = 4;
+
 RenderPipelineStage::RenderPipelineStage(RenderTechnique* technique, const std::string& id) noexcept
     : m_id(id)
+    , m_renderTechnique(*technique)
 {
     technique->addStage(m_id, this);
 }
@@ -18,6 +21,7 @@ RenderPipelineStage::~RenderPipelineStage()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RenderTechnique::RenderTechnique() noexcept
+    : m_renderWorker(k_countRenderTasks)
 {
 }
 
@@ -60,11 +64,32 @@ void RenderTechnique::execute(renderer::Device* device, scene::SceneData& scene,
     {
         stage->execute(device, scene, frame);
     }
+
+    m_renderWorker.mainThreadLoop();
+}
+
+void RenderTechnique::submit(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+{
+    for (auto& [cmd, renderTask] : m_dependencyList)
+    {
+        renderTask->waitCompetition();
+        device->submit(cmd);
+
+        delete renderTask;
+    }
+
+    m_dependencyList.clear();
 }
 
 void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage)
 {
     m_stages.emplace_back(id, stage);
+}
+
+void RenderTechnique::addRenderJob(renderer::CmdList* cmd, task::Task* renderTask)
+{
+    m_dependencyList.emplace_back(cmd, renderTask);
+    m_renderWorker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
 }
 
 } //namespace scene

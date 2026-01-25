@@ -8,6 +8,7 @@ namespace v3d
 namespace renderer
 {
     class Device;
+    class CmdListRender;
     class RenderTargetState;
     class GraphicsPipelineState;
 } // namespace renderer
@@ -50,11 +51,12 @@ namespace scene
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
-        scene::ModelHandler* m_modelHandler;
+        scene::ModelHandler* const                         m_modelHandler;
+        renderer::CmdListRender*                           m_cmdList;
 
-        renderer::RenderTargetState* m_GBufferRenderTarget;
+        renderer::RenderTargetState*                       m_GBufferRenderTarget;
         std::vector<v3d::renderer::GraphicsPipelineState*> m_pipeline;
-        std::vector<MaterialParameters> m_parameters;
+        std::vector<MaterialParameters>                    m_parameters;
     };
 
 
