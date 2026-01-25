@@ -8,17 +8,18 @@
 
 using namespace v3d;
 
-class EditorPropertyScreen final
+class EditorPropertyScreen final : public EditorScreen
 {
 public:
 
     EditorPropertyScreen(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorPropertyScreen();
 
-    void registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData);
+    void registerWiget(ui::Widget* widget, scene::SceneData& sceneData) override;
+    void show() override;
+    void hide() override;
 
-    void build();
-    void update(f32 dt);
+    void update(f32 dt) override;
 
 public:
 
@@ -27,6 +28,7 @@ public:
 
 private:
 
+    void build();
     void buildTransformProp();
     void buildGeometryProp();
     void buildLightProp();

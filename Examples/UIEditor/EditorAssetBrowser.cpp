@@ -2,6 +2,7 @@
 
 EditorAssetBrowser::EditorAssetBrowser(event::GameEventReceiver* gameEventRecevier) noexcept
     : m_window(nullptr)
+    , m_sceneData(nullptr)
 
     , m_loaded(false)
 {
@@ -11,13 +12,25 @@ EditorAssetBrowser::~EditorAssetBrowser()
 {
 }
 
-void EditorAssetBrowser::registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData)
+void EditorAssetBrowser::registerWiget(ui::Widget* widget, scene::SceneData& sceneData)
 {
     ASSERT(widget, "must be valid");
-    m_window = widget;
+    m_window = static_cast<ui::WidgetWindow*>(widget);
     m_sceneData = &sceneData;
 
     m_loaded = false;
+}
+
+void EditorAssetBrowser::show()
+{
+    ASSERT(m_window, "must be valid");
+    m_window->setVisible(true);
+}
+
+void EditorAssetBrowser::hide()
+{
+    ASSERT(m_window, "must be valid");
+    m_window->setVisible(false);
 }
 
 void EditorAssetBrowser::build()

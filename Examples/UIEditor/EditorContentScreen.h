@@ -9,17 +9,18 @@
 
 using namespace v3d;
 
-class EditorContentScreen final
+class EditorContentScreen final : public EditorScreen
 {
 public:
 
     EditorContentScreen(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorContentScreen();
 
-    void registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData);
+    void registerWiget(ui::Widget* widget, scene::SceneData& sceneData) override;
+    void show() override;
+    void hide() override;
 
-    void build();
-    void update(f32 dt);
+    void update(f32 dt) override;
 
 public:
 
@@ -27,6 +28,8 @@ public:
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
 private:
+
+    void build();
 
     event::GameEventReceiver* m_gameEventRecevier;
     ui::WidgetWindow* m_window;

@@ -14,13 +14,25 @@ EditorContentScreen::~EditorContentScreen()
 {
 }
 
-void EditorContentScreen::registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData)
+void EditorContentScreen::registerWiget(ui::Widget* widget, scene::SceneData& sceneData)
 {
     ASSERT(widget, "must be valid");
-    m_window = widget;
+    m_window = static_cast<ui::WidgetWindow*>(widget);
     m_sceneData = &sceneData;
 
     m_loaded = false;
+}
+
+void EditorContentScreen::show()
+{
+    ASSERT(m_window, "must be valid");
+    m_window->setVisible(true);
+}
+
+void EditorContentScreen::hide()
+{
+    ASSERT(m_window, "must be valid");
+    m_window->setVisible(false);
 }
 
 void EditorContentScreen::build()

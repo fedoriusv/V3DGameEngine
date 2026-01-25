@@ -9,17 +9,18 @@
 
 using namespace v3d;
 
-class EditorAssetBrowser final
+class EditorAssetBrowser final : public EditorScreen
 {
 public:
 
     EditorAssetBrowser(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorAssetBrowser();
 
-    void registerWiget(ui::WidgetWindow* widget, scene::SceneData& sceneData);
+    void registerWiget(ui::Widget* widget, scene::SceneData& sceneData) override;
+    void show() override;
+    void hide() override;
 
-    void build();
-    void update(f32 dt);
+    void update(f32 dt) override;
 
 public:
 
@@ -27,6 +28,8 @@ public:
     bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
 
 private:
+
+    void build();
 
     ui::WidgetWindow* m_window;
     scene::SceneData* m_sceneData;

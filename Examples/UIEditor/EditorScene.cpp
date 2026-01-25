@@ -48,6 +48,16 @@
 
 using namespace v3d;
 
+bool EditorScreen::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
+{
+    return false;
+}
+
+bool EditorScreen::handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
+{
+    return false;
+}
+
 EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* modelHandler, ui::WidgetHandler* uiHandler)
 {
     new scene::RenderPipelineZPrepassStage(this, modelHandler);
@@ -186,9 +196,9 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
 {
     m_device = device;
     m_currentViewportRect = math::Rect(0, 0, viewportSize._width, viewportSize._height);
-    m_cameraHandler->setPerspective(m_vewportParams._fov, viewportSize, m_vewportParams._near, m_vewportParams._far);
-    m_cameraHandler->setMoveSpeed(1.f);
-    m_cameraHandler->setRotationSpeed(25.0f);
+    m_cameraHandler->setPerspective(m_sceneData.m_settings._vewportParams._fov, viewportSize, m_sceneData.m_settings._vewportParams._near, m_sceneData.m_settings._vewportParams._far);
+    m_cameraHandler->setMoveSpeed(m_sceneData.m_settings._vewportParams._moveSpeed);
+    m_cameraHandler->setRotationSpeed(m_sceneData.m_settings._vewportParams._rotateSpeed);
     m_cameraHandler->setTarget({ 0.f, 0.f, 0.f });
     m_cameraHandler->setPosition({ 0.f, 0.25f, -1.f });
 
@@ -260,6 +270,7 @@ void EditorScene::submitRender()
 {
     TRACE_PROFILER_SCOPE("SubmitRender", color::rgba8::WHITE);
 
+    m_mainPipeline.submit(m_device, m_sceneData, m_frameState[m_stateIndex]);
     m_device->submit(m_frameState[m_stateIndex].m_cmdList, false);
     //m_device->destroyCommandList(m_frameState[m_stateIndex].m_cmdList);
     //m_frameState[m_stateIndex].m_cmdList = nullptr;
@@ -380,25 +391,134 @@ void EditorScene::loadResources()
         //editor_loadDebug();
     }
 
-    test_loadTestScene();
-    //test_loadScene(cmdList, "SunTemple.fbx");
+    //test_loadTestScene();
+    test_loadScene("SunTemple.fbx");
 }
 
 void EditorScene::test_loadScene(const std::string& name)
 {
+    //Config scene
+    m_sceneData.m_settings._shadowsParams._longRange = 250.f;
+    m_sceneData.m_settings._shadowsParams._cascadeBaseBias = { 0.1f, 0.12f, 0.15f, 0.5f };
+    m_sceneData.m_settings._shadowsParams._cascadeSlopeBias = { 1.0f, 1.5f, 2.0f, 3.0f };
+
+    static auto loadTexture2D = [](renderer::Device* device, const std::string& name, bool generateMips) -> renderer::Texture2D*
+        {
+            resource::ImageDecoder::TexturePolicy policy;
+            policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
+
+            resource::ImageLoaderFlags flags = 0;
+            if (generateMips)
+            {
+                flags |= resource::ImageLoaderFlag::ImageLoader_GenerateMipmaps;
+            }
+
+            return resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(device, name, policy, flags);
+        };
+
     resource::ModelFileLoader::ModelPolicy policy;
     policy.scaleFactor = 0.01f;
-    policy.overridedShadingModel = scene::MaterialShadingModel::PBR_MetallicRoughness;
+    policy.overridedShadingModel = scene::MaterialShadingModel::Custom;
 
     scene::Model* scene = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, name, policy, 
-        /*resource::ModelFileLoader::Optimization |*/ 0);
+        resource::ModelFileLoader::Optimization | resource::ModelFileLoader::OverridedShadingModel | 0);
     ASSERT(scene, "nullptr");
 
+    scene::SceneNode::forEach(scene, [this](scene::SceneNode* parent, scene::SceneNode* node)
+        {
+            if (scene::Material* material = node->getComponentByType<scene::Material>(); material)
+            {
+                material->setProperty("pipelineID", 1U);
+            }
+
+            if (scene::DirectionalLight* dirLight = node->getComponentByType<scene::DirectionalLight>(); dirLight && m_editorMode)
+            {
+                ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+                ASSERT(uv_h.isValid(), "must be valid");
+                renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+                scene::Billboard* icon = new scene::Billboard(m_device);
+                node->addComponent(icon);
+
+                scene::Material* material = new scene::Material(m_device);
+                material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+                material->setProperty("BaseColor", uvGrid);
+                node->addComponent(material);
+
+                {
+                    scene::SceneNode* debugNode = new scene::SceneNode();
+                    debugNode->m_name = "LightDebug";
+                    debugNode->setRotation(scene::TransformMode::Local, { 90.f, 0.0f, 0.0f });
+                    debugNode->setPosition(scene::TransformMode::Local, { 0.0f, 0.0f, 0.25f });
+                    node->addChild(debugNode);
+
+                    scene::Mesh* cylinder = scene::MeshHelper::createCylinder(m_device, 0.01f, 0.5f, 16, "lightDirection");
+                    cylinder->setShadowsCast(false);
+                    debugNode->addComponent(cylinder);
+
+                    scene::Material* material = new scene::Material(m_device);
+                    material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+                    material->setProperty("pipelineID", 0U);
+                    material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 0.0, 1.0 });
+                    debugNode->addComponent(material);
+                }
+            }
+            else if (scene::PointLight* pointLight = node->getComponentByType<scene::PointLight>(); pointLight && m_editorMode)
+            {
+                ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+                ASSERT(uv_h.isValid(), "must be valid");
+                renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+                scene::Billboard* icon = new scene::Billboard(m_device);
+                node->addComponent(icon);
+
+                scene::Material* material = new scene::Material(m_device);
+                material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+                material->setProperty("BaseColor", uvGrid);
+                node->addComponent(material);
+
+                {
+                    scene::SceneNode* debugNode = new scene::SceneNode();
+                    debugNode->m_name = "LightDebug";
+                    node->addChild(debugNode);
+
+                    scene::Mesh* sphere = scene::MeshHelper::createSphere(m_device, 1.f, 8, 8, "pointLight");
+                    sphere->setShadowsCast(false);
+                    debugNode->addComponent(sphere);
+
+                    scene::Material* material = new scene::Material(m_device);
+                    material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+                    material->setProperty("pipelineID", 1U);
+                    material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 0.0, 1.0 });
+                    debugNode->addComponent(material);
+                }
+            }
+        });
+
     m_sceneData.m_nodes.push_back(scene);
+
+    {
+        scene::SceneNode* skyboxNode = new scene::SceneNode();
+        skyboxNode->m_name = "Skybox";
+        m_sceneData.m_nodes.push_back(skyboxNode);
+
+        scene::Skybox* skybox = new scene::Skybox(m_device);
+        skyboxNode->addComponent(skybox);
+
+        scene::Material* material = new scene::Material(m_device);
+        material->setProperty("BaseColor", loadTexture2D(m_device, "SunTemple_Skybox.dds", false));
+        material->setProperty("pipelineID", 0U);
+        skyboxNode->addComponent(material);
+    }
 }
 
 void EditorScene::test_loadTestScene()
 {
+    //Config scene
+    m_sceneData.m_settings._shadowsParams._longRange = 50.f;
+    m_sceneData.m_settings._shadowsParams._cascadeBaseBias = { 0.004f, 0.008f, 0.02f, 0.1f };
+    m_sceneData.m_settings._shadowsParams._cascadeSlopeBias = { 2.0f, 2.5f, 3.0f, 5.0f };
+
     test_loadLights();
 
     auto rendomVector = []() ->math::float3
@@ -414,9 +534,21 @@ void EditorScene::test_loadTestScene()
     ASSERT(default_metalness_h.isValid(), "must be valid");
     renderer::Texture2D* default_metalness = objectFromHandle<renderer::Texture2D>(default_metalness_h);
 
+    ObjectHandle default_roughness_h = m_sceneData.m_globalResources.get("default_roughness");
+    ASSERT(default_roughness_h.isValid(), "must be valid");
+    renderer::Texture2D* default_roughness = objectFromHandle<renderer::Texture2D>(default_roughness_h);
+
+    ObjectHandle default_normal_h = m_sceneData.m_globalResources.get("default_normal");
+    ASSERT(default_normal_h.isValid(), "must be valid");
+    renderer::Texture2D* default_normal = objectFromHandle<renderer::Texture2D>(default_normal_h);
+
     ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
     ASSERT(uv_h.isValid(), "must be valid");
     renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+    ObjectHandle default_black_h = m_sceneData.m_globalResources.get("default_black");
+    ASSERT(default_black_h.isValid(), "must be valid");
+    renderer::Texture2D* default_black = objectFromHandle<renderer::Texture2D>(default_black_h);
 
     static auto loadTexture2D = [](renderer::Device* device, const std::string& name, bool generateMips) -> renderer::Texture2D*
         {
@@ -436,7 +568,7 @@ void EditorScene::test_loadTestScene()
         resource::ModelFileLoader::ModelPolicy policy;
         scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeCube->setPosition(scene::TransformMode::Local, { 3.f, 1.f, -1.f });
-        nodeCube->m_shadowCast = true;
+        nodeCube->m_name = "cube.fbx";
         m_sceneData.m_nodes.push_back(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
@@ -452,6 +584,7 @@ void EditorScene::test_loadTestScene()
     {
         resource::ModelFileLoader::ModelPolicy policy;
         scene::Model* nodePlane = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "plane.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        nodePlane->m_name = "plane.fbx";
         m_sceneData.m_nodes.push_back(nodePlane);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
@@ -462,6 +595,25 @@ void EditorScene::test_loadTestScene()
         material->setProperty("Displacement", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Displacement.png", true));
         material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
         nodePlane->addComponent(material);
+    }
+
+    {
+        resource::ModelFileLoader::ModelPolicy policy;
+        policy.scaleFactor = 1.0f;
+        scene::Model* nodeField = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "big_field.dae", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        nodeField->m_name = "big_field";
+        nodeField->setPosition(scene::TransformMode::Local, { 5.0f, -0.03f, 0.0f });
+        nodeField->setRotation(scene::TransformMode::Local, { 90.f, 0.0f, 0.0f });
+        m_sceneData.m_nodes.push_back(nodeField);
+
+        scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
+        material->setProperty("BaseColor", uv_h);
+        material->setProperty("Normals", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_NormalGL.png", true));
+        material->setProperty("Roughness", default_roughness);
+        material->setProperty("Metalness", default_metalness);
+        material->setProperty("Displacement", default_black);
+        material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+        nodeField->addComponent(material);
     }
 
     {
@@ -524,6 +676,7 @@ void EditorScene::test_loadLights()
                 directionallightNode->addChild(debugNode);
 
                 scene::Mesh* cylinder = scene::MeshHelper::createCylinder(m_device, 0.01f, 0.5f, 16, "lightDirection");
+                cylinder->setShadowsCast(false);
                 debugNode->addComponent(cylinder);
 
                 scene::Material* material = new scene::Material(m_device);
@@ -564,6 +717,7 @@ void EditorScene::test_loadLights()
                 pointLightNode->addChild(debugNode);
 
                 scene::Mesh* sphere = scene::MeshHelper::createSphere(m_device, 1.f, 8, 8, "pointLight");
+                sphere->setShadowsCast(false);
                 debugNode->addComponent(sphere);
 
                 scene::Material* material = new scene::Material(m_device);
@@ -605,6 +759,7 @@ void EditorScene::test_loadLights()
                 spotLightNode->addChild(debugNode);
 
                 scene::Mesh* sphere = scene::MeshHelper::createCone(m_device, 1.f, 1.f, 16, "spotLight");
+                sphere->setShadowsCast(false);
                 debugNode->addComponent(sphere);
 
                 scene::Material* material = new scene::Material(m_device);

@@ -24,6 +24,7 @@
 #include "EditorContentScreen.h"
 #include "EditorPropertyScreen.h"
 #include "EditorAssetBrowser.h"
+#include "EditorViewScreen.h"
 
 #include "FrameProfiler.h"
 
@@ -49,6 +50,7 @@ public:
         , m_EditorContentScreen(new EditorContentScreen(m_EditorScene->getGameEventReceiver()))
         , m_EditorPropertyScreen(new EditorPropertyScreen(m_EditorScene->getGameEventReceiver()))
         , m_EditorAssetBrowser(new EditorAssetBrowser(m_EditorScene->getGameEventReceiver()))
+        , m_EditorViewScreen(new EditorViewScreen(m_EditorScene->getGameEventReceiver()))
     {
         m_Window = Window::createWindow(k_editorResolution, { 200, 200 }, false, true, new InputEventReceiver(), "MainWindow");
         ASSERT(m_Window, "windows is nullptr");
@@ -60,6 +62,7 @@ public:
         delete m_EditorContentScreen;
         delete m_EditorPropertyScreen;
         delete m_EditorScene;
+        delete m_EditorViewScreen;
 
         if (m_Window)
         {
@@ -233,6 +236,9 @@ private:
         //Scene Editor
         ui::WidgetWindow& sceneEditor = m_UI->createWidget<ui::WidgetWindow>("Scene Editor", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
 
+        ui::WidgetPopup& viewPopup = m_UI->createWidget<ui::WidgetPopup>("View");
+        m_EditorViewScreen->registerWiget(&viewPopup, m_EditorScene->m_sceneData);
+
         ui::WidgetWindow& viewportWin = m_UI->createWidget<ui::WidgetWindow>("Viewport", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
             .setActive(true)
             .setVisible(true)
@@ -260,9 +266,9 @@ private:
                 })
             .addWidget(ui::WidgetHorizontalLayout()
                 .addWidget(ui::WidgetButton("View")
-                    .setOnClickedEvent([](const ui::Widget* w) -> void
+                    .setOnClickedEvent([this](const ui::Widget* w) -> void
                         {
-                            LOG_DEBUG("TODO: Show context menu");
+                            m_EditorViewScreen->show();
                         })
                 )
                 .addWidget(ui::WidgetRadioButtonGroup()
@@ -356,6 +362,7 @@ private:
         //Scene
         {
             TRACE_PROFILER_SCOPE("Update", rgba8::WHITE);
+            m_EditorViewScreen->update(deltaTime);
             m_EditorGizmo->update(deltaTime);
             m_EditorContentScreen->update(deltaTime);
             m_EditorPropertyScreen->update(deltaTime);
@@ -417,13 +424,14 @@ private:
     v3d::renderer::RenderTargetState* m_Backbuffer = nullptr;
     v3d::renderer::CmdListRender* m_cmdListUI = nullptr;
 
-    ui::ImGuiWidgetHandler*  m_UI;
+    ui::ImGuiWidgetHandler* m_UI;
     EditorScene*            m_EditorScene;
 
     EditorGizmo*            m_EditorGizmo;
     EditorContentScreen*    m_EditorContentScreen;
     EditorPropertyScreen*   m_EditorPropertyScreen;
     EditorAssetBrowser*     m_EditorAssetBrowser;
+    EditorViewScreen*       m_EditorViewScreen;
 
     bool m_Terminate = false;
 };

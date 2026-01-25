@@ -55,6 +55,21 @@ struct EditorTrasformEvent : event::GameEvent
 constexpr u32 k_emptyIndex = -1;
 
 
+class EditorScreen
+{
+public:
+
+    virtual void registerWiget(ui::Widget* widget, scene::SceneData& sceneData) = 0;
+    virtual void show() = 0;
+    virtual void hide() = 0;
+
+    virtual void update(f32 dt) = 0;
+
+    virtual bool handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event);
+    virtual bool handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event);
+};
+
+
 class EditorScene : public scene::Scene
 {
 public:
@@ -113,17 +128,7 @@ private:
     event::GameEventReceiver*       m_gameEventRecevier;
     RenderPipelineScene             m_mainPipeline;
 
-public:
-
-    struct ViewportParams
-    {
-        f32 _fov = 45.f;
-        f32 _near = 0.01f;
-        f32 _far = 10000.f;
-    };
-
     math::Rect                      m_currentViewportRect;
-    ViewportParams                  m_vewportParams;
 
 private:
 

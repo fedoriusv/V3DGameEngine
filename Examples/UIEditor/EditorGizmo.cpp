@@ -20,11 +20,23 @@ EditorGizmo::~EditorGizmo()
 {
 }
 
-void EditorGizmo::registerWiget(ui::WidgetGizmo* widget, scene::SceneData& sceneData)
+void EditorGizmo::registerWiget(ui::Widget* widget, scene::SceneData& sceneData)
 {
     ASSERT(widget, "must be valid");
-    m_gizmo = widget;
+    m_gizmo = static_cast<ui::WidgetGizmo*>(widget);
     m_sceneData = &sceneData;
+}
+
+void EditorGizmo::show()
+{
+    ASSERT(m_gizmo, "must be valid");
+    m_gizmo->setVisible(true);
+}
+
+void EditorGizmo::hide()
+{
+    ASSERT(m_gizmo, "must be valid");
+    m_gizmo->setVisible(false);
 }
 
 void EditorGizmo::modify(const math::Matrix4D& matrix)
@@ -39,10 +51,6 @@ void EditorGizmo::modify(const math::Matrix4D& matrix)
         transform.setMatrix(matrix);
         m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, scene::TransformMode::Local, transform));
     }
-}
-
-void EditorGizmo::select()
-{
 }
 
 void EditorGizmo::setEnable(bool enable)

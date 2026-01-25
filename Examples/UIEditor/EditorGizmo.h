@@ -10,22 +10,22 @@
 
 using namespace v3d;
 
-class EditorGizmo final
+class EditorGizmo final : public EditorScreen
 {
 public:
 
     EditorGizmo(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorGizmo();
 
-    void registerWiget(ui::WidgetGizmo* widget, scene::SceneData& sceneData);
+    void registerWiget(ui::Widget* widget, scene::SceneData& sceneData) override;
+    void show() override;
+    void hide() override;
+
+    void update(f32 dt) override;
 
     void modify(const math::Matrix4D& transform);
-    void select();
-
     void setEnable(bool enable);
     void setOperation(u32 index);
-
-    void update(f32 dt);
 
 public:
 
