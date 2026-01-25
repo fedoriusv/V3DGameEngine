@@ -952,6 +952,7 @@ void VulkanDevice::destroy()
         {
             threadPool.m_cmdBufferManager->waitCompletion();
             V3D_DELETE(threadPool.m_cmdBufferManager, memory::MemoryLabel::MemoryRenderCore);
+            threadPool.m_cmdBufferManager = nullptr;
         }
     }
     m_threadedPools.clear();
@@ -959,6 +960,7 @@ void VulkanDevice::destroy()
     {
         m_internalCmdBufferManager->waitCompletion();
         V3D_DELETE(m_internalCmdBufferManager, memory::MemoryLabel::MemoryRenderCore);
+        m_internalCmdBufferManager = nullptr;
     }
 
     m_resourceDeleter.updateResourceDeleter();

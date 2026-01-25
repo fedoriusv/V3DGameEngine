@@ -45,7 +45,7 @@ Device* Device::createDevice(RenderType type, DeviceMaskFlags mask)
     {
         LOG_FATAL("RenderDevice::createRenderDevice can't initialize");
 
-        V3D_FREE(render, memory::MemoryLabel::MemoryRenderCore);
+        V3D_DELETE(render, memory::MemoryLabel::MemoryRenderCore);
         return nullptr;
     }
 
@@ -56,7 +56,7 @@ Device* Device::createDevice(RenderType type, DeviceMaskFlags mask)
 void Device::destroyDevice(Device* device)
 {
     device->destroy();
-    V3D_FREE(device, memory::MemoryLabel::MemoryRenderCore);
+    V3D_DELETE(device, memory::MemoryLabel::MemoryRenderCore);
 }
 
 } //namespace renderer

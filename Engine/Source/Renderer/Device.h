@@ -349,6 +349,9 @@ namespace renderer
         virtual bool initialize() = 0;
         virtual void destroy() = 0;
 
+        template<class T>
+        friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
+
         RenderType              m_renderType;
 #if FRAME_PROFILER_ENABLE
         utils::ProfileManager   m_frameProfiler;
