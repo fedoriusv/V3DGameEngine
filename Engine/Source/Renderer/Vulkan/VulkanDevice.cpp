@@ -285,6 +285,7 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
         }
 
         cmdList.m_pendingRenderState.flushBarriers(drawBuffer);
+        cmdList.m_pendingRenderState.flushDebugMarkers(drawBuffer);
         drawBuffer->endCommandBuffer();
 
         //Sync

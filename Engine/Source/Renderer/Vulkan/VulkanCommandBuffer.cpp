@@ -26,6 +26,8 @@ namespace renderer
 namespace vk
 {
 
+static const bool k_enableCmdBufferMarker = false;
+
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, CommandBufferLevel level, VulkanCommandBuffer* primaryBuffer) noexcept
     : m_device(*device)
 
@@ -239,7 +241,7 @@ void VulkanCommandBuffer::beginCommandBuffer()
     }
 
 #if VULKAN_DEBUG_MARKERS
-    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled && k_enableCmdBufferMarker)
     {
         VkDebugUtilsLabelEXT debugUtilsLabel = {};
         debugUtilsLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
@@ -260,7 +262,7 @@ void VulkanCommandBuffer::beginCommandBuffer()
 void VulkanCommandBuffer::endCommandBuffer()
 {
 #if VULKAN_DEBUG_MARKERS
-    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+    if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled && k_enableCmdBufferMarker)
     {
         VulkanWrapper::CmdEndDebugUtilsLabel(m_commands);
     }
