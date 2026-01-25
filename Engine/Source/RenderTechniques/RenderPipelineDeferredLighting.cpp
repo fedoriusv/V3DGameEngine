@@ -16,12 +16,12 @@ namespace v3d
 namespace scene
 {
 
-constexpr bool k_debugShadow = false;
-
 RenderPipelineDeferredLightingStage::RenderPipelineDeferredLightingStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "DeferredLighting")
     , m_deferredRenderTarget(nullptr)
     , m_pipeline(nullptr)
+
+    , m_debug(false)
 {
 }
 
@@ -32,10 +32,11 @@ RenderPipelineDeferredLightingStage::~RenderPipelineDeferredLightingStage()
 void RenderPipelineDeferredLightingStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
+    m_debug = scene.m_settings._shadowsParams._debug;
 
     const renderer::Shader::DefineList defines =
     {
-        {"DEBUG_SHADOWMAP", std::to_string(k_debugShadow)},
+        {"DEBUG_SHADOWMAP", std::to_string(m_debug)},
     };
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -80,6 +81,12 @@ void RenderPipelineDeferredLightingStage::destroy(renderer::Device* device, scen
 
 void RenderPipelineDeferredLightingStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (m_debug != scene.m_settings._shadowsParams._debug)
+    {
+        destroy(device, scene, frame);
+        create(device, scene, frame);
+    }
+
     if (!m_deferredRenderTarget)
     {
         createRenderTarget(device, scene);

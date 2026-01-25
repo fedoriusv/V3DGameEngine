@@ -49,6 +49,8 @@ namespace scene
         renderer::RenderTargetState* m_deferredRenderTarget;
         v3d::renderer::GraphicsPipelineState* m_pipeline;
         MaterialParameters m_parameters;
+
+        bool m_debug;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

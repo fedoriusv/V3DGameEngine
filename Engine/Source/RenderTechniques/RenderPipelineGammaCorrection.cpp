@@ -33,7 +33,7 @@ void RenderPipelineGammaCorrectionStage::create(renderer::Device* device, scene:
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
         "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-        "gamma.hlsl", "gamma_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        "tonemapping.hlsl", "tonemapping_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
     m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_gammaRenderTarget->getRenderPassDesc(),
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gamma_pipeline");
@@ -47,6 +47,7 @@ void RenderPipelineGammaCorrectionStage::create(renderer::Device* device, scene:
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Tonemapper);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_ColorSampler);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_ColorTexture);
 }
@@ -96,6 +97,19 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
         });
 
+    struct Tonemapper
+    {
+        u32     tonemapper;
+        u32     lut;
+        f32     exposure;
+        f32     gamma;
+    } tonemapper;
+
+    tonemapper.tonemapper = scene.m_settings._tonemapParams._tonemapper;
+    tonemapper.lut = 0u;
+    tonemapper.exposure = 1.0f;
+    tonemapper.gamma = scene.m_settings._tonemapParams._gamma;
+
     ObjectHandle composite_attachment = scene.m_globalResources.get("render_target");
     ASSERT(composite_attachment.isValid(), "must be valid");
     renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(composite_attachment);
@@ -106,6 +120,7 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
 
     cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
         {
+            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &tonemapper, 0, sizeof(Tonemapper)}, m_parameters.cb_Tonemapper),
             renderer::Descriptor(sampler_state, m_parameters.s_ColorSampler),
             renderer::Descriptor(renderer::TextureView(texture, 0, 0), m_parameters.t_ColorTexture),
         });

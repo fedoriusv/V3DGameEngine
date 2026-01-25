@@ -33,6 +33,7 @@ namespace scene
         struct MaterialParameters
         {
             SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Tonemapper);
             SHADER_PARAMETER(s_ColorSampler);
             SHADER_PARAMETER(t_ColorTexture);
         };

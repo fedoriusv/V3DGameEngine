@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Utils/ResourceID.h"
 #include "Utils/Copiable.h"
+#include "Task/TaskScheduler.h"
 #include "Scene/Transform.h"
 #include "Scene/Camera/CameraController.h"
 #include "Scene/Light.h"
@@ -65,16 +66,30 @@ namespace scene
             f32 _fov = 60.f;
             f32 _near = 0.1f;
             f32 _far = 1000.f;
-        };
+            f32 _moveSpeed = 1.0f;
+            f32 _rotateSpeed = 25.0f;
+        } _vewportParams;
 
-        ViewportParams _vewportParams;
+        struct ShadowsParams
+        {
+            math::Dimension2D                           _size = { 2048, 2048 };
+            std::array<f32, k_maxShadowmapCascadeCount> _cascadeBaseBias = { 0.0, 0.0, 0.0, 0.0 };
+            std::array<f32, k_maxShadowmapCascadeCount> _cascadeSlopeBias = { 0.0, 0.0, 0.0, 0.0 };
+            u32                                         _cascadeCount = k_maxShadowmapCascadeCount;
+            f32                                         _longRange = 50.0f;
+            bool                                        _debug = false;
+        } _shadowsParams;
+
+        struct TonemapParams
+        {
+            u32 _tonemapper = 0;
+            u32 _lut = 0;
+            f32 _gamma = 2.2f;
+            f32 _ev100 = 1.0;
+        } _tonemapParams;
 
         renderer::Format _colorFormat = renderer::Format_R16G16B16A16_SFloat;
         renderer::Format _depthFormat = renderer::Format_D24_UNorm_S8_UInt;
-        math::Dimension2D _shadowmapSize = { 2048, 2048 };
-        u32 _shadowmapCascadeCount = k_maxShadowmapCascadeCount;
-        f32 _shadowmapLongRange = 50.0f;
-        bool _shadowmapDebug = false;
     };
 
     enum class TransformMode
@@ -238,9 +253,7 @@ namespace scene
 
     struct LightNodeEntry : NodeEntry
     {
-        Component*                  light = nullptr;
-        std::vector<math::Matrix4D> lightSpaceMatrix;
-        std::vector<f32>            cascadeSplits;
+        Component* light = nullptr;
     };
 
     struct SkyboxNodeEntry : NodeEntry
