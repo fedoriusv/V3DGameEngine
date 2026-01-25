@@ -64,7 +64,7 @@ float linearize_depth(in float d, in float zNear, in float zFar)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float3 srgb_linear(float3 srgb)
+float3 srgb_linear(in float3 srgb)
 {
     float3 linearLow = srgb / 12.92;
     float3 linearHigh = pow((srgb + 0.055) / 1.055, 2.4);

@@ -62,23 +62,17 @@ VS_GBUFFER_STANDARD_OUTPUT gbuffer_billboard_vs(uint VertexID : SV_VERTEXID)
 PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
 #if SEPARATE_MATERIALS
-    float3 albedo = srgb_linear(t_TextureAlbedo.Sample(s_SamplerState, Input.UV).rgb);
-    float3 normal = t_TextureNormal.Sample(s_SamplerState, Input.UV).rgb * 2.0 - 1.0;
-    float roughness = t_TextureRoughness.Sample(s_SamplerState, Input.UV).r;
-    float metalness = t_TextureMetalness.Sample(s_SamplerState, Input.UV).r;
     float3 albedo = srgb_linear(t_TextureAlbedo.Sample(s_SamplerState, uv).rgb);
     float3 normal = t_TextureNormal.Sample(s_SamplerState, uv).rgb * 2.0 - 1.0;
     float roughness = t_TextureRoughness.Sample(s_SamplerState, uv).r;
     float metalness = t_TextureMetalness.Sample(s_SamplerState, uv).r;
 #else
-    float3 albedo = srgb_linear(t_TextureAlbedo.Sample(s_SamplerState, Input.UV).rgb);
-    float3 normal = t_TextureNormal.Sample(s_SamplerState, Input.UV).rgb * 2.0 - 1.0;
-    float3 materials = t_TextureMaterial.Sample(s_SamplerState, Input.UV).rgb;
     float3 albedo = srgb_linear(t_TextureAlbedo.Sample(s_SamplerState, uv).rgb);
     float3 normal = t_TextureNormal.Sample(s_SamplerState, uv).rgb * 2.0 - 1.0;
+    normal *= -1.0;
     float3 materials = t_TextureMaterial.Sample(s_SamplerState, uv).rgb;
-    float roughness = materials.r;
-    float metalness = materials.g;
+    float metalness = materials.b;
+    float roughness = materials.g;
 #endif
     return _gbuffer_standard_ps(Input, cb_Viewport, cb_Model, albedo, normal, roughness, metalness);
 }
@@ -98,8 +92,8 @@ PS_GBUFFER_STRUCT gbuffer_masked_ps(PS_GBUFFER_STANDARD_INPUT Input)
     float3 albedo = srgb_linear(baseColor.rgb);
     float3 normal = t_TextureNormal.Sample(s_SamplerState, Input.UV).rgb * 2.0 - 1.0;
     float3 materials = t_TextureMaterial.Sample(s_SamplerState, Input.UV).rgb;
-    float roughness = materials.r;
-    float metalness = materials.g;
+    float metalness = materials.b;
+    float roughness = materials.g;
 #endif
     PS_GBUFFER_STRUCT GBubfferStruct = _gbuffer_standard_alpha_ps(Input, cb_Viewport, cb_Model, albedo, baseColor.a, normal, roughness, metalness);
     
