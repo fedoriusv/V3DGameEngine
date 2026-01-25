@@ -5,6 +5,7 @@
 #include "Resource/Loader/ShaderCompiler.h"
 #include "Stream/StreamManager.h"
 #include "Utils/Logger.h"
+#include "FrameProfiler.h"
 
 using namespace v3d;
 using namespace v3d::renderer;
@@ -24,8 +25,7 @@ SimpleTriangle::SimpleTriangle()
     , m_Pipeline(nullptr)
     , m_Geometry(nullptr)
 
-    , m_Camera(new scene::CameraArcballHandler(
-        std::make_unique<scene::Camera>(math::Vector3D(0.0f, 0.0f, 3.0f), math::Vector3D(0.0f, 0.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f))
+    , m_Camera(std::make_unique<scene::Camera>(math::Vector3D(0.0f, 0.0f, 3.0f), math::Vector3D(0.0f, 0.0f, 0.0f)), 3.0f, k_nearValue + 1.0f, k_farValue - 10.0f)
 {
 }
 
@@ -39,7 +39,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
     m_CmdList = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
 
     m_Rect = { 0, 0, (f32)swapchain->getBackbufferSize()._width, (f32)swapchain->getBackbufferSize()._height };
-    m_Camera->setPerspective(45.0f, swapchain->getBackbufferSize(), k_nearValue, k_farValue);
+    m_Camera.setPerspective(45.0f, swapchain->getBackbufferSize(), k_nearValue, k_farValue);
 
     const renderer::VertexShader* vertShader = nullptr;
     {
@@ -122,7 +122,7 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
         {
-            renderer::TransitionOp::TransitionOp_Undefined, renderer::TransitionOp::TransitionOp_Present
+            renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_Present
         });
 
     std::vector<math::TVector3D<f32>> geometryData = 
@@ -150,17 +150,19 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
     m_Pipeline->setDepthWrite(false);
 
 
-    m_CmdList->uploadData(m_Geometry, 0, static_cast<u32>(geometryData.size() * sizeof(math::TVector3D<f32>)), geometryData.data());
+    m_CmdList->upload(m_Geometry, 0, static_cast<u32>(geometryData.size() * sizeof(math::TVector3D<f32>)), geometryData.data());
     m_Device->submit(m_CmdList, true);
 }
 
 void SimpleTriangle::update(f32 dt)
 {
-    m_Camera->update(dt);
+    m_Camera.update(dt);
 }
 
 void SimpleTriangle::render()
 {
+    TRACE_PROFILER_FRAME;
+
     //update uniforms
     struct UBO
     {
@@ -177,25 +179,25 @@ void SimpleTriangle::render()
     m_CmdList->setPipelineState(*m_Pipeline);
 
     UBO ubo1;
-    ubo1.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    ubo1.projectionMatrix = m_Camera.getCamera().getProjectionMatrix();
     ubo1.modelMatrix.setTranslation({ -1, 0, 0 });
-    ubo1.viewMatrix = m_Camera->getViewMatrix();
+    ubo1.viewMatrix = m_Camera.getViewMatrix();
 
     renderer::Descriptor desc1(renderer::Descriptor::Descriptor_ConstantBuffer);
     desc1._resource = renderer::Descriptor::ConstantBuffer{ &ubo1, 0, sizeof(UBO) };
 
-    m_CmdList->bindDescriptorSet(0, { desc1 });
+    m_CmdList->bindDescriptorSet(m_Program, 0, { desc1 });
     m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
 
     UBO ubo2;
-    ubo2.projectionMatrix = m_Camera->getCamera().getProjectionMatrix();
+    ubo2.projectionMatrix = m_Camera.getCamera().getProjectionMatrix();
     ubo2.modelMatrix.setTranslation({ 1, 0, 0 });
-    ubo2.viewMatrix = m_Camera->getViewMatrix();
+    ubo2.viewMatrix = m_Camera.getViewMatrix();
 
     renderer::Descriptor desc2(renderer::Descriptor::Descriptor_ConstantBuffer);
     desc2._resource = renderer::Descriptor::ConstantBuffer{ &ubo2, 0, sizeof(UBO) };
 
-    m_CmdList->bindDescriptorSet(0, { desc2 });
+    m_CmdList->bindDescriptorSet(m_Program, 0, { desc2 });
     m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
 
     m_CmdList->endRenderTarget();
@@ -235,33 +237,14 @@ void SimpleTriangle::terminate()
         m_Geometry = nullptr;
     }
 
-    if (m_Camera)
-    {
-        delete m_Camera;
-        m_Camera = nullptr;
-    }
-
     m_Device->destroyCommandList(m_CmdList);
 }
 
 bool SimpleTriangle::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)
 {
-    if (event->_eventType == event::InputEvent::InputEventType::MouseInputEvent)
-    {
-        const event::MouseInputEvent* mouseEvent = static_cast<const event::MouseInputEvent*>(event);
-        m_Camera->handleMouseCallback(handler, mouseEvent);
+    m_Camera.handleInputEventCallback(handler, event);
 
-        return true;
-    }
-    else if (event->_eventType == event::InputEvent::InputEventType::TouchInputEvent)
-    {
-        const event::TouchInputEvent* touchEvent = static_cast<const event::TouchInputEvent*>(event);
-        m_Camera->handleTouchCallback(handler, touchEvent);
-
-        return true;
-    }
-
-    return false;
+    return true;
 }
 
 bool SimpleTriangle::dispatchEvent(SimpleTriangle* render, event::InputEventHandler* handler, const event::InputEvent* event)
