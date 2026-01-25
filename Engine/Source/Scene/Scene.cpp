@@ -82,7 +82,7 @@ void Scene::finalize()
                     }
                 }
 
-                if (node->m_shadowCast)
+                if (geometry->isShadowsCasted())
                 {
                     entry->passMask |= 1 << toEnumType(scene::RenderPipelinePass::Shadowmap);
                 }
@@ -108,8 +108,6 @@ void Scene::finalize()
                 entry->light = light;
                 entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::DirectionLight);
                 entry->pipelineID = 0;
-                entry->lightSpaceMatrix.resize(m_sceneData.m_settings._shadowmapCascadeCount);
-                entry->cascadeSplits.resize(m_sceneData.m_settings._shadowmapCascadeCount);
 
                 m_sceneData.m_generalRenderList.push_back(entry);
             }

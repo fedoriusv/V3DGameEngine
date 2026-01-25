@@ -128,7 +128,6 @@ namespace scene
         std::list<Component*> m_components;
         std::string           m_name;
         bool                  m_visible = true;
-        bool                  m_shadowCast = false;
 
     private:
 
@@ -299,8 +298,6 @@ namespace scene
         void finalize();
 
     public:
-
-        static void calculateShadowCascades(scene::SceneData& scene, const math::Vector3D& light);
 
         scene::SceneData                m_sceneData;
         std::vector<scene::FrameData>   m_frameState;

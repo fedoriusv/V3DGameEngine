@@ -62,6 +62,9 @@ namespace scene
 
         const std::string_view getName() const;
 
+        void setShadowsCast(bool value);
+        bool isShadowsCasted() const;
+
     protected:
 
         using BaseType = Component;
@@ -105,6 +108,16 @@ namespace scene
     inline const std::string_view Mesh::getName() const
     {
         return m_header.getName();
+    }
+
+    inline bool Mesh::isShadowsCasted() const
+    {
+        return m_castShadows;
+    }
+
+    inline void Mesh::setShadowsCast(bool value)
+    {
+        m_castShadows = value;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
