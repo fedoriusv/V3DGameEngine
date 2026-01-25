@@ -433,6 +433,8 @@ void EditorScene::test_loadScene(const std::string& name)
 
             if (scene::DirectionalLight* dirLight = node->getComponentByType<scene::DirectionalLight>(); dirLight && m_editorMode)
             {
+                node->setScale(scene::TransformMode::Local, { 1.0f, 1.0f, 1.0f });
+
                 ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
                 ASSERT(uv_h.isValid(), "must be valid");
                 renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
@@ -465,6 +467,10 @@ void EditorScene::test_loadScene(const std::string& name)
             }
             else if (scene::PointLight* pointLight = node->getComponentByType<scene::PointLight>(); pointLight && m_editorMode)
             {
+                node->setScale(scene::TransformMode::Local, { 10.0f, 10.0f, 10.0f });
+                pointLight->setRadius(10.0f);
+                pointLight->setAttenuation(1.0, 0.5f, 2.0f, 10.0f);
+
                 ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
                 ASSERT(uv_h.isValid(), "must be valid");
                 renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);

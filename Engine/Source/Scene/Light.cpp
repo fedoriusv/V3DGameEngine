@@ -10,6 +10,16 @@ namespace v3d
 namespace scene
 {
 
+    /*
+    Classic Game Attenuation Model(Constant + Linear + Quadratic)
+        |                       Range | Kc | Kl | Kq   |
+        | -------------------- - | -- - | ---- | ---- - |
+        | Short(~7 units)        | 1.0  | 0.7  | 1.8    |
+        | Medium(~13 units)      | 1.0  | 0.35 | 0.44   |
+        | Long(~20 units)        | 1.0  | 0.22 | 0.20   |
+        | Very long(~50 units)   | 1.0  | 0.09 | 0.032  |
+    */
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Light::Light(renderer::Device* device, Type type) noexcept
@@ -18,7 +28,7 @@ Light::Light(renderer::Device* device, Type type) noexcept
     , m_color({ 1.f, 1.f, 1.f, 1.f })
     , m_intensity()
     , m_temperature(0)
-    , m_attenuation({ 1.f, 1.f, 1.f, 0.f})
+    , m_attenuation({ 1.f, 0.35f, 0.44, 1.f })
     , m_shadowCaster(true)
 {
 }
@@ -29,7 +39,7 @@ Light::Light(renderer::Device* device, const LightHeader& header) noexcept
     , m_color({ 1.f, 1.f, 1.f, 1.f })
     , m_intensity()
     , m_temperature(0)
-    , m_attenuation({ 1.f, 1.f, 1.f, 0.f })
+    , m_attenuation({ 1.f, 0.35f, 0.44, 1.f })
     , m_shadowCaster(true)
 {
 }

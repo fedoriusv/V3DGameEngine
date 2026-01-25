@@ -186,6 +186,7 @@ u32 AssimpDecoder::decodeNode(const aiScene* scene, const aiNode* node, stream::
 
     math::Matrix4D tranform;
     tranform.set(node->mTransformation[0]);
+    tranform.makeTransposed();
     stream->write<math::Matrix4D>(tranform);
     streamNodeSize += sizeof(math::Matrix4D);
 

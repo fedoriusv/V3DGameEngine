@@ -172,7 +172,7 @@ bool Model::loadNode(SceneNode* node, const stream::Stream* stream, u32 offset)
 
     math::Matrix4D tranform;
     stream->read<math::Matrix4D>(tranform);
-    SceneNode::setTransform(TransformMode::Local, tranform);
+    node->setTransform(TransformMode::Local, tranform);
 
     u32 numNodes = 0;
     stream->read<u32>(numNodes);
