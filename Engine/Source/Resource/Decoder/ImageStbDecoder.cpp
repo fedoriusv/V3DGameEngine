@@ -16,9 +16,9 @@
 #   define STBI_ONLY_PNG
 #   define STBI_ONLY_BMP
 #   define STBI_ONLY_TGA
+#   define STBI_ONLY_HDR
 //#    define STBI_ONLY_PSD
 //#    define STBI_ONLY_GIF
-//#    define STBI_ONLY_HDR
 //#    define STBI_ONLY_PIC
 
 #   include <stb/stb_image.h>
@@ -128,6 +128,7 @@ static stream::Stream* readImage(u8* source, u32 sizeInBytes, u32 flags, s32& wi
             return nullptr;
         }
         format = convertFloatFormat(componentCount);
+        ASSERT(!(format == renderer::Format::Format_R32G32B32_SFloat), "fromat is not supported");
 
         if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
         {

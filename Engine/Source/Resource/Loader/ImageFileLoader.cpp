@@ -18,7 +18,7 @@ namespace v3d
 namespace resource
 {
 
-static std::vector<std::string> k_bitmapSupportedFormats = { "jpg", "png", "bmp", "tga" };
+static std::vector<std::string> k_bitmapSupportedFormats = { "jpg", "png", "bmp", "tga", "hdr" };
 static std::vector<std::string> k_textureSupportedFormats = { "ktx", "kmg", "dds" };
 
 BitmapFileLoader::BitmapFileLoader(ImageLoaderFlags flags) noexcept
