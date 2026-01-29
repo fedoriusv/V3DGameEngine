@@ -116,7 +116,8 @@ VkImageLayout VulkanResourceStateTracker::setLayout(VulkanImage* image, VkImageL
     auto iter = m_states.find(image);
     if (iter == m_states.end())
     {
-        auto result = m_states.emplace(image, std::make_tuple(image->m_globalLayout, image->m_globalLayout));
+        //auto result = m_states.emplace(image, std::make_tuple(image->m_globalLayout, image->m_globalLayout));
+        auto result = m_states.emplace(image, std::make_tuple(newlayout, newlayout));
         ASSERT(result.second, "must be valid");
         iter = result.first;
     }
@@ -150,21 +151,24 @@ void VulkanResourceStateTracker::prepareGlobalState(const std::function<VulkanCo
 {
     for (auto& [image, layouts] : m_states)
     {
-        auto& globalLayouts = std::get<0>(layouts);
-        auto& currentLayouts = std::get<1>(layouts);
-        ASSERT(globalLayouts.size() == currentLayouts.size() && globalLayouts.size() == image->m_globalLayout.size(), "must has the same size");
+        auto& beginLayouts = std::get<0>(layouts);
+        auto& finalLayouts = std::get<1>(layouts);
+        ASSERT(beginLayouts.size() == finalLayouts.size() && beginLayouts.size() == image->m_globalLayout.size(), "must has the same size");
 
-        if (image->m_globalLayout != globalLayouts)
+        if (image->m_globalLayout != beginLayouts)
         {
             //general layout
             {
                 RenderTexture::Subresource resource{ 0, image->getArrayLayers(), 0, image->m_mipLevels };
-                VkImageLayout oldLayout = globalLayouts[0];
-                VkImageLayout newLayout = image->m_globalLayout[0];
+                VkImageLayout oldLayout = image->m_globalLayout[0];
+                VkImageLayout newLayout = beginLayouts[0];
                 if (oldLayout != newLayout)
                 {
-                    VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();
-                    cmdBuffer->cmdPipelineBarrier(image, resource, oldLayout, newLayout);
+                    if (newLayout != VK_IMAGE_LAYOUT_UNDEFINED) //skip unknown
+                    {
+                        VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();
+                        cmdBuffer->cmdPipelineBarrier(image, resource, oldLayout, newLayout);
+                    }
 
                     image->setGlobalLayout(newLayout, resource);
                 }
@@ -178,12 +182,15 @@ void VulkanResourceStateTracker::prepareGlobalState(const std::function<VulkanCo
                     u32 index = 1 + (resource._baseLayer * image->m_mipLevels + resource._baseMip);
                     ASSERT(index < image->m_globalLayout.size(), "out of range");
 
-                    VkImageLayout oldLayout = globalLayouts[index];
-                    VkImageLayout newLayout = image->m_globalLayout[index];
+                    VkImageLayout oldLayout = image->m_globalLayout[index];
+                    VkImageLayout newLayout = beginLayouts[index];
                     if (oldLayout != newLayout)
                     {
-                        VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();
-                        cmdBuffer->cmdPipelineBarrier(image, resource, oldLayout, newLayout);
+                        if (newLayout != VK_IMAGE_LAYOUT_UNDEFINED) //skip unknown
+                        {
+                            VulkanCommandBuffer* cmdBuffer = cmdBufferGetter();
+                            cmdBuffer->cmdPipelineBarrier(image, resource, oldLayout, newLayout);
+                        }
 
                         image->setGlobalLayout(newLayout, resource);
                     }
