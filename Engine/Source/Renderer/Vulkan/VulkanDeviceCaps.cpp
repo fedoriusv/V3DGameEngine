@@ -175,7 +175,7 @@ void VulkanDeviceCaps::fillCapabilitiesList(const DeviceInfo* info)
 
     ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_1_EXTENSION_NAME), "required VK_KHR_maintenance1 extension");
     ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_2_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
-    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_3_EXTENSION_NAME), "required VK_KHR_maintenance2 extension");
+    ASSERT(isEnabledExtension(VK_KHR_MAINTENANCE_3_EXTENSION_NAME), "required VK_KHR_maintenance3 extension");
     _supportRenderpass2 = isEnabledExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
     _supportDynamicRendering = isEnabledExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     _supportMultiview = isEnabledExtension(VK_KHR_MULTIVIEW_EXTENSION_NAME);

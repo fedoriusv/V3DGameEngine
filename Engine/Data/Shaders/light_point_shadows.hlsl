@@ -11,26 +11,28 @@ typedef VS_GBUFFER_STANDARD_INPUT VS_SHADOW_STANDARD_INPUT;
 
 struct ShadowBuffer
 {
-    float4x4 lightSpaceMatrix;
+    float4x4 lightSpaceMatrix[6];
     float4x4 modelMatrix;
-    float    bias;
+    float bias;
 };
-[[vk::binding(0, 0)]] ConstantBuffer<ShadowBuffer> cb_ShadowBuffer : register(b0, space0);
+[[vk::binding(0, 0)]] ConstantBuffer<ShadowBuffer> cb_PunctualShadowBuffer : register(b0, space0);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float4 shadows_vs(VS_SHADOW_STANDARD_INPUT Input) : SV_POSITION
+float4 point_shadows_vs(VS_SHADOW_STANDARD_INPUT Input, uint ViewId : SV_ViewID) : SV_POSITION
 {
-    float4 position = mul(cb_ShadowBuffer.modelMatrix, float4(Input.Position, 1.0));
-    position = mul(cb_ShadowBuffer.lightSpaceMatrix, position);
+    float4 position = mul(cb_PunctualShadowBuffer.modelMatrix, float4(Input.Position, 1.0));
+    position = mul(cb_PunctualShadowBuffer.lightSpaceMatrix[ViewId], position);
     
     //Apply bias
     float depth = position.z / position.w;
-    depth += cb_ShadowBuffer.bias;
+    depth += cb_PunctualShadowBuffer.bias;
     position.z = depth * position.w;
     
     return position;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
 
 void shadows_ps(float4 Position : SV_POSITION) : SV_DEPTH
 {

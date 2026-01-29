@@ -64,10 +64,11 @@ float depthTextureProj_PCF3x3(float4 shadowCoord, uint cascadeIndex)
     float2 texelSize = 1.0 / cb_CascadeShadowBuffer.shadowMapResolution.xy;
     float shadow = 0.0;
     
+    float scale = 0.5;
     [unroll(kernelSize)]
     for (uint i = 0; i < kernelSize; ++i)
     {
-        float2 offset = kernel[i] * texelSize;
+        float2 offset = kernel[i] * texelSize * scale;
         shadow += depthTextureProj(shadowCoord, offset, cascadeIndex);
     }
     

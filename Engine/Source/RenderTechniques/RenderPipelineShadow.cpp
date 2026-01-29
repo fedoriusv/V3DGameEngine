@@ -26,6 +26,8 @@ RenderPipelineShadowStage::RenderPipelineShadowStage(RenderTechnique* technique,
     , m_cmdList(nullptr)
 
     , m_cascadeTextureArray(nullptr)
+    , m_punctualShadowRenderTarget(nullptr)
+
     , m_SSShadowsRenderTarget(nullptr)
 {
 }
@@ -39,16 +41,16 @@ void RenderPipelineShadowStage::create(renderer::Device* device, scene::SceneDat
     m_cmdList = device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
     createRenderTarget(device, scene);
 
-    renderer::Shader::DefineList defines =
     {
-        { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
-    };
+        renderer::Shader::DefineList defines =
+        {
+            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
+        };
 
-    {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "light_shadows.hlsl", "shadows_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "light_directional_shadows.hlsl", "shadows_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "light_shadows.hlsl", "shadows_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "light_directional_shadows.hlsl", "shadows_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 0;
@@ -71,10 +73,45 @@ void RenderPipelineShadowStage::create(renderer::Device* device, scene::SceneDat
         m_cascadeShadowPipeline->setColorMask(0, renderer::ColorMask::ColorMask_None);
         //m_cascadeShadowPipeline->setDepthBias(0.0f, 0.0f, -2.5f); Apply inside the shader
 
-        BIND_SHADER_PARAMETER(m_cascadeShadowPipeline, m_cascadeShadowParameters, cb_ShadowBuffer);
+        BIND_SHADER_PARAMETER(m_cascadeShadowPipeline, m_cascadeShadowParameters, cb_DirectionShadowBuffer);
     }
 
     {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "light_point_shadows.hlsl", "point_shadows_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "light_point_shadows.hlsl", "shadows_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        renderer::RenderPassDesc desc{};
+        desc._countColorAttachment = 0;
+        desc._hasDepthStencilAttachment = true;
+        desc._attachmentsDesc.back()._format = renderer::Format::Format_D32_SFloat;
+
+        m_punctualShadowPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, desc,
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "point_shadow_pipeline");
+        m_punctualShadowPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_punctualShadowPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_punctualShadowPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+#if REVERSED_DEPTH
+        m_punctualShadowPipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        m_punctualShadowPipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        m_punctualShadowPipeline->setDepthClamp(true);
+        m_punctualShadowPipeline->setDepthWrite(true);
+        m_punctualShadowPipeline->setDepthTest(true);
+        m_punctualShadowPipeline->setColorMask(0, renderer::ColorMask::ColorMask_None);
+
+        BIND_SHADER_PARAMETER(m_punctualShadowPipeline, m_punctualShadowParameters, cb_PunctualShadowBuffer);
+        ASSERT(device->getDeviceCaps()._supportMultiview, "the feature must be supported");
+    }
+
+    {
+        renderer::Shader::DefineList defines =
+        {
+            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
+        };
+
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
             "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
@@ -201,7 +238,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
 
                         cmdList->bindDescriptorSet(m_cascadeShadowPipeline->getShaderProgram(), 0,
                             {
-                                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowViewBuffer, 0, sizeof(shadowViewBuffer) }, m_cascadeShadowParameters.cb_ShadowBuffer)
+                                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowViewBuffer, 0, sizeof(shadowViewBuffer) }, m_cascadeShadowParameters.cb_DirectionShadowBuffer)
                             });
 
                         DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_cascadeShadowPipeline->getName()), color::rgbaf::LTGREY);
@@ -221,7 +258,70 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
                 TRACE_PROFILER_SCOPE("PointShadowmaps", color::rgba8::GREEN);
                 DEBUG_MARKER_SCOPE(cmdList, "PointShadowmaps", color::rgbaf::GREEN);
 
-                //TODO
+                /*for (u32 i = 0; i < scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].size(); ++i)
+                {
+                    scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)][i]);
+                    const scene::Light& light = *static_cast<const scene::Light*>(itemLight.light);
+
+                    static std::array<math::Matrix4D, 6> pointLightSpaceMatrix;
+                    f32 radius = light.getAttenuation()._w;
+
+                    calculateShadowViews(itemLight.object->getTransform().getPosition(), radius, pointLightSpaceMatrix);
+                    if (i >= m_punctualShadowTextures.size())
+                    {
+                        renderer::TextureCube* viewShadow = V3D_NEW(renderer::TextureCube, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+                            renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 1, "view_shadow");
+
+                        m_punctualShadowTextures.push_back(viewShadow);
+                    }
+
+                    m_punctualShadowRenderTarget->setDepthStencilTexture(renderer::TextureView(m_punctualShadowTextures[i]),
+                            {
+                                renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f,
+                            },
+                            {
+                                 renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_DontCare, 0U,
+                            },
+                            {
+                                renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilReadOnly
+                            }
+                    );
+
+                    cmdList->beginRenderTarget(*m_punctualShadowRenderTarget);
+                    cmdList->setViewport({ 0.f, 0.f, (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height });
+                    cmdList->setScissor({ 0.f, 0.f, (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height });
+                    cmdList->setPipelineState(*m_punctualShadowPipeline);
+
+                    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Shadowmap)])
+                    {
+                        const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+
+                        struct ShadowBuffer
+                        {
+                            math::Matrix4D lightSpaceMatrix[6];
+                            math::Matrix4D modelMatrix;
+                            f32            bias;
+                            u32            faceMask;
+                            f32           _pas[2];
+                        } shadowViewBuffer;
+
+                        memcpy(shadowViewBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
+                        shadowViewBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+                        shadowViewBuffer.bias = 0.0f;
+
+                        cmdList->bindDescriptorSet(m_cascadeShadowPipeline->getShaderProgram(), 0,
+                            {
+                                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowViewBuffer, 0, sizeof(shadowViewBuffer) }, m_punctualShadowParameters.cb_PunctualShadowBuffer)
+                            });
+
+                        DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_punctualShadowPipeline->getName()), color::rgbaf::LTGREY);
+
+                        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+                        ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(scene::VertexFormatStandard), "must be same");
+                        renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(scene::VertexFormatStandard), 0);
+                        cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                    }
+                }*/
             }
 
             {
@@ -324,10 +424,16 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, sce
                 }
             );
 
-                m_cascadeRenderTargets.push_back(renderTarget);
+            m_cascadeRenderTargets.push_back(renderTarget);
         }
 
         scene.m_globalResources.bind("shadowmap", m_cascadeTextureArray);
+    }
+
+    {
+        ASSERT(m_punctualShadowTextures.empty(), "must be empty");
+        ASSERT(m_punctualShadowRenderTarget == nullptr, "must be nullptr");
+        m_punctualShadowRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_settings._shadowsParams._size, 0, 0b00111111);
     }
 
     {
@@ -362,6 +468,18 @@ void RenderPipelineShadowStage::destroyRenderTarget(renderer::Device* device, sc
 
         V3D_DELETE(m_cascadeTextureArray, memory::MemoryLabel::MemoryGame);
         m_cascadeTextureArray = nullptr;
+    }
+
+    {
+        for (auto& viewShadow : m_punctualShadowTextures)
+        {
+            V3D_DELETE(viewShadow, memory::MemoryLabel::MemoryGame);
+        }
+        m_punctualShadowTextures.clear();
+
+        ASSERT(m_punctualShadowRenderTarget != nullptr, "must be valid");
+        V3D_DELETE(m_punctualShadowRenderTarget, memory::MemoryLabel::MemoryGame);
+        m_punctualShadowRenderTarget = nullptr;
     }
 
     {
@@ -501,6 +619,49 @@ void RenderPipelineShadowStage::calculateShadowCascades(const scene::SceneData& 
         lightSpaceMatrix.push_back(lightOrthoMatrix * lightViewMatrix);
 
         lastSplitDist = depthSplits[i];
+    }
+}
+
+void RenderPipelineShadowStage::calculateShadowViews(const math::Vector3D& position, f32 radius, std::array<math::Matrix4D, 6>& lightSpaceMatrix)
+{
+    f32 nearPlane = 0.1f;
+    f32 farPlane = std::max(radius, nearPlane + 0.1f);
+    math::Matrix4D lightProjectionMatrix = math::SMatrix::projectionMatrixPerspective(90.f * math::k_degToRad, 1.f, nearPlane, farPlane);
+
+    //X+
+    {
+        math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(1.f, 0.f, 0.f), math::Vector3D(0.0f, 1.0f, 0.0f));
+        lightSpaceMatrix[0] = lightProjectionMatrix * lightViewMatrix;
+    }
+
+    //X-
+    {
+        math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(-1.f, 0.f, 0.f), math::Vector3D(0.0f, 1.0f, 0.0f));
+        lightSpaceMatrix[1] = lightProjectionMatrix * lightViewMatrix;
+    }
+
+    //Y+
+    {
+        math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, 1.f, 0.f), math::Vector3D(0.f, 0.f, -1.f));
+        lightSpaceMatrix[2] = lightProjectionMatrix * lightViewMatrix;
+    }
+
+    //Y-
+    {
+        math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, -1.f, 0.f), math::Vector3D(0.f, 0.f, 1.f));
+        lightSpaceMatrix[3] = lightProjectionMatrix * lightViewMatrix;
+    }
+
+    //Z+
+    {
+        math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, 0.f, 1.f), math::Vector3D(0.f, 1.f, 0.f));
+        lightSpaceMatrix[4] = lightProjectionMatrix * lightViewMatrix;
+    }
+
+    //Z-
+    {
+        math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, 0.f, -1.f), math::Vector3D(0.f, 1.f, 0.f));
+        lightSpaceMatrix[5] = lightProjectionMatrix * lightViewMatrix;
     }
 }
 

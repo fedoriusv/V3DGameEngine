@@ -831,6 +831,17 @@ bool VulkanDevice::createDevice()
         vkDeviceExtension = &physicalDeviceDynamicRenderingFeatures;
     }
 
+    if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_KHR_MULTIVIEW_EXTENSION_NAME))
+    {
+        VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures = {};
+        physicalDeviceMultiviewFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
+        physicalDeviceMultiviewFeatures.pNext = vkDeviceExtension;
+        physicalDeviceMultiviewFeatures.multiview = m_deviceCaps._supportMultiview;
+        physicalDeviceMultiviewFeatures.multiviewGeometryShader = m_deviceCaps._supportMultiview;
+        physicalDeviceMultiviewFeatures.multiviewTessellationShader = m_deviceCaps._supportMultiview;
+        vkDeviceExtension = &physicalDeviceMultiviewFeatures;
+    }
+
 #ifdef VK_EXT_descriptor_indexing
     if (VulkanDeviceCaps::checkDeviceExtension(m_deviceInfo._physicalDevice, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME))
     {
