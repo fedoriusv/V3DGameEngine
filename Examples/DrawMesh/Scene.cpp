@@ -132,7 +132,7 @@ void Scene::LoadVoyager()
         scene::Mesh* mesh = (*model->m_children.begin())->getComponentByType<scene::Mesh>();
         if (mesh->getIndexBuffer())
         {
-            v3d::renderer::GeometryBufferDesc desc(mesh->getIndexBuffer(), 0, mesh->getVertexBuffer(0), 0, mesh->getVertexAttribDesc()._inputBindings[0]._stride, 0);
+            v3d::renderer::GeometryBufferDesc desc(mesh->getIndexBuffer(), 0, mesh->getVertexBuffer(0), mesh->getVertexAttribDesc()._inputBindings[0]._stride, 0);
             app::DrawProperties prop{ 0, mesh->getIndexBuffer()->getIndicesCount(), 0, 1, true};
             voyager->m_Props.emplace_back(std::move(desc), prop);
             voyager->m_InputAttrib = mesh->getVertexAttribDesc();
