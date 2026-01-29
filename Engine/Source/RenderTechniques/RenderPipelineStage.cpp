@@ -86,10 +86,17 @@ void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage
     m_stages.emplace_back(id, stage);
 }
 
-void RenderTechnique::addRenderJob(renderer::CmdList* cmd, task::Task* renderTask)
+void RenderTechnique::addRenderJob(renderer::Device* device, renderer::CmdList* cmd, task::Task* renderTask)
 {
+#if 0 //Debug cmds
+    m_renderWorker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::MainThread);
+    m_renderWorker.mainThreadLoop();
+
+    device->submit(cmd, true);
+#else
     m_dependencyList.emplace_back(cmd, renderTask);
     m_renderWorker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
+#endif
 }
 
 } //namespace scene

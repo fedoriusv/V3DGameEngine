@@ -165,7 +165,7 @@ void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::Scene
         };
 
     ASSERT(m_cmdList, "must be valid");
-    addRenderJob("ZPrepass Job", renderJob, m_cmdList, scene, frame);
+    addRenderJob("ZPrepass Job", renderJob, device, m_cmdList, scene, frame);
 }
 
 void RenderPipelineZPrepassStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene)

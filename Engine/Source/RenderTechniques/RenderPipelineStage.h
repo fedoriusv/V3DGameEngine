@@ -41,7 +41,7 @@ namespace scene
         virtual ~RenderTechnique();
 
         void addStage(const std::string& id, RenderPipelineStage* stage);
-        void addRenderJob(renderer::CmdList* cmd, task::Task* renderTask);
+        void addRenderJob(renderer::Device* device, renderer::CmdList* cmd, task::Task* renderTask);
 
         struct Stage
         {
@@ -75,7 +75,7 @@ namespace scene
     protected:
 
         template<typename Func>
-        void addRenderJob(const std::string& name, Func&& func, renderer::CmdListRender* cmd, const scene::SceneData& scene, const scene::FrameData& frame);
+        void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, renderer::CmdListRender* cmd, const scene::SceneData& scene, const scene::FrameData& frame);
 
         std::string          m_id;
         RenderTechnique&     m_renderTechnique;
@@ -84,12 +84,12 @@ namespace scene
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename Func>
-    inline void RenderPipelineStage::addRenderJob(const std::string& name, Func&& func, renderer::CmdListRender* cmd, const scene::SceneData& scene, const scene::FrameData& frame)
+    inline void RenderPipelineStage::addRenderJob(const std::string& name, Func&& func, renderer::Device* device, renderer::CmdListRender* cmd, const scene::SceneData& scene, const scene::FrameData& frame)
     {
         task::Task* renderTask = new task::Task;
         renderTask->init(name, std::forward<Func>(func), cmd, scene, frame);
 
-        m_renderTechnique.addRenderJob(cmd, renderTask);
+        m_renderTechnique.addRenderJob(device, cmd, renderTask);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

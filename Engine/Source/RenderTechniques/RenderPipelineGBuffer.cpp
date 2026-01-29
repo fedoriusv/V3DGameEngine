@@ -405,7 +405,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
         };
 
     ASSERT(m_cmdList, "must be valid");
-    addRenderJob("GBuffer Job", renderJob, m_cmdList, scene, frame);
+    addRenderJob("GBuffer Job", renderJob, device, m_cmdList, scene, frame);
 }
 
 void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, scene::SceneData& state)
