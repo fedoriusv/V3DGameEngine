@@ -20,8 +20,8 @@ RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& si
 
     ASSERT(countAttacment < m_device->getDeviceCaps()._maxColorAttachments, "index >= maxColorattachments");
     m_renderpassDesc._countColorAttachment = countAttacment;
+    m_renderpassDesc._viewsMask = viewsMask;
     m_attachmentsDesc._renderArea = size;
-    m_attachmentsDesc._viewsMask = viewsMask;
 }
 
 RenderTargetState::~RenderTargetState()
@@ -169,7 +169,7 @@ bool RenderTargetState::checkCompatibility(const TextureView& texture, Attachmen
     u32 countLayers = 0;
     for (u32 i = 0; i < std::numeric_limits<u16>::digits; ++i)
     {
-        if ((m_attachmentsDesc._viewsMask >> i) & 0x1)
+        if ((m_renderpassDesc._viewsMask >> i) & 0x1)
         {
             countLayers = i;
         }

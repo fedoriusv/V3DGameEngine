@@ -52,7 +52,7 @@ namespace scene
             SHADER_PARAMETER(cb_DirectionShadowBuffer);
         };
 
-        std::vector<renderer::RenderTargetState*> m_cascadeRenderTargets;
+        renderer::RenderTargetState*              m_cascadeRenderTarget;
         renderer::Texture2D*                      m_cascadeTextureArray;
         renderer::GraphicsPipelineState*          m_cascadeShadowPipeline;
         MaterialCascadeShadowsParameters          m_cascadeShadowParameters;

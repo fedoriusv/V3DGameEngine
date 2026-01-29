@@ -423,12 +423,12 @@ void VulkanCommandBuffer::cmdEndRenderPass()
     m_isInsideRenderPass = false;
 }
 
-void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, const FramebufferDesc& framebufferDesc, const std::vector<VkClearValue>& clearValues)
+void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& renderpassDesc, const FramebufferDesc& framebufferDesc, const std::vector<VkClearValue>& clearValues)
 {
     std::vector<VkRenderingAttachmentInfo> colorAttachments;
-    for (u32 color = 0; color < passDesc._countColorAttachment; ++color)
+    for (u32 color = 0; color < renderpassDesc._countColorAttachment; ++color)
     {
-        const AttachmentDesc& description = passDesc._attachmentsDesc[color];
+        const AttachmentDesc& description = renderpassDesc._attachmentsDesc[color];
         auto& [texture, subresource] = framebufferDesc._imageViews[color];
         VulkanImage* vkImage = nullptr;
         if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
@@ -467,8 +467,8 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
 
     VkRenderingAttachmentInfo depthAttachment = {};
     VkRenderingAttachmentInfo stencilAttachment = {};
-    const AttachmentDesc& depthStencilDescription = passDesc._attachmentsDesc.back();
-    if (passDesc._hasDepthStencilAttachment)
+    const AttachmentDesc& depthStencilDescription = renderpassDesc._attachmentsDesc.back();
+    if (renderpassDesc._hasDepthStencilAttachment)
     {
         auto& [image, subresource] = framebufferDesc._imageViews.back();
         VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image->getTextureHandle()));
@@ -518,12 +518,12 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& passDesc, cons
     renderingInfo.pNext = nullptr;
     renderingInfo.flags = 0;
     renderingInfo.renderArea = { {0, 0 }, framebufferDesc._renderArea._width, framebufferDesc._renderArea._height };
-    renderingInfo.viewMask = passDesc._viewsMask;
+    renderingInfo.viewMask = renderpassDesc._viewsMask;
     renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = static_cast<u32>(colorAttachments.size());
     renderingInfo.pColorAttachments = colorAttachments.data();
-    renderingInfo.pDepthAttachment = (passDesc._hasDepthStencilAttachment && VulkanImage::isDepthFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format))) ? &depthAttachment : nullptr;
-    renderingInfo.pStencilAttachment = (passDesc._hasDepthStencilAttachment && VulkanImage::isStencilFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format))) ? &stencilAttachment : nullptr;
+    renderingInfo.pDepthAttachment = (renderpassDesc._hasDepthStencilAttachment && VulkanImage::isDepthFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format))) ? &depthAttachment : nullptr;
+    renderingInfo.pStencilAttachment = (renderpassDesc._hasDepthStencilAttachment && VulkanImage::isStencilFormat(VulkanImage::convertImageFormatToVkFormat(depthStencilDescription._format))) ? &stencilAttachment : nullptr;
 
 #if VULKAN_DEBUG
     LOG_DEBUG("VulkanCommandBuffer::cmdBeginRendering area (width %u, height %u)", renderingInfo.renderArea.extent.width, renderingInfo.renderArea.extent.height);

@@ -3,6 +3,10 @@
 #include "lighting_common.hlsli"
 #include "gbuffer_common.hlsli"
 
+#ifndef SHADOWMAP_CASCADE_COUNT
+#define SHADOWMAP_CASCADE_COUNT 4
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 typedef VS_GBUFFER_STANDARD_INPUT VS_SHADOW_STANDARD_INPUT;
@@ -11,7 +15,7 @@ typedef VS_GBUFFER_STANDARD_INPUT VS_SHADOW_STANDARD_INPUT;
 
 struct ShadowBuffer
 {
-    float4x4 lightSpaceMatrix;
+    float4x4 lightSpaceMatrix[SHADOWMAP_CASCADE_COUNT];
     float4x4 modelMatrix;
     float    bias;
 };
@@ -19,10 +23,10 @@ struct ShadowBuffer
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float4 shadows_vs(VS_SHADOW_STANDARD_INPUT Input) : SV_POSITION
+float4 shadows_vs(VS_SHADOW_STANDARD_INPUT Input, uint ViewId : SV_ViewID) : SV_POSITION
 {
     float4 position = mul(cb_DirectionShadowBuffer.modelMatrix, float4(Input.Position, 1.0));
-    position = mul(cb_DirectionShadowBuffer.lightSpaceMatrix, position);
+    position = mul(cb_DirectionShadowBuffer.lightSpaceMatrix[ViewId], position);
     
     //Apply bias
     float depth = position.z / position.w;

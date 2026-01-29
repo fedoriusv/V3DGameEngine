@@ -104,8 +104,7 @@ namespace renderer
         math::Dimension2D                                  _renderArea;
         std::array<color::Color, k_maxColorAttachments>    _clearColorValues;
         f32                                                _clearDepthValue;
-        u32                                                _clearStencilValue : 16;
-        u32                                                _viewsMask         : 16;
+        u32                                                _clearStencilValue;
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,11 +307,12 @@ namespace renderer
         * @brief RenderTargetState constructor. Used for creating a render target
         * Private method. Use createObject interface inside CommandList class to call.
         *
+        * @param const mDevice* device [required]
         * @param const math::Dimension2D& size [required]
+        * @param u32 countColorAttacment [optional]
         * @param u32 viewsMask [optional]. Use 0 if only one view or mask by bits if multiview feature is supported.
-        * @param const std::string& name [optional]
         */
-        explicit RenderTargetState(Device* device, const math::Dimension2D& size, u32 countAttacment = 1U, u32 viewsMask = 0U) noexcept;
+        explicit RenderTargetState(Device* device, const math::Dimension2D& size, u32 countColorAttacment = 1U, u32 viewsMask = 0U) noexcept;
 
         /**
         * @brief RenderTargetState desctructor
