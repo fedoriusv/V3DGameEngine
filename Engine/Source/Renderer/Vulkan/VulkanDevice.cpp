@@ -1942,9 +1942,9 @@ void VulkanCmdList::draw(const GeometryBufferDesc& desc, u32 firstVertex, u32 ve
     VulkanCommandBuffer* drawBuffer = acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
     {
-        if (!desc._vertexBuffers.empty())
+        if (desc._vertexBufferCount)
         {
-            drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertexBuffers.size()), desc._vertexBuffers, desc._offsets, desc._strides);
+            drawBuffer->cmdBindVertexBuffers(0, desc._vertexBufferCount, desc._vertexBuffers, desc._vertexOffsets, desc._vertexStrides);
         }
 
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
@@ -1967,7 +1967,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
         drawBuffer->cmdBindIndexBuffers(indexBuffer, desc._indexOffset, (desc._indexType == IndexBufferType::IndexType_32) ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 
         ASSERT(!desc._vertexBuffers.empty(), "empty");
-        drawBuffer->cmdBindVertexBuffers(0, static_cast<u32>(desc._vertexBuffers.size()), desc._vertexBuffers, desc._offsets, desc._strides);
+        drawBuffer->cmdBindVertexBuffers(0, desc._vertexBufferCount, desc._vertexBuffers, desc._vertexOffsets, desc._vertexStrides);
 
         ASSERT(drawBuffer->isInsideRenderPass(), "not inside renderpass");
         drawBuffer->cmdDrawIndexed(firstIndex, indexCount, firstInstance, instanceCount, vertexOffest);

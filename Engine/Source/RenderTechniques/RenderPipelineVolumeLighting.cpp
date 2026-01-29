@@ -222,12 +222,12 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
             DEBUG_MARKER_SCOPE(cmdList, std::format("Light {}", light.getName()), color::rgbaf::LTGREY);
             if (light.getType() == typeOf<scene::PointLight>())
             {
-                renderer::GeometryBufferDesc desc(m_sphereVolume->getIndexBuffer(), 0, m_sphereVolume->getVertexBuffer(0), 0, sizeof(VertexFormatSimpleLit), 0);
+                renderer::GeometryBufferDesc desc(m_sphereVolume->getIndexBuffer(), 0, m_sphereVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
                 cmdList->drawIndexed(desc, 0, m_sphereVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
             }
             else if (light.getType() == typeOf<scene::SpotLight>())
             {
-                renderer::GeometryBufferDesc desc(m_coneVolume->getIndexBuffer(), 0, m_coneVolume->getVertexBuffer(0), 0, sizeof(VertexFormatSimpleLit), 0);
+                renderer::GeometryBufferDesc desc(m_coneVolume->getIndexBuffer(), 0, m_coneVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
                 cmdList->drawIndexed(desc, 0, m_coneVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
             }
         }

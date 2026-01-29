@@ -681,7 +681,7 @@ bool ImGuiWidgetHandler::createBuffers(ImGuiWidgetViewportData* viewportData, u3
     {
         viewportData->_indexBuffer[i] = new renderer::IndexBuffer(m_device, renderer::BufferUsage::Buffer_GPUWriteCocherent, sizeof(ImDrawIdx) == 2 ? renderer::IndexBufferType::IndexType_16 : renderer::IndexBufferType::IndexType_32, indexCount, "UIIndexBuffer_" + std::to_string(i));
         viewportData->_vertexBuffer[i] = new renderer::VertexBuffer(m_device, renderer::BufferUsage::Buffer_GPUWriteCocherent, vertexCount, vertexCount * sizeof(ImDrawVert), "UIVertexBuffer_" + std::to_string(i));
-        viewportData->_geometryDesc[i] = renderer::GeometryBufferDesc(viewportData->_indexBuffer[i], 0, viewportData->_vertexBuffer[i], 0, sizeof(ImDrawVert), 0);
+        viewportData->_geometryDesc[i] = renderer::GeometryBufferDesc(viewportData->_indexBuffer[i], 0, viewportData->_vertexBuffer[i], sizeof(ImDrawVert), 0);
     }
 
     return true;

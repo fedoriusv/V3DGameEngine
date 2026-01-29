@@ -29,31 +29,31 @@ inline void VulkanCommandBuffer::cmdSetStencilRef(VkStencilFaceFlags faceMask, u
     VulkanWrapper::CmdSetStencilReference(m_commands, faceMask, ref);
 }
 
-inline void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::vector<BufferHandle>& buffers, const std::vector<u64>& offests, const std::vector<u64>& strides)
+inline void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::array<BufferHandle, k_maxVertexInputBindings>& buffer, const std::array<u64, k_maxVertexInputBindings>& offset, const std::array<u64, k_maxVertexInputBindings>& stride)
 {
     ASSERT(m_status == CommandBufferStatus::Begin, "not started");
     ASSERT(countBinding < k_maxVertexInputBindings, "range out");
 
     std::array<VkBuffer, k_maxVertexInputBindings> vkBuffers;
     std::array<u64, k_maxVertexInputBindings> vkSizes;
+
+    for (u32 index = 0; index < countBinding; ++index)
     {
-        for (u32 index = 0; index < buffers.size(); ++index)
-        {
-            VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffers[index]));
-            vkBuffers[index] = vkBuffer->getHandle();
-            vkSizes[index] = vkBuffer->getSize();
-            VulkanCommandBuffer::captureResource(vkBuffer);
-        }
+        VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer[index]));
+        vkBuffers[index] = vkBuffer->getHandle();
+        vkSizes[index] = vkBuffer->getSize();
+
+        VulkanCommandBuffer::captureResource(vkBuffer);
     }
 
     static_assert(sizeof(VkDeviceSize) == sizeof(u64));
     if (VulkanDevice::isDynamicStateSupported(VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE))
     {
-        VulkanWrapper::CmdBindVertexBuffers2(m_commands, firstBinding, countBinding, vkBuffers.data(), offests.data(), vkSizes.data(), strides.data());
+        VulkanWrapper::CmdBindVertexBuffers2(m_commands, firstBinding, countBinding, vkBuffers.data(), offset.data(), vkSizes.data(), stride.data());
     }
     else
     {
-        VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBinding, vkBuffers.data(), offests.data());
+        VulkanWrapper::CmdBindVertexBuffers(m_commands, firstBinding, countBinding, vkBuffers.data(), offset.data());
     }
 }
 

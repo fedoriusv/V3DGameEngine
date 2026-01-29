@@ -253,59 +253,55 @@ namespace renderer
     struct GeometryBufferDesc
     {
         GeometryBufferDesc() noexcept
-            : _indexBuffer(nullptr)
-            , _indexOffset(0U)
+            : _indexBuffer(BufferHandle())
+            , _indexOffset(0)
             , _indexType(IndexBufferType::IndexType_32)
+            , _vertexBufferCount(0)
         {
         }
 
-        GeometryBufferDesc(const VertexBuffer* vertex, u32 stream, u64 stride) noexcept
-            : _indexBuffer(nullptr)
-            , _indexOffset(0U)
+        GeometryBufferDesc(const VertexBuffer* vertex, u32 stride) noexcept
+            : _indexBuffer(BufferHandle())
+            , _indexOffset(0)
             , _indexType(IndexBufferType::IndexType_32)
-
-            , _vertexBuffers({ vertex->m_buffer })
-            , _streamIDs({ stream })
-            , _strides({ stride })
+            , _vertexBufferCount(1)
         {
-            _offsets.resize(_vertexBuffers.size(), 0);
+            _vertexBuffers[0] = vertex->m_buffer;
+            _vertexOffsets[0] = 0;
+            _vertexStrides[0] = stride;
         }
 
-        GeometryBufferDesc(const VertexBuffer* vertex, u32 stream, u64 stride, u64 offset) noexcept
-            : _indexBuffer(nullptr)
-            , _indexOffset(0U)
+        GeometryBufferDesc(const VertexBuffer* vertex, u32 stride, u32 offset) noexcept
+            : _indexBuffer(BufferHandle())
+            , _indexOffset(0)
             , _indexType(IndexBufferType::IndexType_32)
-
-            , _vertexBuffers({ vertex->m_buffer })
-            , _streamIDs({ stream })
-            , _strides({ stride })
-            , _offsets({ offset })
+            , _vertexBufferCount(1)
         {
+            _vertexBuffers[0] = vertex->m_buffer;
+            _vertexOffsets[0] = offset;
+            _vertexStrides[0] = stride;
         }
 
-        GeometryBufferDesc(const IndexBuffer* index, u32 indexOffset, const VertexBuffer* vertex, u32 stream, u64 stride, u64 vertexOffset) noexcept
+        GeometryBufferDesc(const IndexBuffer* index, u32 indexOffset, const VertexBuffer* vertex, u32 stride, u32 vertexOffset) noexcept
             : _indexBuffer(index->m_buffer)
             , _indexOffset(indexOffset)
             , _indexType(index->getIndexBufferType())
-
-            , _vertexBuffers({ vertex->m_buffer })
-            , _streamIDs({ stream })
-            , _strides({ stride })
-            , _offsets({ vertexOffset })
+            , _vertexBufferCount(1)
         {
+            _vertexBuffers[0] = vertex->m_buffer;
+            _vertexOffsets[0] = vertexOffset;
+            _vertexStrides[0] = stride;
         }
 
         ~GeometryBufferDesc() = default;
 
-        BufferHandle              _indexBuffer;
-        u64                       _indexOffset;
-        IndexBufferType           _indexType;
-
-        std::vector<BufferHandle> _vertexBuffers;
-        std::vector<u32>          _streamIDs;
-        std::vector<u64>          _offsets;
-        std::vector<u64>          _strides;
-
+        BufferHandle                                        _indexBuffer;
+        u64                                                 _indexOffset;
+        IndexBufferType                                     _indexType;
+        u32                                                 _vertexBufferCount = 0;
+        std::array<BufferHandle, k_maxVertexInputBindings>  _vertexBuffers     = {};
+        std::array<u64, k_maxVertexInputBindings>           _vertexOffsets     = {};
+        std::array<u64, k_maxVertexInputBindings>           _vertexStrides     = {};
     };
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

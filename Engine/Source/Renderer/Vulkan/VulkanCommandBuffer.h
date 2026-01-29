@@ -86,7 +86,7 @@ namespace vk
         void cmdResetQueryPool(VulkanQueryPool* pool);
 
         //binds
-        void cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::vector<BufferHandle>& buffers, const std::vector<u64>& offests, const std::vector<u64>& strides);
+        void cmdBindVertexBuffers(u32 firstBinding, u32 countBinding, const std::array<BufferHandle, k_maxVertexInputBindings>& buffer, const std::array<u64, k_maxVertexInputBindings>& offset, const std::array<u64, k_maxVertexInputBindings>& stride);
         void cmdBindIndexBuffers(VulkanBuffer* buffer, VkDeviceSize offest, VkIndexType type);
         void cmdBindPipeline(VulkanGraphicPipeline* pipeline);
         void cmdBindPipeline(VulkanComputePipeline* pipeline);

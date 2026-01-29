@@ -142,7 +142,7 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
         if (itemMesh.geometry)
         {
             const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
-            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(VertexFormatStandard), 0);
+            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), sizeof(VertexFormatStandard), 0);
             cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
         }
         else
