@@ -48,8 +48,10 @@ void RenderPipelineGammaCorrectionStage::create(renderer::Device* device, scene:
 
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Tonemapper);
-    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_ColorSampler);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_LinearMirrorSampler);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_LinearClampSampler);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_ColorTexture);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_LUTTexture);
 }
 
 void RenderPipelineGammaCorrectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -106,7 +108,7 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
     } tonemapper;
 
     tonemapper.tonemapper = scene.m_settings._tonemapParams._tonemapper;
-    tonemapper.lut = 0u;
+    tonemapper.lut = scene.m_settings._tonemapParams._lut;
     tonemapper.exposure = 1.0f;
     tonemapper.gamma = scene.m_settings._tonemapParams._gamma;
 
@@ -114,15 +116,25 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
     ASSERT(composite_attachment.isValid(), "must be valid");
     renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(composite_attachment);
 
-    ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_mirror");
-    ASSERT(sampler_state_h.isValid(), "must be valid");
-    renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
+    ObjectHandle lut_h = scene.m_globalResources.get("current_lut");
+    ASSERT(lut_h.isValid(), "must be valid");
+    renderer::Texture2D* lut = objectFromHandle<renderer::Texture2D>(lut_h);
+
+    ObjectHandle linear_sampler_mirror_h = scene.m_globalResources.get("linear_sampler_mirror");
+    ASSERT(linear_sampler_mirror_h.isValid(), "must be valid");
+    renderer::SamplerState* linear_sampler_mirror_state = objectFromHandle<renderer::SamplerState>(linear_sampler_mirror_h);
+
+    ObjectHandle linear_sampler_repeat_h = scene.m_globalResources.get("linear_sampler_repeat");
+    ASSERT(linear_sampler_repeat_h.isValid(), "must be valid");
+    renderer::SamplerState* linear_sampler_repeat_state = objectFromHandle<renderer::SamplerState>(linear_sampler_repeat_h);
 
     cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
         {
             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &tonemapper, 0, sizeof(Tonemapper)}, m_parameters.cb_Tonemapper),
-            renderer::Descriptor(sampler_state, m_parameters.s_ColorSampler),
+            renderer::Descriptor(linear_sampler_mirror_state, m_parameters.s_LinearMirrorSampler),
+            renderer::Descriptor(linear_sampler_repeat_state, m_parameters.s_LinearClampSampler),
             renderer::Descriptor(renderer::TextureView(texture, 0, 0), m_parameters.t_ColorTexture),
+            renderer::Descriptor(renderer::TextureView(lut, 0, 0), m_parameters.t_LUTTexture),
         });
 
     cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
