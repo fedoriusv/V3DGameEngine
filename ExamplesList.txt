@@ -4,4 +4,4 @@ SimpleTriangle
 DrawMesh
 MultithreadedDraws
 Test
-UIEditor
+V3DEditor

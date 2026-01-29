@@ -116,6 +116,7 @@ public:
 private:
 
     void loadResources();
+    void applyLUT(u32 index);
 
     renderer::Device*               m_device;
 
@@ -133,6 +134,8 @@ private:
 private:
 
     u32                             m_activeIndex;
+
+    std::vector<std::tuple<std::string, v3d::ObjectHandle>> m_LUTs;
 
     void editor_loadDebug();
 

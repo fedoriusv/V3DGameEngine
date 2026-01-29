@@ -154,8 +154,8 @@ void EditorViewScreen::build()
         )
         .addWidget(ui::WidgetComboBox()
             .addElement("No LUT")
-            .addElement("LUT 0")
-            .addElement("LUT 1")
+            .addElement("Default LUT")
+            .addElement("Neutral Color")
             .setActiveIndex(m_sceneData->m_settings._tonemapParams._lut)
             .setOnChangedIndexEvent([this](ui::Widget* w, s32 id)
                 {
@@ -251,6 +251,39 @@ void EditorViewScreen::build()
                 m_sceneData->m_settings._shadowsParams._cascadeSlopeBias[1] = v._y;
                 m_sceneData->m_settings._shadowsParams._cascadeSlopeBias[2] = v._z;
                 m_sceneData->m_settings._shadowsParams._cascadeSlopeBias[3] = v._w;
+            })
+        )
+        // Shadows
+
+        // Debug
+        .addWidget(ui::WidgetLayout()
+            .setFontSize(ui::WidgetLayout::LargeFont)
+            .addWidget(ui::WidgetText("Debug")
+                .setColor({ 1.0, 1.0, 0.2, 1.0 })
+            )
+        )
+        .addWidget(ui::WidgetCheckBox("Show Debug lines", true)
+            .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
+            {
+                //TODO
+            })
+        )
+        .addWidget(ui::WidgetCheckBox("Show Ground grid", false)
+        .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
+            {
+                //TODO
+            })
+        )
+        .addWidget(ui::WidgetComboBox()
+        .addElement("Final")
+        .addElement("GBuffer Albedo")
+        .addElement("GBuffer Normals")
+        .addElement("Depth")
+        .addElement("Lights")
+        .setActiveIndex(0)
+        .setOnChangedIndexEvent([this](ui::Widget* w, s32 id)
+            {
+                //TODO
             })
         );
         // Debug

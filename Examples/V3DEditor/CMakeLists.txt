@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(CURRENT_PROJECT "UIEditor")
+set(CURRENT_PROJECT "V3DEditor")
 message(STATUS ${CURRENT_PROJECT})
 
 project(${CURRENT_PROJECT})
