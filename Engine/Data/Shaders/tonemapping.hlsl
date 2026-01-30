@@ -7,7 +7,7 @@ struct Tonemapper
 {
     uint tonemapper;
     uint lut;
-    float exposure;
+    float ev100;
     float gamma;
 };
 
@@ -94,32 +94,33 @@ float3 lut_2D(float3 color, float lutSize)
 
 [[vk::location(0)]] float4 tonemapping_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
-    float4 hdrColor = t_ColorTexture.SampleLevel(s_LinearMirrorSampler, Input.UV, 0);
-    float exposure = cb_Tonemapper.exposure;
+    float3 hdrColor = t_ColorTexture.SampleLevel(s_LinearMirrorSampler, Input.UV, 0).rgb;
+    float exposure = pow(2.0, cb_Tonemapper.ev100);
     
+     // Tonemap correction
+    float3 ldrColor = saturate(hdrColor * exposure);
     if (cb_Tonemapper.tonemapper == 1) //Reinhard
     {
-        hdrColor.rgb = tonemap_Reinhard(hdrColor.rgb * exposure);
+        ldrColor.rgb = tonemap_Reinhard(hdrColor.rgb * exposure);
     }
     else if (cb_Tonemapper.tonemapper == 2) //ACES
     {
-        hdrColor.rgb = tonemap_ACES_approx(hdrColor.rgb * exposure);
+        ldrColor.rgb = tonemap_ACES_approx(hdrColor.rgb * exposure);
     }
     else if (cb_Tonemapper.tonemapper == 3) //Khronos PBR Neutral
     {
-        hdrColor.rgb = tonemap_KhronosPBR_Neutral(hdrColor.rgb * exposure);
+        ldrColor.rgb = tonemap_KhronosPBR_Neutral(hdrColor.rgb * exposure);
     }
     
-    //TODO
     float with, height;
     t_LUTTexture.GetDimensions(with, height);
-    hdrColor.rgb = lut_2D(hdrColor.rgb, height);
-    
-    // Gamma correction (linear -> sRGB)
-    float gamma = cb_Tonemapper.gamma;
-    float4 ldrColor = float4(pow(hdrColor.rgb * exposure, 1.0 / gamma), 1.0);
+    ldrColor.rgb = lut_2D(ldrColor.rgb, height);
 
-    return ldrColor;
+    // Gamma correction
+    float gamma = cb_Tonemapper.gamma;
+    float3 finalColor = pow(ldrColor.rgb, 1.0 / gamma);
+
+    return float4(finalColor.rgb, 1.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

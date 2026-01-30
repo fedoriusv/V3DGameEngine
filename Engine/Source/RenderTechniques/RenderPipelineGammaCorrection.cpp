@@ -103,13 +103,13 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
     {
         u32     tonemapper;
         u32     lut;
-        f32     exposure;
+        f32     ev100;
         f32     gamma;
     } tonemapper;
 
     tonemapper.tonemapper = scene.m_settings._tonemapParams._tonemapper;
     tonemapper.lut = scene.m_settings._tonemapParams._lut;
-    tonemapper.exposure = 1.0f;
+    tonemapper.ev100 = scene.m_settings._tonemapParams._ev100; //@see: https://en.wikipedia.org/wiki/Exposure_value#Tabulated_exposure_values
     tonemapper.gamma = scene.m_settings._tonemapParams._gamma;
 
     ObjectHandle composite_attachment = scene.m_globalResources.get("render_target");
