@@ -69,6 +69,8 @@ namespace math
     inline T random(T min, T max)
     {
         static std::default_random_engine e;
+        static std::mt19937 gen(e());
+
         if constexpr (std::is_floating_point_v<T>)
         {
             static std::uniform_real_distribution<> dis(min, max);

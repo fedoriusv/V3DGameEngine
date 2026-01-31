@@ -102,7 +102,7 @@ namespace math
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //using Vector2D = TVector2D<f32>;
+    using Vector2D = VectorRegister2D;
     using Vector3D = VectorRegister3D;
     using Vector4D = VectorRegister4D;
 

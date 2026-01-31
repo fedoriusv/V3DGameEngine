@@ -343,11 +343,14 @@ namespace math
     template <RegisterType T, u32 Rows, u32 Cols> requires ValidMatrixDim<Rows, Cols>
     inline void TMatrixRegister<T, Rows, Cols>::set(const T* matrix)
     {
-        _m = DirectX::XMMatrixSet(
-            matrix[0], matrix[1], matrix[2], matrix[3],
-            matrix[4], matrix[5], matrix[6], matrix[7],
-            matrix[8], matrix[9], matrix[10], matrix[11],
-            matrix[12], matrix[13], matrix[14], matrix[15]);
+        if constexpr (Rows == 4 && Cols == 4)
+        {
+            _m = DirectX::XMLoadFloat4x4((DirectX::XMFLOAT4X4*)matrix);
+        }
+        else if (Rows == 3 && Cols == 3)
+        {
+            _m = DirectX::XMLoadFloat3x3((DirectX::XMFLOAT3X3*)matrix);
+        }
     }
 
     template<RegisterType T, u32 Rows, u32 Cols> requires ValidMatrixDim<Rows, Cols>
