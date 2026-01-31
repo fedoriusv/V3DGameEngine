@@ -155,7 +155,7 @@ void EditorViewScreen::build()
         .addWidget(ui::WidgetComboBox()
             .addElement("No LUT")
             .addElement("Default LUT")
-            .addElement("Neutral Color")
+            .addElement("Greyscale LUT")
             .setActiveIndex(m_sceneData->m_settings._tonemapParams._lut)
             .setOnChangedIndexEvent([this](ui::Widget* w, s32 id)
                 {

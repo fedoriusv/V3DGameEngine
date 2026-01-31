@@ -34,6 +34,32 @@ static renderer::Format convertFormat(gli::format format)
     case gli::format::FORMAT_BGRA8_SRGB_PACK8:
         return renderer::Format::Format_B8G8R8A8_SRGB;
 
+    case gli::format::FORMAT_RGB8_UNORM_PACK8:
+        return renderer::Format::Format_R8G8B8_UNorm;
+
+    case gli::format::FORMAT_RGB8_SRGB_PACK8:
+        return renderer::Format::Format_R8G8B8_SRGB;
+
+    case gli::format::FORMAT_BGR8_UNORM_PACK8:
+        return renderer::Format::Format_B8G8R8_UNorm;
+
+    case gli::format::FORMAT_BGR8_SRGB_PACK8:
+        return renderer::Format::Format_B8G8R8_SRGB;
+
+
+    case gli::format::FORMAT_RGBA8_UNORM_PACK32:
+        return renderer::Format::Format_A8B8G8R8_UNorm_Pack32;
+
+    case gli::format::FORMAT_RGBA8_SRGB_PACK32:
+        return renderer::Format::Format_A8B8G8R8_SRGB_Pack32;
+
+    case gli::format::FORMAT_BGR8_UNORM_PACK32:
+        return renderer::Format::Format_A8B8G8R8_UNorm_Pack32;
+
+    case gli::format::FORMAT_BGR8_SRGB_PACK32:
+        return renderer::Format::Format_A8B8G8R8_SRGB_Pack32;
+
+
     case gli::format::FORMAT_RGB_DXT1_UNORM_BLOCK8:
         return renderer::Format::Format_BC1_RGB_UNorm_Block;
 

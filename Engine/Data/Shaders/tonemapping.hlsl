@@ -15,7 +15,7 @@ struct Tonemapper
 [[vk::binding(2, 1)]] SamplerState s_LinearMirrorSampler       : register(s0, space1);
 [[vk::binding(3, 1)]] SamplerState s_LinearClampSampler        : register(s1, space1);
 [[vk::binding(4, 1)]] Texture2D t_ColorTexture                 : register(t1, space1);
-[[vk::binding(5, 1)]] Texture2D t_LUTTexture                   : register(t2, space1);
+[[vk::binding(5, 1)]] Texture3D t_LUTTexture                   : register(t2, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +59,7 @@ float3 tonemap_KhronosPBR_Neutral(in float3 color)
     return lerp(color, newPeak.xxx, g);
 }
 
-float3 lut_2D(float3 color, float lutSize)
+float3 lut_2D(Texture2D lutTexture, in float3 color, in float lutSize)
 {
     color = saturate(color);
     if (cb_Tonemapper.lut == 0)
@@ -72,22 +72,26 @@ float3 lut_2D(float3 color, float lutSize)
 
     float3 lutcoord = float3((color.xy * lutSize - color.xy + 0.5) * texelsize.xy, color.z * lutSize - color.z);
     const float lerpfact = frac(lutcoord.z);
-    
-    //float blue = color.b * (lutSize - 1.0);
-    //float slice0 = floor(blue);
-    //lutcoord.x += slice0 * texelsize.y;
     lutcoord.x += (lutcoord.z - lerpfact) * texelsize.y;
     
-    float3 c0 = t_LUTTexture.Sample(s_LinearMirrorSampler, lutcoord.xy).rgb;
-    float3 c1 = t_LUTTexture.Sample(s_LinearMirrorSampler, float2(lutcoord.x + texelsize.y, lutcoord.y)).rgb;
+    float3 c0 = lutTexture.Sample(s_LinearMirrorSampler, lutcoord.xy).rgb;
+    float3 c1 = lutTexture.Sample(s_LinearMirrorSampler, float2(lutcoord.x + texelsize.y, lutcoord.y)).rgb;
     float3 lutcolor = lerp(c0, c1, lerpfact);
-    
-    //TODO fix r 
-    //lutcolor.r = color.r;
     
     float fLUT_AmountChroma = 1.0;
     float fLUT_AmountLuma = 1.0;
     return lerp(normalize(color), normalize(lutcolor), fLUT_AmountChroma) * lerp(length(color), length(lutcolor), fLUT_AmountLuma);
+}
+
+float3 lut_3D(Texture3D lutTexture, in float3 color, in float lutSize)
+{
+    color = saturate(color);
+    if (cb_Tonemapper.lut == 0)
+    {
+        return color;
+    }
+    
+    return lutTexture.Sample(s_LinearMirrorSampler, color).rgb;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -112,9 +116,9 @@ float3 lut_2D(float3 color, float lutSize)
         ldrColor.rgb = tonemap_KhronosPBR_Neutral(hdrColor.rgb * exposure);
     }
     
-    float with, height;
-    t_LUTTexture.GetDimensions(with, height);
-    ldrColor.rgb = lut_2D(ldrColor.rgb, height);
+    float with, height, depth;
+    t_LUTTexture.GetDimensions(with, height, depth);
+    ldrColor.rgb = lut_3D(t_LUTTexture, ldrColor.rgb, height);
 
     // Gamma correction
     float gamma = cb_Tonemapper.gamma;

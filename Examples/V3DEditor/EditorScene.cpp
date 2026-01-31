@@ -353,8 +353,8 @@ void EditorScene::loadResources()
     renderer::Texture2D* uv_grid = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "uv_grid.dds", policy);
     renderer::Texture2D* noise_blue = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "noise_blue.dds", policy);
     renderer::Texture2D* tiling_noise = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "good64x64tilingnoisehighfreq.dds", policy);
-    renderer::Texture2D* default_lut = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "lut_default.png", policy);
-    renderer::Texture2D* neutral_color_lut = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "lut_neutral_color.png", policy);
+    renderer::Texture3D* default_lut = resource::ResourceManager::getInstance()->load<renderer::Texture3D, resource::TextureFileLoader>(m_device, "default_lut.dds", policy);
+    renderer::Texture3D* greyscale_lut = resource::ResourceManager::getInstance()->load<renderer::Texture3D, resource::TextureFileLoader>(m_device, "greyscale_lut.dds", policy);
 
     m_sceneData.m_globalResources.bind("default_black", default_black);
     m_sceneData.m_globalResources.bind("default_white", default_white);
@@ -366,7 +366,7 @@ void EditorScene::loadResources()
     m_sceneData.m_globalResources.bind("noise_blue", noise_blue);
     m_sceneData.m_globalResources.bind("tiling_noise", tiling_noise);
     m_sceneData.m_globalResources.bind("default_lut", default_lut);
-    m_sceneData.m_globalResources.bind("neutral_color_lut", neutral_color_lut);
+    m_sceneData.m_globalResources.bind("greyscale_lut", greyscale_lut);
 
     renderer::SamplerState* linear_sampler_repeat = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
     linear_sampler_repeat->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
@@ -391,7 +391,7 @@ void EditorScene::loadResources()
 
     m_LUTs.emplace_back("No LUT", default_lut);
     m_LUTs.emplace_back("Default LUT", default_lut);
-    m_LUTs.emplace_back("Neutral color", neutral_color_lut);
+    m_LUTs.emplace_back("Greyscale LUT", greyscale_lut);
 
     if (m_editorMode)
     {
@@ -533,6 +533,7 @@ void EditorScene::test_loadTestScene()
     m_sceneData.m_settings._shadowsParams._longRange = 50.f;
     m_sceneData.m_settings._shadowsParams._cascadeBaseBias = { 0.004f, 0.008f, 0.02f, 0.1f };
     m_sceneData.m_settings._shadowsParams._cascadeSlopeBias = { 2.0f, 2.5f, 3.0f, 5.0f };
+    m_sceneData.m_settings._tonemapParams._ev100 = 0.5f;
 
     test_loadLights();
 

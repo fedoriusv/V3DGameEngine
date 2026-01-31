@@ -118,7 +118,7 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
 
     ObjectHandle lut_h = scene.m_globalResources.get("current_lut");
     ASSERT(lut_h.isValid(), "must be valid");
-    renderer::Texture2D* lut = objectFromHandle<renderer::Texture2D>(lut_h);
+    renderer::Texture3D* lut = objectFromHandle<renderer::Texture3D>(lut_h);
 
     ObjectHandle linear_sampler_mirror_h = scene.m_globalResources.get("linear_sampler_mirror");
     ASSERT(linear_sampler_mirror_h.isValid(), "must be valid");
