@@ -1178,7 +1178,8 @@ u32 AssimpDecoder::decodeMaterial(const aiScene* scene, stream::Stream* stream, 
                 }
                 else if (model == aiShadingMode_OrenNayar || model == aiShadingMode_Minnaert || model == aiShadingMode_Phong || model == aiShadingMode_Blinn)
                 {
-                    shadingModel = scene::MaterialShadingModel::PBR_Specular;
+                    ASSERT(false, "unsupported");
+                    //shadingModel = scene::MaterialShadingModel::PBR_Specular;
                 }
                 else if (model == aiShadingMode_CookTorrance || model == aiShadingMode_PBR_BRDF)
                 {

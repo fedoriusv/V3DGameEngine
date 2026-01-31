@@ -88,7 +88,7 @@ void Scene::finalize()
                         entry->passMask = 1 << toEnumType((scene::RenderPipelinePass)material->getProperty<u32>("materialID"));
                         entry->pipelineID = material->getProperty<u32>("pipelineID");
                     }
-                    else if (material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness || material->getShadingModel() == scene::MaterialShadingModel::PBR_Specular)
+                    else if (material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness)
                     {
                         bool isOpaque = true;
                         entry->passMask = isOpaque ? (1 << toEnumType(scene::RenderPipelinePass::Opaque)) : (1 << toEnumType(scene::RenderPipelinePass::Transparency));
@@ -109,6 +109,7 @@ void Scene::finalize()
                 scene::DrawNodeEntry* entry = new scene::DrawNodeEntry;
                 entry->object = node;
                 entry->material = node->getComponentByType<scene::Material>();
+                entry->geometry = nullptr;
                 entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::Indicator);
                 entry->pipelineID = 0;
 

@@ -116,7 +116,6 @@ public:
 private:
 
     void loadResources();
-    void applyLUT(u32 index);
 
     renderer::Device*               m_device;
 
