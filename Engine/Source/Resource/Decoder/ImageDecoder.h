@@ -34,6 +34,7 @@ namespace resource
         struct TexturePolicy : ResourceDecoder::Policy
         {
             renderer::TextureUsageFlags usage = 0;
+            bool                        unique = true;
         };
         typedef TexturePolicy PolicyType;
 

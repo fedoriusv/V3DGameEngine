@@ -79,6 +79,7 @@ namespace resource
             VertexProperiesFlags        vertexProperies = 0;
             f32                         scaleFactor = 1.f;
             scene::MaterialShadingModel overridedShadingModel = scene::MaterialShadingModel::Custom;
+            bool                        unique = false;
         };
         using PolicyType = ModelPolicy;
 

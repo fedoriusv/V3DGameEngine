@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Resource.h"
 #include "Utils/Singleton.h"
+#include "Utils/Timer.h"
 #include "Renderer/Shader.h"
 #include "Resource/Decoder/ShaderDecoder.h"
 
@@ -241,22 +242,28 @@ namespace resource
         std::string innerName(filename);
         std::transform(filename.cbegin(), filename.cend(), innerName.begin(), ::tolower);
 
-        auto resourceIter = m_resources.emplace(std::make_pair(innerName, nullptr));
-        if (resourceIter.second)
+        auto found = m_resources.find(innerName);
+        if (found != m_resources.end() && policy.unique)
         {
-            TResourceLoader loader(device, policy, flags);
-            Resource* res = loader.load(innerName);
-            if (!res)
+            return static_cast<TResource*>(found->second);
+        }
+        else
+        {
+            if (found != m_resources.end())
             {
-                m_resources.erase(resourceIter.first);
-                return nullptr;
+                innerName = std::format("{}_copy_{}", innerName, utils::Timer::getCurrentTime());
             }
 
-            resourceIter.first->second = res;
-            return static_cast<TResource*>(res);
+            TResourceLoader loader(device, policy, flags);
+            Resource* resource = loader.load(filename);
+            if (resource)
+            {
+                m_resources.insert(std::make_pair(innerName, resource));
+                return static_cast<TResource*>(resource);
+            }
         }
 
-        return static_cast<TResource*>(resourceIter.first->second);
+        return nullptr;
     }
 
     inline void ResourceManager::clear()
