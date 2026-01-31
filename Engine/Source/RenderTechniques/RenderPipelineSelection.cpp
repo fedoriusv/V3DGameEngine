@@ -26,7 +26,6 @@ RenderPipelineSelectionStage::RenderPipelineSelectionStage(RenderTechnique* tech
     , m_modelHandler(modelHandler)
 
     , m_renderTarget(nullptr)
-    , m_pipeline(nullptr)
 {
 }
 
@@ -38,39 +37,105 @@ void RenderPipelineSelectionStage::create(renderer::Device* device, scene::Scene
 {
     createRenderTarget(device, scene);
 
-    const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-        "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-    const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-        "gbuffer.hlsl", "gbuffer_selection_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+    //VertexFormatStandardDesc
+    {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "gbuffer.hlsl", "gbuffer_selection_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_renderTarget->getRenderPassDesc(),
-        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_pipeline");
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_renderTarget->getRenderPassDesc(),
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_standard_pipeline");
 
-    m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-    m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-    m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        pipeline->setCullMode(renderer::CullMode::CullMode_Back);
 #if REVERSED_DEPTH
-    m_pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-    m_pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
-    m_pipeline->setDepthWrite(false);
-    m_pipeline->setDepthTest(false);
-    m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setDepthWrite(false);
+        pipeline->setDepthTest(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
 
-    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
-    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Model);
+        BIND_SHADER_PARAMETER(pipeline, m_parameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(pipeline, m_parameters, cb_Model);
+
+        m_pipelines.push_back(pipeline);
+    }
+
+    //VertexFormatSimpleLitDesc
+    {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "simple.hlsl", "simple_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "simple.hlsl", "simple_selection_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, m_renderTarget->getRenderPassDesc(),
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_simple_pipeline");
+
+        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+#if REVERSED_DEPTH
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        pipeline->setDepthWrite(false);
+        pipeline->setDepthTest(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+
+        BIND_SHADER_PARAMETER(pipeline, m_parameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(pipeline, m_parameters, cb_Model);
+
+        m_pipelines.push_back(pipeline);
+    }
+
+    //VertexFormatEmptyDesc
+    {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
+            "simple.hlsl", "billboard_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
+            "simple.hlsl", "simple_selection_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatEmptyDesc, m_renderTarget->getRenderPassDesc(),
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_billboard_pipeline");
+
+        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleStrip);
+        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        pipeline->setCullMode(renderer::CullMode::CullMode_None);
+        pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
+#if REVERSED_DEPTH
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        pipeline->setDepthWrite(false);
+        pipeline->setDepthTest(false);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+
+        BIND_SHADER_PARAMETER(pipeline, m_parameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(pipeline, m_parameters, cb_Model);
+
+        m_pipelines.push_back(pipeline);
+    }
 }
 
 void RenderPipelineSelectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
-    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
-    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+    for (auto& pipeline : m_pipelines)
+    {
+        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
-    m_pipeline = nullptr;
+        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
+        pipeline = nullptr;
+    }
+    m_pipelines.clear();
 }
 
 void RenderPipelineSelectionStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -104,17 +169,33 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
     cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
     cmdList->setStencilRef(0);
-    cmdList->setPipelineState(*m_pipeline);
-
-    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
-        {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
-        });
 
     for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)])
     {
         const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
         const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
+        static auto selectPipelineFormat = [](const scene::DrawNodeEntry& item) -> std::tuple<u32, u64>
+            {
+                if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Debug)))
+                {
+                    return { 1U, sizeof(VertexFormatSimpleLit) };
+                }
+
+                if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Indicator)))
+                {
+                    return { 2U, 0/*VertexFormatEmpty*/ };
+                }
+
+                return { 0U, sizeof(VertexFormatStandard) };
+            };
+        auto [pipelineID, vertexStride] = selectPipelineFormat(itemMesh);
+
+        cmdList->setPipelineState(*m_pipelines[pipelineID]);
+        cmdList->bindDescriptorSet(m_pipelines[pipelineID]->getShaderProgram(), 0,
+            {
+                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
+            });
 
         struct ModelBuffer
         {
@@ -133,20 +214,21 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
         constantBuffer.tintColour = material.getProperty<math::float4>("ColorDiffuse");
         constantBuffer.objectID = itemMesh.object->ID();
 
-        cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
+        cmdList->bindDescriptorSet(m_pipelines[pipelineID]->getShaderProgram(), 1,
             {
                 renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Model),
             });
 
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipeline->getName()), color::rgbaf::LTGREY);
+        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipelines[pipelineID]->getName()), color::rgbaf::LTGREY);
         if (itemMesh.geometry)
         {
             const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
-            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), sizeof(VertexFormatStandard), 0);
+            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), vertexStride, 0);
             cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
         }
         else
         {
+            ASSERT(pipelineID == 2, "must be VertexFormatEmptyDesc pipeline");
             cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
         }
     }

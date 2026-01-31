@@ -12,7 +12,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
+VS_SIMPLE_OUTPUT simple_vs(VS_SIMPLE_INPUT Input)
 {
     VS_SIMPLE_OUTPUT Output;
    
@@ -42,6 +42,14 @@ VS_SIMPLE_OUTPUT billboard_vs(uint VertexID : SV_VERTEXID)
 [[vk::location(0)]] float4 unlit_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
 {
     return float4(cb_Model.tintColour.rgb, 1.0);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+[[vk::location(0)]] float simple_selection_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
+{
+    float id = (float) cb_Model.objectID;
+    return id;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

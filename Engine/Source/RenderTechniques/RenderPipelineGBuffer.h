@@ -55,7 +55,7 @@ namespace scene
         renderer::CmdListRender*                           m_cmdList;
 
         renderer::RenderTargetState*                       m_GBufferRenderTarget;
-        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipeline;
+        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipelines;
         std::vector<MaterialParameters>                    m_parameters;
     };
 

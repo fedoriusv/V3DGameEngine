@@ -81,7 +81,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureRoughness);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureHeight);
 
-        m_pipeline.emplace_back(pipeline);
+        m_pipelines.emplace_back(pipeline);
         m_parameters.emplace_back(parameters);
     }
 
@@ -124,7 +124,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMaterial);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureHeight);
 
-        m_pipeline.emplace_back(pipeline);
+        m_pipelines.emplace_back(pipeline);
         m_parameters.emplace_back(parameters);
     }
 
@@ -168,7 +168,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureRoughness);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureHeight);
 
-        m_pipeline.emplace_back(pipeline);
+        m_pipelines.emplace_back(pipeline);
         m_parameters.emplace_back(parameters);
     }
 
@@ -211,7 +211,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMaterial);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureHeight);
 
-        m_pipeline.emplace_back(pipeline);
+        m_pipelines.emplace_back(pipeline);
         m_parameters.emplace_back(parameters);
     }
 }
@@ -220,7 +220,7 @@ void RenderPipelineGBufferStage::destroy(renderer::Device* device, scene::SceneD
 {
     destroyRenderTarget(device, scene);
 
-    for (auto& pipeline : m_pipeline)
+    for (auto& pipeline : m_pipelines)
     {
         const renderer::ShaderProgram* program = pipeline->getShaderProgram();
         V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
@@ -228,7 +228,7 @@ void RenderPipelineGBufferStage::destroy(renderer::Device* device, scene::SceneD
         V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
         pipeline = nullptr;
     }
-    m_pipeline.clear();
+    m_pipelines.clear();
 
     device->destroyCommandList(m_cmdList);
     m_cmdList = nullptr;
@@ -266,9 +266,9 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
             cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
             cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
 
-            ObjectHandle hLinearSampler = scene.m_globalResources.get("linear_sampler_repeat");
-            ASSERT(hLinearSampler.isValid(), "must be valid");
-            renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(hLinearSampler);
+            ObjectHandle linear_sampler_repeat_h = scene.m_globalResources.get("linear_sampler_repeat");
+            ASSERT(linear_sampler_repeat_h.isValid(), "must be valid");
+            renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(linear_sampler_repeat_h);
 
             for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
             {
@@ -276,9 +276,9 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                 const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
                 const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
 
-                cmdList->setPipelineState(*m_pipeline[itemMesh.pipelineID]);
+                cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
 
-                cmdList->bindDescriptorSet(m_pipeline[itemMesh.pipelineID]->getShaderProgram(), 0,
+                cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
                     });
@@ -303,7 +303,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
 
                 if (material.getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness)
                 {
-                    cmdList->bindDescriptorSet(m_pipeline[itemMesh.pipelineID]->getShaderProgram(), 1,
+                    cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
                         {
                             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
                             renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
@@ -314,22 +314,10 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                             renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Displacement"))), m_parameters[itemMesh.pipelineID].t_TextureHeight),
                         });
                 }
-                else if (material.getShadingModel() == scene::MaterialShadingModel::PBR_Specular)
-                {
-                    cmdList->bindDescriptorSet(m_pipeline[itemMesh.pipelineID]->getShaderProgram(), 1,
-                        {
-                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
-                            renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Diffuse"))), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), m_parameters[itemMesh.pipelineID].t_TextureNormal),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Specular"))), m_parameters[itemMesh.pipelineID].t_TextureMaterial),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Displacement"))), m_parameters[itemMesh.pipelineID].t_TextureHeight),
-                        });
-                }
                 else if (material.getShadingModel() == scene::MaterialShadingModel::Custom)
                 {
                     //TODO: Rework. Internal V3D material pipeline. Used packed materials (R: ? G: Roughness  B: Metalness)
-                    cmdList->bindDescriptorSet(m_pipeline[itemMesh.pipelineID]->getShaderProgram(), 1,
+                    cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
                         {
                             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
                             renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
@@ -343,7 +331,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                     ASSERT(false, "");
                 }
 
-                DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+                DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_pipelines[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
                 ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
                 renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), sizeof(VertexFormatStandard), 0);
                 cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
@@ -355,13 +343,13 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                 const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
                 const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
 
-                cmdList->setPipelineState(*m_pipeline[itemMesh.pipelineID]);
+                cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
 
                 ObjectHandle noise = scene.m_globalResources.get("tiling_noise");
                 ASSERT(noise.isValid(), "must be valid");
                 renderer::Texture2D* noiseTexture = objectFromHandle<renderer::Texture2D>(noise);
 
-                cmdList->bindDescriptorSet(m_pipeline[itemMesh.pipelineID]->getShaderProgram(), 0,
+                cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
                     });
@@ -384,7 +372,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                 constantBuffer.tintColour = material.getProperty<math::float4>("DiffuseColor");
                 constantBuffer.objectID = itemMesh.object->ID();
 
-                cmdList->bindDescriptorSet(m_pipeline[itemMesh.pipelineID]->getShaderProgram(), 1,
+                cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
                         renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
@@ -395,7 +383,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                         renderer::Descriptor(renderer::TextureView(noiseTexture, 0, 0), 6),
                     });
 
-                DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_pipeline[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+                DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_pipelines[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
                 ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(VertexFormatStandard), "must be same");
                 renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), sizeof(VertexFormatStandard), 0);
                 cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);

@@ -46,7 +46,7 @@ namespace scene
         scene::ModelHandler* m_modelHandler;
 
         renderer::RenderTargetState* m_renderTarget;
-        v3d::renderer::GraphicsPipelineState* m_pipeline;
+        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipelines;
         MaterialParameters m_parameters;
     };
 

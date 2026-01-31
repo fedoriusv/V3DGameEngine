@@ -17,7 +17,6 @@ namespace scene
         Transparency,
         SkinnedTransparency,
 
-        Billboard,
         Skybox,
         VFX,
 
