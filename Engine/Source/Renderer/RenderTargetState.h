@@ -267,6 +267,13 @@ namespace renderer
             const DepthOpState& depthOpState, const StencilOpState& stencilOpState, const TransitionState& tansitionState);
 
         /**
+        * @brief setViewsMask method. Enable redner target layer by bit. Requare supporting of multiview.
+        * TODO move to beginRenderTarget
+        * @param u32 mask [required]
+        */
+        void setViewsMask(u32 mask);
+
+        /**
         * @brief getColorTexture method
         *
         * @param u32 index [required]

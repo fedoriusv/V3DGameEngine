@@ -58,26 +58,27 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
         environment.shadowSaturation = 0.01f; //temp
     
         float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction_range.xyz, 0.0, albedo, normals, roughness, metallic, depth);
-        float shadow = t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).r;
+        float directionShadow = t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).r;
+        float pointShadow = t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).b;
 #if DEBUG_SHADOWMAP
         uint cascade = (uint)t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).g;
         switch (cascade)
         {
             case 0:
-                color.rgb = lerp(color.rgb, float3(1.0, 0.0, 0.0), shadow);
+                color.rgb = lerp(color.rgb, float3(1.0, 0.0, 0.0), directionShadow);
                 break;
             case 1:
-                color.rgb = lerp(color.rgb, float3(0.0, 1.0, 0.0), shadow);
+                color.rgb = lerp(color.rgb, float3(0.0, 1.0, 0.0), directionShadow);
                 break;
             case 2:
-                color.rgb = lerp(color.rgb, float3(0.0, 0.0, 1.0), shadow);
+                color.rgb = lerp(color.rgb, float3(0.0, 0.0, 1.0), directionShadow);
                 break;
             case 3:
-                color.rgb = lerp(color.rgb, float3(1.0, 1.0, 0.0), shadow);
+                color.rgb = lerp(color.rgb, float3(1.0, 1.0, 0.0), directionShadow);
                 break;
         }
 #else
-        color.rgb = lerp(color.rgb, albedo * environment.shadowSaturation, shadow);
+        color.rgb = lerp(color.rgb, albedo * environment.shadowSaturation, saturate(directionShadow + pointShadow));
 #endif
         return float4(color.rgb, 1.0);
     }

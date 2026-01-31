@@ -20,6 +20,16 @@ namespace v3d
 namespace scene
 {
 
+    enum ViewsMaskBits
+    {
+        Positive_X_bit = 0b00000001,
+        Negative_X_bit = 0b00000010,
+        Positive_Y_bit = 0b00000100,
+        Negative_Y_bit = 0b00001000,
+        Positive_Z_bit = 0b00010000,
+        Negative_Z_bit = 0b00100000,
+    };
+
 RenderPipelineShadowStage::RenderPipelineShadowStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
     : RenderPipelineStage(technique, "Shadow")
     , m_modelHandler(modelHandler)
@@ -28,6 +38,7 @@ RenderPipelineShadowStage::RenderPipelineShadowStage(RenderTechnique* technique,
     , m_cascadeTextureArray(nullptr)
     , m_cascadeRenderTarget(nullptr)
 
+    , m_punctualShadowTextureArray(nullptr)
     , m_punctualShadowRenderTarget(nullptr)
 
     , m_SSShadowsRenderTarget(nullptr)
@@ -135,12 +146,13 @@ void RenderPipelineShadowStage::create(renderer::Device* device, scene::SceneDat
         m_SSShadowsPipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
 
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_Viewport);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_CascadeShadowBuffer);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_ShadowmapBuffer);
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, s_SamplerState);
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, s_ShadowSamplerState);
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureDepth);
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureNormals);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_CascadeShadows);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_DirectionCascadeShadows);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_PunctualShadows);
 
         m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
         m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
@@ -201,11 +213,14 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
         {
             const scene::ViewportState& viewportState = scene.m_viewportState;
             ASSERT(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].size() == 1, "supported only one light at the moment");
-            static std::vector<math::Matrix4D> lightSpaceMatrix;
-            static std::vector<f32> cascadeSplits;
 
-            cascadeSplits.clear();
-            lightSpaceMatrix.clear();
+            static std::vector<math::Matrix4D> directionLightSpaceMatrix;
+            static std::vector<f32> directionLightCascadeSplits;
+            static std::vector<std::tuple<math::Vector3D, math::float2, u32>> punctualLightsData;
+
+            directionLightSpaceMatrix.clear();
+            directionLightCascadeSplits.clear();
+            punctualLightsData.clear();
 
             if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].empty())
             {
@@ -215,7 +230,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
                 scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0]);
                 const scene::DirectionalLight& dirLight = *static_cast<const scene::DirectionalLight*>(itemLight.light);
 
-                calculateShadowCascades(scene, itemLight.object->getDirection(), lightSpaceMatrix, cascadeSplits);
+                calculateShadowCascades(scene, itemLight.object->getDirection(), directionLightSpaceMatrix, directionLightCascadeSplits);
 
                 cmdList->beginRenderTarget(*m_cascadeRenderTarget);
                 cmdList->setViewport({ 0.f, 0.f, (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height });
@@ -234,7 +249,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
                         f32           _pas[3];
                     } shadowViewBuffer;
 
-                    memcpy(shadowViewBuffer.lightSpaceMatrix, lightSpaceMatrix.data(), sizeof(math::Matrix4D) * k_maxShadowmapCascadeCount);
+                    memcpy(shadowViewBuffer.lightSpaceMatrix, directionLightSpaceMatrix.data(), sizeof(math::Matrix4D) * k_maxShadowmapCascadeCount);
                     shadowViewBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
                     shadowViewBuffer.bias = 0.0f;
 
@@ -256,27 +271,34 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
 
             if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty())
             {
-                TRACE_PROFILER_SCOPE("PointShadowmaps", color::rgba8::GREEN);
-                DEBUG_MARKER_SCOPE(cmdList, "PointShadowmaps", color::rgbaf::GREEN);
+                TRACE_PROFILER_SCOPE("PunctualShadowmaps", color::rgba8::GREEN);
+                DEBUG_MARKER_SCOPE(cmdList, "PunctualShadowmaps", color::rgbaf::GREEN);
 
-                /*for (u32 i = 0; i < scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].size(); ++i)
+                for (u32 i = 0; i < scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].size(); ++i)
                 {
                     scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)][i]);
                     const scene::Light& light = *static_cast<const scene::Light*>(itemLight.light);
 
-                    static std::array<math::Matrix4D, 6> pointLightSpaceMatrix;
-                    f32 radius = light.getAttenuation()._w;
+                    DEBUG_MARKER_SCOPE(cmdList, std::format("Light [{}]", itemLight.object->m_name), color::rgbaf::GREEN);
 
-                    calculateShadowViews(itemLight.object->getTransform().getPosition(), radius, pointLightSpaceMatrix);
-                    if (i >= m_punctualShadowTextures.size())
-                    {
-                        renderer::TextureCube* viewShadow = V3D_NEW(renderer::TextureCube, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-                            renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 1, "view_shadow");
+                    std::array<math::Matrix4D, 6> pointLightSpaceMatrix;
+                    math::Vector3D lightPosition = itemLight.object->getTransform().getPosition();
+                    f32 lightRadius = light.getAttenuation()._w;
+                    f32 distanceToCamera = (lightPosition - scene.m_viewportState._camera->getPosition()).length();
+                    //if (distanceToCamera > lightRadius)
+                    //{
+                    //    //skip light
+                    //    continue;
+                    //}
 
-                        m_punctualShadowTextures.push_back(viewShadow);
-                    }
+                    f32 nearPlane = 0.1f;
+                    f32 farPlane = std::max(lightRadius, nearPlane + 0.1f);
+                    u32 viewsMask = 0b00111111; //TODO get from the light
+                    calculateShadowViews(lightPosition, nearPlane, farPlane, viewsMask, pointLightSpaceMatrix);
+                    punctualLightsData.emplace_back(lightPosition, math::float2{nearPlane, farPlane}, viewsMask);
 
-                    m_punctualShadowRenderTarget->setDepthStencilTexture(renderer::TextureView(m_punctualShadowTextures[i]),
+                    m_punctualShadowRenderTarget->setViewsMask(viewsMask);
+                    m_punctualShadowRenderTarget->setDepthStencilTexture(renderer::TextureView(m_punctualShadowTextureArray),
                             {
                                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f,
                             },
@@ -319,10 +341,12 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
 
                         const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
                         ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(scene::VertexFormatStandard), "must be same");
-                        renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), 0, sizeof(scene::VertexFormatStandard), 0);
+                        renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), sizeof(scene::VertexFormatStandard), 0);
                         cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
                     }
-                }*/
+
+                    cmdList->endRenderTarget();
+                }
             }
 
             {
@@ -341,7 +365,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
 
                 scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0]);
 
-                struct ShadowCascade
+                struct DirectionLightShadowmapCascade
                 {
                     math::Matrix4D  lightSpaceMatrix;
                     f32             cascadeSplit;
@@ -350,26 +374,53 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
                     f32            _pad[1];
                 };
 
-                struct CascadeShadowBuffer
+                struct PunctualLightShadowmap
                 {
-                    ShadowCascade  cascade[k_maxShadowmapCascadeCount];
-                    math::Vector3D lightDirection;
-                    math::Vector4D shadowMapResolution;
-                    f32            enablePCF;
-                    f32           _pad[3];
+                    math::Vector3D  position;
+                    math::float2    clipNearFar;
+                    math::uint2     sliceOffsetCount;
+                    u32             viewMask;
+                    f32            _pad[3];
+                };
+
+                struct ShadowmapBuffer
+                {
+                    math::Vector4D                  shadowMapResolution;
+
+                    DirectionLightShadowmapCascade  cascade[k_maxShadowmapCascadeCount];
+                    math::Vector3D                  directionLight;
+
+                    PunctualLightShadowmap          punctualLight[k_maxPunctualShadowmapCount];
+                    u32                             countLights;
+                    f32                             enablePCF;
+                    f32                            _pad[2];
                 } cascadeShadowBuffer;
 
-                for (u32 id = 0; id < lightSpaceMatrix.size(); ++id)
+                for (u32 id = 0; id < directionLightSpaceMatrix.size(); ++id)
                 {
-                    cascadeShadowBuffer.cascade[id].lightSpaceMatrix = lightSpaceMatrix[id];
-                    cascadeShadowBuffer.cascade[id].cascadeSplit = cascadeSplits[id];
+                    cascadeShadowBuffer.cascade[id].lightSpaceMatrix = directionLightSpaceMatrix[id];
+                    cascadeShadowBuffer.cascade[id].cascadeSplit = directionLightCascadeSplits[id];
                     cascadeShadowBuffer.cascade[id].baseBias = scene.m_settings._shadowsParams._cascadeBaseBias[id];
                     cascadeShadowBuffer.cascade[id].slopeBias = scene.m_settings._shadowsParams._cascadeSlopeBias[id];
                 }
-                cascadeShadowBuffer.lightDirection = itemLight.object->getDirection();
+                cascadeShadowBuffer.directionLight = itemLight.object->getDirection();
                 cascadeShadowBuffer.shadowMapResolution.set(scene.m_settings._shadowsParams._size._width, scene.m_settings._shadowsParams._size._height,
                     1.0f / scene.m_settings._shadowsParams._size._width, 1.0f / scene.m_settings._shadowsParams._size._height);
                 cascadeShadowBuffer.enablePCF = true;
+
+                cascadeShadowBuffer.countLights = punctualLightsData.size();
+                u32 arrayOffset = 0;
+                for (u32 i = 0; i < punctualLightsData.size(); ++i)
+                {
+                    auto& [position, clip, viewsMask] = punctualLightsData[i];
+                    u32 sliceCount = std::popcount(viewsMask);
+
+                    cascadeShadowBuffer.punctualLight[i].position = position;
+                    cascadeShadowBuffer.punctualLight[i].clipNearFar = clip;
+                    cascadeShadowBuffer.punctualLight[i].sliceOffsetCount = math::uint2{ arrayOffset, sliceCount };
+                    cascadeShadowBuffer.punctualLight[i].viewMask = viewsMask;
+                    arrayOffset += sliceCount;
+                }
 
                 ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
                 ASSERT(depth_stencil_h.isValid(), "must be valid");
@@ -385,12 +436,13 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
 
                 cmdList->bindDescriptorSet(m_SSShadowsPipeline->getShaderProgram(), 1,
                     {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &cascadeShadowBuffer, 0, sizeof(cascadeShadowBuffer) }, m_SSCascadeShadowParameters.cb_CascadeShadowBuffer),
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &cascadeShadowBuffer, 0, sizeof(cascadeShadowBuffer) }, m_SSCascadeShadowParameters.cb_ShadowmapBuffer),
                         renderer::Descriptor(sampler_state, m_SSCascadeShadowParameters.s_SamplerState),
                         renderer::Descriptor(m_shadowSamplerState, m_SSCascadeShadowParameters.s_ShadowSamplerState),
                         renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_SSCascadeShadowParameters.t_TextureDepth),
                         renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_SSCascadeShadowParameters.t_TextureNormals),
-                        renderer::Descriptor(renderer::TextureView(m_cascadeTextureArray), m_SSCascadeShadowParameters.t_CascadeShadows),
+                        renderer::Descriptor(renderer::TextureView(m_cascadeTextureArray), m_SSCascadeShadowParameters.t_DirectionCascadeShadows),
+                        renderer::Descriptor(renderer::TextureView(m_punctualShadowTextureArray), m_SSCascadeShadowParameters.t_PunctualShadows),
                     });
 
                 cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
@@ -426,7 +478,11 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, sce
     }
 
     {
-        ASSERT(m_punctualShadowTextures.empty(), "must be empty");
+        //TODO use array
+        ASSERT(m_punctualShadowTextureArray == nullptr, "must be nullptr");
+        m_punctualShadowTextureArray = V3D_NEW(renderer::TextureCube, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+            renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 1, "view_shadow");
+
         ASSERT(m_punctualShadowRenderTarget == nullptr, "must be nullptr");
         m_punctualShadowRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_settings._shadowsParams._size, 0, 0b00111111);
     }
@@ -464,11 +520,9 @@ void RenderPipelineShadowStage::destroyRenderTarget(renderer::Device* device, sc
     }
 
     {
-        for (auto& viewShadow : m_punctualShadowTextures)
-        {
-            V3D_DELETE(viewShadow, memory::MemoryLabel::MemoryGame);
-        }
-        m_punctualShadowTextures.clear();
+        ASSERT(m_punctualShadowTextureArray != nullptr, "must be valid");
+        V3D_DELETE(m_punctualShadowTextureArray, memory::MemoryLabel::MemoryGame);
+        m_punctualShadowTextureArray = nullptr;
 
         ASSERT(m_punctualShadowRenderTarget != nullptr, "must be valid");
         V3D_DELETE(m_punctualShadowRenderTarget, memory::MemoryLabel::MemoryGame);
@@ -615,46 +669,51 @@ void RenderPipelineShadowStage::calculateShadowCascades(const scene::SceneData& 
     }
 }
 
-void RenderPipelineShadowStage::calculateShadowViews(const math::Vector3D& position, f32 radius, std::array<math::Matrix4D, 6>& lightSpaceMatrix)
+void RenderPipelineShadowStage::calculateShadowViews(const math::Vector3D& position, f32 nearPlane, f32 farPlane, u32 viewsMask, std::array<math::Matrix4D, 6>& lightSpaceMatrix)
 {
-    f32 nearPlane = 0.1f;
-    f32 farPlane = std::max(radius, nearPlane + 0.1f);
     math::Matrix4D lightProjectionMatrix = math::SMatrix::projectionMatrixPerspective(90.f * math::k_degToRad, 1.f, nearPlane, farPlane);
+    u32 matrixOffset = 0;
 
     //X+
+    if (viewsMask & ViewsMaskBits::Positive_X_bit)
     {
         math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(1.f, 0.f, 0.f), math::Vector3D(0.0f, 1.0f, 0.0f));
-        lightSpaceMatrix[0] = lightProjectionMatrix * lightViewMatrix;
+        lightSpaceMatrix[matrixOffset++] = lightProjectionMatrix * lightViewMatrix;
     }
 
     //X-
+    if (viewsMask & ViewsMaskBits::Negative_X_bit)
     {
         math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(-1.f, 0.f, 0.f), math::Vector3D(0.0f, 1.0f, 0.0f));
-        lightSpaceMatrix[1] = lightProjectionMatrix * lightViewMatrix;
+        lightSpaceMatrix[matrixOffset++] = lightProjectionMatrix * lightViewMatrix;
     }
 
     //Y+
+    if (viewsMask & ViewsMaskBits::Positive_Y_bit)
     {
         math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, 1.f, 0.f), math::Vector3D(0.f, 0.f, -1.f));
-        lightSpaceMatrix[2] = lightProjectionMatrix * lightViewMatrix;
+        lightSpaceMatrix[matrixOffset++] = lightProjectionMatrix * lightViewMatrix;
     }
 
     //Y-
+    if (viewsMask & ViewsMaskBits::Negative_Y_bit)
     {
         math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, -1.f, 0.f), math::Vector3D(0.f, 0.f, 1.f));
-        lightSpaceMatrix[3] = lightProjectionMatrix * lightViewMatrix;
+        lightSpaceMatrix[matrixOffset++] = lightProjectionMatrix * lightViewMatrix;
     }
 
     //Z+
+    if (viewsMask & ViewsMaskBits::Positive_Z_bit)
     {
         math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, 0.f, 1.f), math::Vector3D(0.f, 1.f, 0.f));
-        lightSpaceMatrix[4] = lightProjectionMatrix * lightViewMatrix;
+        lightSpaceMatrix[matrixOffset++] = lightProjectionMatrix * lightViewMatrix;
     }
 
     //Z-
+    if (viewsMask & ViewsMaskBits::Negative_Z_bit)
     {
         math::Matrix4D lightViewMatrix = math::SMatrix::lookAtMatrix(position, position + math::Vector3D(0.f, 0.f, -1.f), math::Vector3D(0.f, 1.f, 0.f));
-        lightSpaceMatrix[5] = lightProjectionMatrix * lightViewMatrix;
+        lightSpaceMatrix[matrixOffset++] = lightProjectionMatrix * lightViewMatrix;
     }
 }
 

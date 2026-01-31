@@ -580,11 +580,41 @@ void EditorScene::test_loadTestScene()
             return resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(device, name, policy, flags);
         };
 
+    static auto randomVector = [](f32 min, f32 max) -> math::Vector3D
+        {
+            f32 x = math::random<f32>(min, max);
+            f32 y = math::random<f32>(min, max);
+            f32 z = math::random<f32>(min, max);
+
+            return math::Vector3D(x, y, z);
+        };
+
     {
         resource::ModelFileLoader::ModelPolicy policy;
         scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeCube->setPosition(scene::TransformMode::Local, { 3.f, 1.f, -1.f });
         nodeCube->m_name = "cube.fbx";
+        m_sceneData.m_nodes.push_back(nodeCube);
+
+        scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
+        material->setProperty("BaseColor", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Color.png", true));
+        material->setProperty("Normals", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_NormalGL.png", true));
+        material->setProperty("Roughness", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Roughness.png", true));
+        material->setProperty("Metalness", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Metalness.png", true));
+        material->setProperty("Displacement", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Displacement.png", true));
+        material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+        nodeCube->addComponent(material);
+    }
+
+    u32 objects = 10;
+    for (u32 i = 0; i < objects; ++i)
+    {
+        resource::ModelFileLoader::ModelPolicy policy;
+        policy.scaleFactor = 0.5f;
+
+        scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        nodeCube->m_name = std::format("cube{}", i);
+        nodeCube->setPosition(scene::TransformMode::Local, randomVector(-5.f, 5.f));
         m_sceneData.m_nodes.push_back(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);

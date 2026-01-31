@@ -150,6 +150,11 @@ bool RenderTargetState::setDepthStencilTexture(const TextureView& depthStencilTe
     return false;
 }
 
+void RenderTargetState::setViewsMask(u32 mask)
+{
+    m_renderpassDesc._viewsMask = mask;
+}
+
 bool RenderTargetState::checkCompatibility(const TextureView& texture, AttachmentDesc& desc)
 {
     s32 layer = texture._subresource._baseLayer;

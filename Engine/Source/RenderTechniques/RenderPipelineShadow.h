@@ -40,7 +40,7 @@ namespace scene
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
 
         static void calculateShadowCascades(const scene::SceneData& data, const math::Vector3D& lightDirection, std::vector<math::Matrix4D>& lightSpaceMatrix, std::vector<f32>& cascadeSplits);
-        static void calculateShadowViews(const math::Vector3D& position, f32 radius, std::array<math::Matrix4D, 6>& lightSpaceMatrix);
+        static void calculateShadowViews(const math::Vector3D& position, f32 nearPlane, f32 farPlane, u32 viewsMask, std::array<math::Matrix4D, 6>& lightSpaceMatrix);
 
         scene::ModelHandler* const                m_modelHandler;
         renderer::CmdListRender*                  m_cmdList;
@@ -63,19 +63,20 @@ namespace scene
         };
 
         renderer::RenderTargetState*              m_punctualShadowRenderTarget;
-        std::vector<renderer::TextureCube*>       m_punctualShadowTextures;
+        renderer::TextureCube*                    m_punctualShadowTextureArray;
         renderer::GraphicsPipelineState*          m_punctualShadowPipeline;
         MaterialPointShadowsParameters            m_punctualShadowParameters;
 
         struct MaterialScreenSpaceShadowsParameters
         {
             SHADER_PARAMETER(cb_Viewport);
-            SHADER_PARAMETER(cb_CascadeShadowBuffer);
             SHADER_PARAMETER(s_SamplerState);
             SHADER_PARAMETER(s_ShadowSamplerState);
             SHADER_PARAMETER(t_TextureDepth);
             SHADER_PARAMETER(t_TextureNormals);
-            SHADER_PARAMETER(t_CascadeShadows);
+            SHADER_PARAMETER(cb_ShadowmapBuffer);
+            SHADER_PARAMETER(t_DirectionCascadeShadows);
+            SHADER_PARAMETER(t_PunctualShadows);
         };
 
         renderer::RenderTargetState*              m_SSShadowsRenderTarget;
