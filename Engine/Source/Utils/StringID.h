@@ -44,7 +44,10 @@ namespace utils
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @brief StringID. Compile time string
+    * @brief StringID. Compile time string.
+    * View to exernal memory. Keep data alive until TStringID exists
+    * Does not keep internal copy of memory.
+    * Data must be immutable or hash should be recalculated. Call recalculateHash
     */
     template <UIntType T>
     class V3D_API TStringID
@@ -96,6 +99,11 @@ namespace utils
             return m_hash < other.m_hash;
         }
 
+        constexpr void recalculateHash()
+        {
+            m_hash = fnv1a_hash<T>(m_str);
+        }
+
     private:
         T         m_hash;
         const c8* m_str;
@@ -105,6 +113,12 @@ namespace utils
     consteval TStringID<T> MakeStringID(const c8(&str)[N])
     {
         return TStringID<T>(fnv1a_hash<T>(str), str);
+    }
+
+    template <UIntType T = u64>
+    constexpr TStringID<T> MakeRuntimeStringID(const std::string& str)
+    {
+        return TStringID<T>(fnv1a_hash<T>(str.data()), str.data());
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
