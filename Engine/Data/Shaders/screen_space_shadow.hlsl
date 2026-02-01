@@ -139,15 +139,13 @@ float point_light_shadows(in float3 worldPos)
     for (uint i = 0; i < cb_ShadowmapBuffer.countLights; ++i)
     {
         float3 lightDirection = worldPos - cb_ShadowmapBuffer.punctualLight[i].position.rgb;
+        float dist = t_PunctualShadows.Sample(s_SamplerState, lightDirection).r;
+        //float linearDepth = linearize_depth(dist, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
+        
         float lightDistance = length(lightDirection) / (cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y - cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
-
-        if (lightDirection.z > -1.0 && lightDirection.z < 1.0)
+        if (dist < lightDistance)
         {
-            float dist = t_PunctualShadows.SampleCmpLevelZero(s_ShadowSamplerState, lightDirection, lightDistance);
-            if (dist < lightDistance)
-            {
-                shadow += 1.0;
-            }
+            shadow += 1.0;
         }
     }
 
@@ -164,7 +162,7 @@ float point_light_shadows(in float3 worldPos)
         
         float cascadeID = 0.0;
         float directShadow = direction_light_shadows(worldPos, normal, cascadeID);
-        float poinLightShadows = point_light_shadows(worldPos);
+        float poinLightShadows = 0.0; //point_light_shadows(worldPos);
         
         return float4(directShadow, cascadeID, poinLightShadows, 0.0);
     }

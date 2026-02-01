@@ -324,8 +324,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, scene::SceneDa
                             math::Matrix4D lightSpaceMatrix[6];
                             math::Matrix4D modelMatrix;
                             f32            bias;
-                            u32            faceMask;
-                            f32           _pas[2];
+                            f32           _pas[3];
                         } shadowViewBuffer;
 
                         memcpy(shadowViewBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);

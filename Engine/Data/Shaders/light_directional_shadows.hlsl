@@ -23,7 +23,7 @@ struct ShadowBuffer
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float4 shadows_vs(VS_SHADOW_STANDARD_INPUT Input, uint ViewId : SV_ViewID) : SV_POSITION
+float4 shadows_vs(VS_SHADOW_STANDARD_INPUT Input, uint ViewId : SV_VIEWID) : SV_POSITION
 {
     float4 position = mul(cb_DirectionShadowBuffer.modelMatrix, float4(Input.Position, 1.0));
     position = mul(cb_DirectionShadowBuffer.lightSpaceMatrix[ViewId], position);
