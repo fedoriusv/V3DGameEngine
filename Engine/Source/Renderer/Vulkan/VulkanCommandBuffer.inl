@@ -39,7 +39,7 @@ inline void VulkanCommandBuffer::cmdBindVertexBuffers(u32 firstBinding, u32 coun
 
     for (u32 index = 0; index < countBinding; ++index)
     {
-        VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer[index]));
+        VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer[index].as<RenderBuffer>());
         vkBuffers[index] = vkBuffer->getHandle();
         vkSizes[index] = vkBuffer->getSize();
 

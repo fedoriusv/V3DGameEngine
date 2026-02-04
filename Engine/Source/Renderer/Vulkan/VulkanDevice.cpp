@@ -1261,7 +1261,7 @@ void VulkanDevice::destroyTexture(TextureHandle texture)
 #endif //VULKAN_DEBUG
 
     ASSERT(texture.isValid(), "nullptr");
-    VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture));
+    VulkanImage* vkImage = static_cast<VulkanImage*>(texture.as<RenderTexture>());
     m_resourceDeleter.addResourceToDelete(vkImage, [vkImage](VulkanResource* resource) -> void
         {
             vkImage->destroy();
@@ -1304,7 +1304,7 @@ void VulkanDevice::destroyBuffer(BufferHandle buffer)
 #endif //VULKAN_DEBUG
 
     ASSERT(buffer.isValid(), "nullptr");
-    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer));
+    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer.as<RenderBuffer>());
     m_resourceDeleter.addResourceToDelete(vkBuffer, [vkBuffer](VulkanResource* resource) -> void
         {
             vkBuffer->destroy();
@@ -1648,12 +1648,12 @@ void VulkanCmdList::transition(const TextureView& textureView, TransitionOp stat
     VulkanImage* image = nullptr;
     if (textureView._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
-        VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(textureView._texture->getTextureHandle()));
+        VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(textureView._texture->getTextureHandle().as<Swapchain>());
         image = swapchain->getCurrentSwapchainImage();
     }
     else
     {
-        image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(textureView._texture->getTextureHandle()));
+        image = static_cast<VulkanImage*>(textureView._texture->getTextureHandle().as<RenderTexture>());
     }
 
     VkImageLayout newLayout = VulkanTransitionState::convertTransitionStateToImageLayout(state);
@@ -1668,12 +1668,12 @@ void VulkanCmdList::bindTexture(const ShaderProgram* program, u32 set, u32 bindi
     VulkanImage* image = nullptr;
     if (textureView._texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
-        VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(textureView._texture->getTextureHandle()));
+        VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(textureView._texture->getTextureHandle().as<Swapchain>());
         image = swapchain->getCurrentSwapchainImage();
     }
     else
     {
-        image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(textureView._texture->getTextureHandle()));
+        image = static_cast<VulkanImage*>(textureView._texture->getTextureHandle().as<RenderTexture>());
     }
 
     u32 slot = program->getResourceSlot(set, binding);
@@ -1685,7 +1685,7 @@ void VulkanCmdList::bindUAV(const ShaderProgram* program, u32 set, u32 binding, 
     TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::rgba8::GREEN);
 
     ASSERT(buffer, "nullptr");
-    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer->getBufferHandle()));
+    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer->getBufferHandle().as<RenderBuffer>());
     u32 slot = program->getResourceSlot(set, binding);
     m_pendingRenderState.bind(BindingType::RWBuffer, slot, set, binding, vkBuffer, 0, vkBuffer->getSize());
 }
@@ -1695,7 +1695,7 @@ void VulkanCmdList::bindUAV(const ShaderProgram* program, u32 set, u32 binding, 
     TRACE_PROFILER_RENDER_SCOPE("bindBuffer", color::rgba8::GREEN);
 
     ASSERT(texture, "nullptr");
-    VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+    VulkanImage* vkImage = static_cast<VulkanImage*>(texture->getTextureHandle().as<RenderTexture>());
     u32 slot = program->getResourceSlot(set, binding);
     m_pendingRenderState.bind(BindingType::RWTexture, slot, set, binding, 0, vkImage, RenderTexture::makeSubresource(0, vkImage->getArrayLayers(), 0, 1));
 }
@@ -1963,7 +1963,7 @@ void VulkanCmdList::drawIndexed(const GeometryBufferDesc& desc, u32 firstIndex, 
     if (VulkanCmdList::prepareDraw(drawBuffer)) [[likely]]
     {
         ASSERT(desc._indexBuffer.isValid(), "nullptr");
-        VulkanBuffer* indexBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(desc._indexBuffer));
+        VulkanBuffer* indexBuffer = static_cast<VulkanBuffer*>(desc._indexBuffer.as<RenderBuffer>());
         drawBuffer->cmdBindIndexBuffers(indexBuffer, desc._indexOffset, (desc._indexType == IndexBufferType::IndexType_32) ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 
         ASSERT(!desc._vertexBuffers.empty(), "empty");
@@ -1986,12 +1986,12 @@ void VulkanCmdList::clear(Texture* texture, const color::Color& color)
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
     if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
     {
-        VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(texture->getTextureHandle()));
+        VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(texture->getTextureHandle().as<Swapchain>());
         image = swapchain->getCurrentSwapchainImage();
     }
     else
     {
-        image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+        image = static_cast<VulkanImage*>(texture->getTextureHandle().as<RenderTexture>());
     }
 
     m_pendingRenderState.flushDebugMarkers(cmdBuffer);
@@ -2010,7 +2010,7 @@ void VulkanCmdList::clear(Texture* texture, f32 depth, u32 stencil)
 #endif //FRAME_PROFILER_INTERNAL
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    VulkanImage* image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+    VulkanImage* image = static_cast<VulkanImage*>(texture->getTextureHandle().as<RenderTexture>());
 
     m_pendingRenderState.flushDebugMarkers(cmdBuffer);
 
@@ -2025,7 +2025,7 @@ void VulkanCmdList::clear(Buffer* buffer, u32 value)
 #endif
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdDrawBuffer);
-    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer->getBufferHandle()));
+    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer->getBufferHandle().as<RenderBuffer>());
 
     m_pendingRenderState.flushDebugMarkers(cmdBuffer);
 
@@ -2041,7 +2041,7 @@ bool VulkanCmdList::upload(Texture* texture, u32 size, const void* data)
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
     ASSERT(!texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer), "swapchain is not supported");
-    VulkanImage* image = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+    VulkanImage* image = static_cast<VulkanImage*>(texture->getTextureHandle().as<RenderTexture>());
     bool result = image->upload(cmdBuffer, size, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
@@ -2060,7 +2060,7 @@ bool VulkanCmdList::upload(Buffer* buffer, u32 offset, u32 size, const void* dat
 #endif
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
-    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(buffer->getBufferHandle()));
+    VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer->getBufferHandle().as<RenderBuffer>());
     bool result = vkBuffer->upload(cmdBuffer, offset, size, data);
 
     u32 immediateResourceSubmit = m_device.getVulkanDeviceCaps()._immediateResourceSubmit;
@@ -2079,8 +2079,8 @@ void VulkanCmdList::copy(Texture* src, Texture* dst, const math::Dimension3D& si
 #endif
 
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
-    VulkanImage* vkSrcImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(src->getTextureHandle()));
-    VulkanImage* vkDstImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(dst->getTextureHandle()));
+    VulkanImage* vkSrcImage = static_cast<VulkanImage*>(src->getTextureHandle().as<RenderTexture>());
+    VulkanImage* vkDstImage = static_cast<VulkanImage*>(dst->getTextureHandle().as<RenderTexture>());
 
     static auto makeSubresourceLayer = [](VulkanImage* image, u32 mip) -> VkImageSubresourceLayers
         {
@@ -2169,8 +2169,8 @@ void VulkanCmdList::copy(Texture* src, Texture* dst, const math::Dimension3D& si
 void VulkanCmdList::copy(const TextureView& src, const TextureView& dst, const math::Dimension3D& size)
 {
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
-    VulkanImage* vkSrcImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(src._texture->getTextureHandle()));
-    VulkanImage* vkDstImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(dst._texture->getTextureHandle()));
+    VulkanImage* vkSrcImage = static_cast<VulkanImage*>(src._texture->getTextureHandle().as<RenderTexture>());
+    VulkanImage* vkDstImage = static_cast<VulkanImage*>(dst._texture->getTextureHandle().as<RenderTexture>());
 
     static auto getPipelineStage = [](const VulkanImage* vkImage) -> VkPipelineStageFlags
         {
@@ -2242,8 +2242,8 @@ void VulkanCmdList::copy(const TextureView& src, const TextureView& dst, const m
 void VulkanCmdList::copy(Buffer* src, u32 srcOffset, Buffer* dst, u32 dstOffset, u32 size)
 {
     VulkanCommandBuffer* cmdBuffer = VulkanCmdList::acquireAndStartCommandBuffer(CommandTargetType::CmdResourceBuffer);
-    VulkanBuffer* vkSrcBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(src->getBufferHandle()));
-    VulkanBuffer* vkDstBuffer = static_cast<VulkanBuffer*>(objectFromHandle<RenderBuffer>(dst->getBufferHandle()));
+    VulkanBuffer* vkSrcBuffer = static_cast<VulkanBuffer*>(src->getBufferHandle().as<RenderBuffer>());
+    VulkanBuffer* vkDstBuffer = static_cast<VulkanBuffer*>(dst->getBufferHandle().as<RenderBuffer>());
 
     VkBufferCopy regions = {};
     regions.srcOffset = static_cast<VkDeviceSize>(srcOffset);

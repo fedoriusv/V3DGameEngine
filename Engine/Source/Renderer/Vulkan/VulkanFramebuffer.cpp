@@ -152,12 +152,12 @@ std::tuple<VulkanFramebuffer*, bool> VulkanFramebufferManager::acquireFramebuffe
                 const RenderTexture::Subresource& subresource = VulkanImage::isColorFormat(renderpass->getAttachmentDescription(index)._format) ? framebufferDesc._imageViews[index]._subresource : framebufferDesc._imageViews.back()._subresource;
                 if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
                 {
-                    VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(texture->getTextureHandle()));
+                    VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(texture->getTextureHandle().as<Swapchain>());
                     vkImage = swapchain->getCurrentSwapchainImage();
                 }
                 else
                 {
-                    vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+                    vkImage = static_cast<VulkanImage*>(texture->getTextureHandle().as<RenderTexture>());
                 }
 
                 desc._renderTargets[index] = std::make_tuple(vkImage->ID(), subresource);

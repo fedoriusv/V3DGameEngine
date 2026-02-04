@@ -433,13 +433,13 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& renderpassDesc
         VulkanImage* vkImage = nullptr;
         if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
         {
-            VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(texture->getTextureHandle()));
+            VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(texture->getTextureHandle().as<Swapchain>());
             vkImage = swapchain->getCurrentSwapchainImage();
             m_renderpassState._activeSwapchain = VulkanImage::getSwapchainFromImage(vkImage);
         }
         else
         {
-            vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+            vkImage = static_cast<VulkanImage*>(texture->getTextureHandle().as<RenderTexture>());
         }
         ASSERT(vkImage, "nullptr");
 
@@ -471,7 +471,7 @@ void VulkanCommandBuffer::cmdBeginRendering(const RenderPassDesc& renderpassDesc
     if (renderpassDesc._hasDepthStencilAttachment)
     {
         auto& [image, subresource] = framebufferDesc._imageViews.back();
-        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image->getTextureHandle()));
+        VulkanImage* vkImage = static_cast<VulkanImage*>(image->getTextureHandle().as<RenderTexture>());
         ASSERT(vkImage, "nullptr");
 
         VkImageLayout oldLayout = m_resourceStates.getLayout(vkImage, subresource);
@@ -549,13 +549,13 @@ void VulkanCommandBuffer::cmdEndRendering(const RenderPassDesc& passDesc, const 
         VulkanImage* vkImage = nullptr;
         if (texture->hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
         {
-            VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(objectFromHandle<Swapchain>(texture->getTextureHandle()));
+            VulkanSwapchain* swapchain = static_cast<VulkanSwapchain*>(texture->getTextureHandle().as<Swapchain>());
             vkImage = swapchain->getCurrentSwapchainImage();
             m_renderpassState._activeSwapchain = VulkanImage::getSwapchainFromImage(vkImage);
         }
         else
         {
-            vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(texture->getTextureHandle()));
+            vkImage = static_cast<VulkanImage*>(texture->getTextureHandle().as<RenderTexture>());
         }
         ASSERT(vkImage, "nullptr");
 
@@ -568,7 +568,7 @@ void VulkanCommandBuffer::cmdEndRendering(const RenderPassDesc& passDesc, const 
     {
         const AttachmentDesc& description = passDesc._attachmentsDesc.back();
         auto& [image, subresource] = framebufferDesc._imageViews.back();
-        VulkanImage* vkImage = static_cast<VulkanImage*>(objectFromHandle<RenderTexture>(image->getTextureHandle()));
+        VulkanImage* vkImage = static_cast<VulkanImage*>(image->getTextureHandle().as<RenderTexture>());
         ASSERT(vkImage, "nullptr");
 
         VkImageLayout oldLayout = m_resourceStates.getLayout(vkImage, subresource);

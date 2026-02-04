@@ -69,6 +69,20 @@ namespace v3d
             return _type == typeOf<ObjectType>();
         }
 
+        template<typename ObjectType>
+        ObjectType* as()
+        {
+            ASSERT(isType<ObjectType>(), "different types");
+            return reinterpret_cast<ObjectType*>(_object);
+        }
+
+        template<typename ObjectType>
+        ObjectType* as() const
+        {
+            ASSERT(isType<ObjectType>(), "different types");
+            return reinterpret_cast<ObjectType*>(_object);
+        }
+
         TypePtr _type;
         void*   _object;
     };
@@ -78,12 +92,6 @@ namespace v3d
     {
         ASSERT(handle.isType<ObjectType>(), "different types");
         return reinterpret_cast<ObjectType*>((handle)._object);
-    }
-
-    template<typename ObjectType>
-    constexpr ObjectHandle makeObjectHandle(ObjectType* object = nullptr)
-    {
-        return ObjectHandle(object);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
