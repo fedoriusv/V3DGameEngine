@@ -512,7 +512,9 @@ void EditorPropertyScreen::buildLightProp()
                                 {
                                     if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
                                     {
+                                        math::float4 attenuation = light->getAttenuation();
                                         light->setRadius(val);
+                                        light->setAttenuation(attenuation._x, attenuation._y, attenuation._z, val);
                                         m_selectedNode->setScale(scene::TransformMode::Local, { val , val, val });
 
                                         m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
@@ -539,6 +541,9 @@ void EditorPropertyScreen::buildLightProp()
                                     if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
                                     {
                                         light->setAttenuation(val._x, val._y, val._z, val._w);
+
+                                        light->setRadius(val._w);
+                                        m_selectedNode->setScale(scene::TransformMode::Local, { val._w , val._w, val._w });
                                     }
                                 }
                             })
