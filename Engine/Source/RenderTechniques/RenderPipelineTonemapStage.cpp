@@ -1,4 +1,4 @@
-#include "RenderPipelineGammaCorrection.h"
+#include "RenderPipelineTonemapStage.h"
 #include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
@@ -15,18 +15,18 @@ namespace v3d
 namespace scene
 {
 
-RenderPipelineGammaCorrectionStage::RenderPipelineGammaCorrectionStage(RenderTechnique* technique) noexcept
+RenderPipelineTonemapStage::RenderPipelineTonemapStage(RenderTechnique* technique) noexcept
     : RenderPipelineStage(technique, "Gamma")
     , m_gammaRenderTarget(nullptr)
     , m_pipeline(nullptr)
 {
 }
 
-RenderPipelineGammaCorrectionStage::~RenderPipelineGammaCorrectionStage()
+RenderPipelineTonemapStage::~RenderPipelineTonemapStage()
 {
 }
 
-void RenderPipelineGammaCorrectionStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineTonemapStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
@@ -54,7 +54,7 @@ void RenderPipelineGammaCorrectionStage::create(renderer::Device* device, scene:
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_LUTTexture);
 }
 
-void RenderPipelineGammaCorrectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineTonemapStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -68,7 +68,7 @@ void RenderPipelineGammaCorrectionStage::destroy(renderer::Device* device, scene
     }
 }
 
-void RenderPipelineGammaCorrectionStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineTonemapStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_gammaRenderTarget)
     {
@@ -81,7 +81,7 @@ void RenderPipelineGammaCorrectionStage::prepare(renderer::Device* device, scene
     }
 }
 
-void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineTonemapStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
@@ -141,7 +141,7 @@ void RenderPipelineGammaCorrectionStage::execute(renderer::Device* device, scene
     cmdList->endRenderTarget();
 }
 
-void RenderPipelineGammaCorrectionStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineTonemapStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_gammaRenderTarget == nullptr, "must be nullptr");
     m_gammaRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0);
@@ -160,7 +160,7 @@ void RenderPipelineGammaCorrectionStage::createRenderTarget(renderer::Device* de
     data.m_globalResources.bind("final", gamma);
 }
 
-void RenderPipelineGammaCorrectionStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineTonemapStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_gammaRenderTarget, "must be valid");
     renderer::Texture2D* gamma = m_gammaRenderTarget->getColorTexture<renderer::Texture2D>(0);

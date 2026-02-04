@@ -25,7 +25,7 @@
 
 #include "RenderTechniques/RenderPipelineGBuffer.h"
 #include "RenderTechniques/RenderPipelineOutline.h"
-#include "RenderTechniques/RenderPipelineGammaCorrection.h"
+#include "RenderTechniques/RenderPipelineTonemapStage.h"
 #include "RenderTechniques/RenderPipelineUIOverlay.h"
 #include "RenderTechniques/RenderPipelineZPrepass.h"
 #include "RenderTechniques/RenderPipelineFXAA.h"
@@ -33,7 +33,7 @@
 #include "RenderTechniques/RenderPipelineMBOIT.h"
 #include "RenderTechniques/RenderPipelineSelection.h"
 #include "RenderTechniques/RenderPipelineDeferredLighting.h"
-#include "RenderTechniques/RenderPipelineVolumeLighting.h"
+#include "RenderTechniques/RenderPipelineLightAccumulationStage.h"
 #include "RenderTechniques/RenderPipelineDebug.h"
 #include "RenderTechniques/RenderPipelineUnlit.h"
 #include "RenderTechniques/RenderPipelineSkybox.h"
@@ -65,14 +65,14 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     new scene::RenderPipelineShadowStage(this, modelHandler);
     new scene::RenderPipelineSelectionStage(this, modelHandler);
     new scene::RenderPipelineDeferredLightingStage(this);
-    new scene::RenderPipelineVolumeLightingStage(this, modelHandler);
+    new scene::RenderPipelineLightAccumulationStage(this, modelHandler);
     new scene::RenderPipelineSkyboxStage(this, modelHandler);
     new scene::RenderPipelineMBOITStage(this);
     new scene::RenderPipelineUnlitStage(this, modelHandler);
     new scene::RenderPipelineOutlineStage(this);
     new scene::RenderPipelineTAAStage(this);
     new scene::RenderPipelineDebugStage(this, modelHandler);
-    new scene::RenderPipelineGammaCorrectionStage(this);
+    new scene::RenderPipelineTonemapStage(this);
     new scene::RenderPipelineUIOverlayStage(this, uiHandler);
 }
 

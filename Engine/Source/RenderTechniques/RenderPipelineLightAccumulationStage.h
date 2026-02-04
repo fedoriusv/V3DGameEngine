@@ -2,6 +2,10 @@
 
 #include "Common.h"
 #include "RenderPipelineStage.h"
+#include "RenderPipelineGBuffer.h"
+
+#include "Renderer/PipelineState.h"
+#include "Renderer/ShaderProgram.h"
 
 namespace v3d
 {
@@ -15,12 +19,16 @@ namespace scene
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class RenderPipelineGammaCorrectionStage : public RenderPipelineStage
+    class ModelHandler;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    class RenderPipelineLightAccumulationStage : public RenderPipelineStage
     {
     public:
 
-        explicit RenderPipelineGammaCorrectionStage(RenderTechnique* technique) noexcept;
-        ~RenderPipelineGammaCorrectionStage();
+        explicit  RenderPipelineLightAccumulationStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept;
+        ~RenderPipelineLightAccumulationStage();
 
         void create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
         void destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
@@ -33,22 +41,28 @@ namespace scene
         struct MaterialParameters
         {
             SHADER_PARAMETER(cb_Viewport);
-            SHADER_PARAMETER(cb_Tonemapper);
-            SHADER_PARAMETER(s_LinearMirrorSampler);
-            SHADER_PARAMETER(s_LinearClampSampler);
-            SHADER_PARAMETER(t_ColorTexture);
-            SHADER_PARAMETER(t_LUTTexture);
+            SHADER_PARAMETER(cb_Model);
+            SHADER_PARAMETER(cb_Light);
+            SHADER_PARAMETER(s_SamplerState);
+            SHADER_PARAMETER(t_TextureBaseColor);
+            SHADER_PARAMETER(t_TextureNormal);
+            SHADER_PARAMETER(t_TextureMaterial);
+            SHADER_PARAMETER(t_TextureDepth);
         };
 
         void createRenderTarget(renderer::Device* device, scene::SceneData& data);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
 
-        renderer::RenderTargetState* m_gammaRenderTarget;
-        renderer::GraphicsPipelineState* m_pipeline;
-        MaterialParameters m_parameters;
+        scene::ModelHandler* m_modelHandler;
+        renderer::RenderTargetState* m_lightRenderTarget;
+        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipelines;
+        std::vector<MaterialParameters> m_parameters;
+
+        scene::Mesh* m_sphereVolume;
+        scene::Mesh* m_coneVolume;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace scene
+} //namespace renderer
 } //namespace v3d

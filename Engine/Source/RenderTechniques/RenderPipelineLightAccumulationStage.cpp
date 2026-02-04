@@ -1,4 +1,4 @@
-#include "RenderPipelineVolumeLighting.h"
+#include "RenderPipelineLightAccumulationStage.h"
 #include "Utils/Logger.h"
 
 #include "Resource/ResourceManager.h"
@@ -17,34 +17,30 @@ namespace v3d
 namespace scene
 {
 
-RenderPipelineVolumeLightingStage::RenderPipelineVolumeLightingStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
-    : RenderPipelineStage(technique, "VolumeLight")
+RenderPipelineLightAccumulationStage::RenderPipelineLightAccumulationStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
+    : RenderPipelineStage(technique, "LightPass")
     , m_modelHandler(modelHandler)
     , m_lightRenderTarget(nullptr)
 {
 }
 
-RenderPipelineVolumeLightingStage::~RenderPipelineVolumeLightingStage()
+RenderPipelineLightAccumulationStage::~RenderPipelineLightAccumulationStage()
 {
 }
 
-void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineLightAccumulationStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     createRenderTarget(device, scene);
 
     {
-        const renderer::Shader::DefineList defines =
-        {
-        };
-
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
-            "light.hlsl", "main_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "light.hlsl", "main_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
-            "light.hlsl", "light_volume_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            "light.hlsl", "light_accumulation_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 1;
-        desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
+        desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "lighting");
@@ -83,7 +79,7 @@ void RenderPipelineVolumeLightingStage::create(renderer::Device* device, scene::
     m_coneVolume = scene::MeshHelper::createCone(device, 1.f, 1.f, 32, "spotLight");
 }
 
-void RenderPipelineVolumeLightingStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineLightAccumulationStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     destroyRenderTarget(device, scene);
 
@@ -98,7 +94,7 @@ void RenderPipelineVolumeLightingStage::destroy(renderer::Device* device, scene:
     m_pipelines.clear();
 }
 
-void RenderPipelineVolumeLightingStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_lightRenderTarget)
     {
@@ -111,7 +107,7 @@ void RenderPipelineVolumeLightingStage::prepare(renderer::Device* device, scene:
     }
 }
 
-void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     renderer::CmdListRender* cmdList = frame.m_cmdList;
     scene::ViewportState& viewportState = scene.m_viewportState;
@@ -189,24 +185,28 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
 
             struct LightBuffer
             {
+                math::Matrix4D lightSpaceMatrix[6];
+                math::float2   clipNearFar;
+                math::float2   viewSliceOffsetCount;
                 math::Vector3D position;
-                math::Vector3D range;
                 math::float4   color;
                 math::float4   attenuation;
                 f32            intensity;
                 f32            temperature;
-                f32            type;
+                f32            shadowBaseBias;
                 f32           _pad = 0;
             };
 
             LightBuffer lightBuffer;
+            lightBuffer.lightSpaceMatrix;
+            lightBuffer.clipNearFar;
+            lightBuffer.viewSliceOffsetCount;
+            lightBuffer.shadowBaseBias;
             lightBuffer.position = itemLight.object->getTransform().getPosition();
-            lightBuffer.range = { light.getRadius(), 0.0, 0.0};
             lightBuffer.color = light.getColor();
             lightBuffer.attenuation = light.getAttenuation();
             lightBuffer.intensity = light.getIntensity();
             lightBuffer.temperature = light.getTemperature();
-            lightBuffer.type = light.getType() == typeOf<scene::PointLight>() ? 1 : 2;
 
             cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 1,
                 {
@@ -236,13 +236,13 @@ void RenderPipelineVolumeLightingStage::execute(renderer::Device* device, scene:
     }
 }
 
-void RenderPipelineVolumeLightingStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_lightRenderTarget == nullptr, "must be nullptr");
     m_lightRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
 }
 
-void RenderPipelineVolumeLightingStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineLightAccumulationStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
 {
     ASSERT(m_lightRenderTarget, "must be valid");
     V3D_DELETE(m_lightRenderTarget, memory::MemoryLabel::MemoryGame);
