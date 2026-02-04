@@ -40,7 +40,7 @@ void RenderPipelineTAAStage::create(renderer::Device* device, scene::SceneData& 
 
     renderer::RenderPassDesc desc{};
     desc._countColorAttachment = 1;
-    desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
+    desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
 
     m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), desc, 
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "taa");

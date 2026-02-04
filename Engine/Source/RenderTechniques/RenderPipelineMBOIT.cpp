@@ -104,7 +104,7 @@ void RenderPipelineMBOITStage::create(renderer::Device* device, scene::SceneData
     {
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 1;
-        desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
+        desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
             "offscreen.hlsl", "offscreen_vs", {}, {}/*, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV*/);

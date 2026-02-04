@@ -65,11 +65,14 @@ namespace scene
     {
         struct ViewportParams
         {
-            f32 _fov = 60.f;
-            f32 _near = 0.1f;
-            f32 _far = 1000.f;
-            f32 _moveSpeed = 1.0f;
-            f32 _rotateSpeed = 25.0f;
+            f32              _fov = 60.f;
+            f32              _near = 0.1f;
+            f32              _far = 1000.f;
+            f32              _moveSpeed = 1.0f;
+            f32              _rotateSpeed = 25.0f;
+            renderer::Format _colorFormat = renderer::Format_R16G16B16A16_SFloat;
+            renderer::Format _depthFormat = renderer::Format_D24_UNorm_S8_UInt;
+            u32              _renderTargetID = 0;
         } _vewportParams;
 
         struct ShadowsParams
@@ -80,7 +83,9 @@ namespace scene
             u32                                         _cascadeCount = k_maxShadowmapCascadeCount;
             f32                                         _longRange = 50.0f;
             f32                                         _splitFactor = 0.90f;
-            bool                                        _debug = false;
+            f32                                         _punctualLightBias = 0.0f;
+            bool                                        _debugShadowCascades = false;
+            bool                                        _debugPunctualLightShadows = false;
         } _shadowsParams;
 
         struct TonemapParams
@@ -90,9 +95,6 @@ namespace scene
             f32 _gamma = 2.2f;
             f32 _ev100 = 1.0;
         } _tonemapParams;
-
-        renderer::Format _colorFormat = renderer::Format_R16G16B16A16_SFloat;
-        renderer::Format _depthFormat = renderer::Format_D24_UNorm_S8_UInt;
     };
 
     enum class TransformMode

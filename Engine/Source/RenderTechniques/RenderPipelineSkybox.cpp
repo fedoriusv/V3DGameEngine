@@ -45,9 +45,9 @@ void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneDat
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 1;
-        desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
+        desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
         desc._hasDepthStencilAttachment = true;
-        desc._attachmentsDesc.back()._format = scene.m_settings._depthFormat;
+        desc._attachmentsDesc.back()._format = scene.m_settings._vewportParams._depthFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "skybox");
@@ -82,9 +82,9 @@ void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneDat
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 1;
-        desc._attachmentsDesc[0]._format = scene.m_settings._colorFormat;
+        desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
         desc._hasDepthStencilAttachment = true;
-        desc._attachmentsDesc.back()._format = scene.m_settings._depthFormat;
+        desc._attachmentsDesc.back()._format = scene.m_settings._vewportParams._depthFormat;
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "skybox");
