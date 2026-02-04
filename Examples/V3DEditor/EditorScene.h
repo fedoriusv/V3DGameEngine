@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Task/TaskScheduler.h"
 
 #include "Events/Input/InputEventHandler.h"
 #include "Events/Game/GameEventHandler.h"
@@ -118,6 +119,7 @@ private:
     void loadResources();
 
     renderer::Device*               m_device;
+    task::TaskDispatcher            m_taskWorker;
 
     scene::ModelHandler*            m_modelHandler;
     ui::WidgetHandler*              m_UIHandler;

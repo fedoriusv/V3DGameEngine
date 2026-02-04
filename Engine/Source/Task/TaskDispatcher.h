@@ -52,6 +52,9 @@ namespace task
         void lockThread();
         void unlockThread();
 
+        u32 getNumberOfWorkingThreads() const;
+        static u32 currentWorkerThreadID();
+
     private:
 
         void threadEntryPoint(u32 threadID);

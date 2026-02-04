@@ -117,6 +117,16 @@ void TaskDispatcher::unlockThread()
     m_taskQueue[TaskQueue::MainThreadQueue + threadID]->_mutex.unlock();
 }
 
+u32 TaskDispatcher::getNumberOfWorkingThreads() const
+{
+    return m_numWorkingThreads + 1/*main thread*/;
+}
+
+u32 TaskDispatcher::currentWorkerThreadID()
+{
+    return TaskDispatcher::s_threadID;
+}
+
 void TaskDispatcher::threadEntryPoint(u32 threadID)
 {
     [[maybe_unused]] std::string threadName = "WorkerThread_" + std::to_string(threadID);

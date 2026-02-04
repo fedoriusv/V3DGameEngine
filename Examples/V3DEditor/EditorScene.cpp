@@ -82,7 +82,7 @@ EditorScene::RenderPipelineScene::~RenderPipelineScene()
 
 EditorScene::EditorScene() noexcept
     : m_device()
-
+    , m_taskWorker(k_workerThreadCount, task::TaskDispatcher::WorkerThreadPerCore/* | task::TaskDispatcher::AllowToMainThreadStealTasks*/)
     , m_modelHandler(new scene::ModelHandler())
     , m_UIHandler(nullptr)
     , m_cameraHandler(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
