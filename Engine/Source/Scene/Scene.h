@@ -4,6 +4,7 @@
 #include "Utils/ResourceID.h"
 #include "Utils/Copiable.h"
 #include "Task/TaskScheduler.h"
+#include "Memory/ThreadSafeAllocator.h"
 #include "Scene/Transform.h"
 #include "Scene/Camera/CameraController.h"
 #include "Scene/Light.h"
@@ -288,14 +289,10 @@ namespace scene
 
     struct FrameData
     {
-        struct Allocator
-        {
-        };
+        task::TaskDispatcher*        m_taskWorker;
+        memory::ThreadSafeAllocator* m_allocator;
 
-        Allocator* _dynamicAllocator;
-        Allocator* _staticAllocator;
-
-        renderer::CmdListRender* m_cmdList;
+        renderer::CmdListRender*     m_cmdList;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

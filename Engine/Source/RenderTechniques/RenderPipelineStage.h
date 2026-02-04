@@ -5,6 +5,7 @@
 
 #include "Scene/Scene.h"
 #include "Task/Task.h"
+#include "Memory/ThreadSafeAllocator.h"
 
 namespace v3d
 {

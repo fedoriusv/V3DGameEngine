@@ -48,6 +48,9 @@
 
 using namespace v3d;
 
+constexpr u32 k_workerThreadCount = 8;
+constexpr u32 k_frameAllocationSize = 4 * 1024 * 1024;
+
 bool EditorScreen::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
     return false;
@@ -202,29 +205,42 @@ void EditorScene::create(renderer::Device* device, const math::Dimension2D& view
 
     m_sceneData.m_viewportState._viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
 
+    renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
+    for (auto frame : m_frameState)
+    {
+        frame.m_cmdList = cmdList;
+        frame.m_taskWorker = &m_taskWorker;
+        frame.m_allocator = new memory::ThreadSafeAllocator(k_frameAllocationSize, m_taskWorker.getNumberOfWorkingThreads());
+    }
+
     loadResources();
     finalize();
 
     m_mainPipeline.create(m_device, m_sceneData, m_frameState[m_stateIndex]);
-
-    renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    m_frameState[m_stateIndex].m_cmdList = cmdList;
 }
 
 void EditorScene::destroy()
 {
     m_mainPipeline.destroy(m_device, m_sceneData, m_frameState[m_stateIndex]);
+
+    m_device->destroyCommandList(m_frameState[0].m_cmdList);
+    for (auto frame : m_frameState)
+    {
+        delete frame.m_allocator;
+        frame.m_allocator = nullptr;
+
+        frame.m_cmdList = nullptr;
+        frame.m_taskWorker = nullptr;
+    }
 }
 
 void EditorScene::preRender(f32 dt)
 {
     TRACE_PROFILER_SCOPE("PreRender", color::rgba8::WHITE);
 
-    //renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    //m_frameState[m_stateIndex].m_cmdList = cmdList;
-
     m_cameraHandler->update(dt);
     m_sceneData.m_viewportState._camera = m_cameraHandler;
+    m_frameState[m_stateIndex].m_allocator->reset();
 
     s32 posX = (s32)m_inputHandler->getAbsoluteCursorPosition()._x - (s32)m_currentViewportRect.getLeftX();
     posX = (posX < 0) ? 0 : posX;
@@ -271,10 +287,8 @@ void EditorScene::submitRender()
 
     m_mainPipeline.submit(m_device, m_sceneData, m_frameState[m_stateIndex]);
     m_device->submit(m_frameState[m_stateIndex].m_cmdList, false);
-    //m_device->destroyCommandList(m_frameState[m_stateIndex].m_cmdList);
-    //m_frameState[m_stateIndex].m_cmdList = nullptr;
 
-    m_stateIndex = 0;//(m_stateIndex + 1) % m_states.size();
+    m_stateIndex = (m_stateIndex + 1) % m_frameState.size();
 }
 
 void EditorScene::modifyObject(const math::Matrix4D& transform)
