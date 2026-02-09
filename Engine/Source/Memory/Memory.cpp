@@ -27,6 +27,8 @@ std::string MemoryLabelName(MemoryLabel label)
 
 #if MEMORY_DEBUG
 std::vector<std::tuple<void*, v3d::u64, v3d::memory::MemoryLabel, std::string, u32>> g_allocr;
+std::array<u64, toEnumType(MemoryLabel::MemoryCount)> g_totalAllocMemory;
+std::array<u64, toEnumType(MemoryLabel::MemoryCount)> g_totalAllocCount;
 std::recursive_mutex g_mutex;
 #endif //MEMORY_DEBUG
 
@@ -39,6 +41,8 @@ void* internal_malloc(v3d::u64 size, MemoryLabel label, v3d::u64 align, const v3
 #if MEMORY_DEBUG
     std::lock_guard scope(g_mutex);
     g_allocr.push_back({ ptr, size, label, file, line });
+    g_totalAllocCount[toEnumType(label)]++;
+    g_totalAllocMemory[toEnumType(label)] += size;
 #endif //MEMORY_DEBUG
 
     return ptr;
@@ -58,6 +62,8 @@ void internal_free(void* ptr, MemoryLabel label, v3d::u64 align, const v3d::c8* 
             });
 
         ASSERT(found != g_allocr.end(), "not found");
+        g_totalAllocCount[toEnumType(label)]--;
+        g_totalAllocMemory[toEnumType(label)] -= std::get<1>(*found);
         g_allocr.erase(found);
 #endif //MEMORY_DEBUG
 
