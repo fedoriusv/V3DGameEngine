@@ -119,7 +119,7 @@ void TaskDispatcher::unlockThread()
 
 u32 TaskDispatcher::getNumberOfWorkingThreads() const
 {
-    return m_numWorkingThreads + 1/*main thread*/;
+    return m_numWorkingThreads;
 }
 
 u32 TaskDispatcher::currentWorkerThreadID()

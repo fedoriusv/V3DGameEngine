@@ -10,6 +10,11 @@ TaskScheduler::TaskScheduler(u32 numWorkerThreads, u32 mask) noexcept
 {
 }
 
+u32 TaskScheduler::getNumberOfCoreThreads() const
+{
+    return m_dispatcher.getNumberOfWorkingThreads() + 1/*main thread*/;
+}
+
 void TaskScheduler::mainThreadLoop()
 {
     ASSERT(utils::Thread::getCurrentThread() == utils::Thread::getMainThreadId(), "must be main thread");

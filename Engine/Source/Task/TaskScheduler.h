@@ -20,8 +20,9 @@ namespace task
         explicit TaskScheduler(u32 numWorkerThreads, u32 mask = 0) noexcept;
         ~TaskScheduler() = default;
 
-        void mainThreadLoop();
+        u32 getNumberOfCoreThreads() const;
 
+        void mainThreadLoop();
 
         void executeTask(Task* task, TaskPriority priority, TaskMask mask);
         void executeTask(std::vector<Task*> tasks, TaskPriority priority, TaskMask mask);
