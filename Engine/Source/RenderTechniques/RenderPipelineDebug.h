@@ -40,8 +40,8 @@ namespace scene
             SHADER_PARAMETER(cb_Model);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
         scene::ModelHandler* m_modelHandler;
         renderer::RenderTargetState* m_renderTarget;

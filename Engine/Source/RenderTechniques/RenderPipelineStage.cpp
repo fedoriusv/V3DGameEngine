@@ -1,11 +1,10 @@
 #include "RenderPipelineStage.h"
+#include "Renderer/Device.h"
 
 namespace v3d
 {
 namespace scene
 {
-
-static const u32 k_countRenderTasks = 4;
 
 RenderPipelineStage::RenderPipelineStage(RenderTechnique* technique, const std::string& id) noexcept
     : m_id(id)
@@ -18,10 +17,13 @@ RenderPipelineStage::~RenderPipelineStage()
 {
 }
 
+void RenderPipelineStage::onChanged(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+{
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RenderTechnique::RenderTechnique() noexcept
-    : m_renderWorker(k_countRenderTasks)
 {
 }
 
@@ -64,8 +66,6 @@ void RenderTechnique::execute(renderer::Device* device, scene::SceneData& scene,
     {
         stage->execute(device, scene, frame);
     }
-
-    m_renderWorker.mainThreadLoop();
 }
 
 void RenderTechnique::submit(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
@@ -75,10 +75,27 @@ void RenderTechnique::submit(renderer::Device* device, scene::SceneData& scene, 
         renderTask->waitCompetition();
         device->submit(cmd);
 
+        m_freeCmdList.push(cmd);
+
         delete renderTask;
     }
 
     m_dependencyList.clear();
+}
+
+RenderPipelineStage* RenderTechnique::getStage(const std::string& id)
+{
+    auto found = std::find_if(m_stages.cbegin(), m_stages.cend(), [&id](const Stage& stage)
+        {
+            return stage._id == id;
+        });
+
+    if (found != m_stages.cend())
+    {
+        return found->_stage;
+    }
+
+    return nullptr;
 }
 
 void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage)
@@ -86,17 +103,24 @@ void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage
     m_stages.emplace_back(id, stage);
 }
 
-void RenderTechnique::addRenderJob(renderer::Device* device, renderer::CmdList* cmd, task::Task* renderTask)
+void RenderTechnique::addRenderJob(renderer::Device* device, renderer::CmdListRender* cmds, task::TaskScheduler& worker, task::Task* renderTask)
 {
-#if 0 //Debug cmds
-    m_renderWorker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::MainThread);
-    m_renderWorker.mainThreadLoop();
+    m_dependencyList.emplace_back(cmds, renderTask);
+    worker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::MainThread);
+}
 
-    device->submit(cmd, true);
-#else
-    m_dependencyList.emplace_back(cmd, renderTask);
-    m_renderWorker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
-#endif
+renderer::CmdListRender* RenderTechnique::acquireCmdList(renderer::Device* device)
+{
+    if (!m_freeCmdList.empty())
+    {
+        renderer::CmdListRender* cmdList = m_freeCmdList.front();
+        m_freeCmdList.pop();
+
+        return cmdList;
+    }
+
+    renderer::CmdListRender* cmdList = device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
+    return cmdList;
 }
 
 } //namespace scene

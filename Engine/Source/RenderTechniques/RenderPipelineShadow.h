@@ -76,7 +76,6 @@ namespace scene
             SHADER_PARAMETER(t_TextureNormals);
             SHADER_PARAMETER(cb_ShadowmapBuffer);
             SHADER_PARAMETER(t_DirectionCascadeShadows);
-            SHADER_PARAMETER(t_PunctualShadows);
         };
 
         renderer::RenderTargetState*              m_SSShadowsRenderTarget;
@@ -85,7 +84,20 @@ namespace scene
 
     };
 
+} // namespace scene
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace scene
+    template<>
+    struct TypeOf<scene::RenderPipelineShadowStage::PipelineData>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } // namespace v3d

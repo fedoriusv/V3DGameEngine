@@ -9,6 +9,7 @@
 
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
+#include "Scene/SceneNode.h"
 
 #include "FrameProfiler.h"
 
@@ -30,7 +31,7 @@ RenderPipelineLightAccumulationStage::~RenderPipelineLightAccumulationStage()
 
 void RenderPipelineLightAccumulationStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, scene);
+    createRenderTarget(device, scene, frame);
 
     {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
@@ -70,6 +71,7 @@ void RenderPipelineLightAccumulationStage::create(renderer::Device* device, scen
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureNormal);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMaterial);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureDepth);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureShadowmaps);
 
         m_pipelines.push_back(pipeline);
         m_parameters.push_back(parameters);
@@ -81,7 +83,7 @@ void RenderPipelineLightAccumulationStage::create(renderer::Device* device, scen
 
 void RenderPipelineLightAccumulationStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene);
+    destroyRenderTarget(device, scene, frame);
 
     for (auto& pipeline : m_pipelines)
     {
@@ -98,151 +100,165 @@ void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, sce
 {
     if (!m_lightRenderTarget)
     {
-        createRenderTarget(device, scene);
+        createRenderTarget(device, scene, frame);
     }
-    else if (m_lightRenderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
+    else if (m_lightRenderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene);
-        createRenderTarget(device, scene);
+        destroyRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene, frame);
     }
 }
 
 void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = frame.m_cmdList;
-    scene::ViewportState& viewportState = scene.m_viewportState;
-
-    TRACE_PROFILER_SCOPE("VolumeLight", color::rgba8::GREEN);
-    DEBUG_MARKER_SCOPE(cmdList, "VolumeLight", color::rgbaf::GREEN);
-
-    if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty())
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty())
     {
-        ObjectHandle rt_h = scene.m_globalResources.get("render_target");
-        ASSERT(rt_h.isValid(), "must be valid");
-        renderer::Texture2D* renderTargetTexture = objectFromHandle<renderer::Texture2D>(rt_h);
-
-        ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
-        ASSERT(depth_stencil_h.isValid(), "must be valid");
-        renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(depth_stencil_h);
-
-        ObjectHandle gbuffer_albedo_h = scene.m_globalResources.get("gbuffer_albedo");
-        ASSERT(gbuffer_albedo_h.isValid(), "must be valid");
-        renderer::Texture2D* gbufferAlbedoTexture = objectFromHandle<renderer::Texture2D>(gbuffer_albedo_h);
-
-        ObjectHandle gbuffer_normals_h = scene.m_globalResources.get("gbuffer_normals");
-        ASSERT(gbuffer_normals_h.isValid(), "must be valid");
-        renderer::Texture2D* gbufferNormalsTexture = objectFromHandle<renderer::Texture2D>(gbuffer_normals_h);
-
-        ObjectHandle gbuffer_material_h = scene.m_globalResources.get("gbuffer_material");
-        ASSERT(gbuffer_material_h.isValid(), "must be valid");
-        renderer::Texture2D* gbufferMaterialTexture = objectFromHandle<renderer::Texture2D>(gbuffer_material_h);
-
-        ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_clamp");
-        ASSERT(sampler_state_h.isValid(), "must be valid");
-        renderer::SamplerState* samplerState = objectFromHandle<renderer::SamplerState>(sampler_state_h);
-
-        m_lightRenderTarget->setColorTexture(0, renderTargetTexture,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
-            },
-            {
-                renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
-            }
-        );
-
-        cmdList->beginRenderTarget(*m_lightRenderTarget);
-        cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-        cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-
-        for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)])
-        {
-            const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
-            const scene::PointLight& light = *static_cast<const scene::PointLight*>(itemLight.light);
-
-            cmdList->setPipelineState(*m_pipelines[entry->pipelineID]);
-
-            cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 0,
-                {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[entry->pipelineID].cb_Viewport)
-                });
-
-            struct ModelBuffer
-            {
-                math::Matrix4D modelMatrix;
-                math::Matrix4D prevModelMatrix;
-                math::Matrix4D normalMatrix;
-                math::float4   tintColour;
-                u64            objectID;
-                u64           _pad = 0;
-            };
-
-            ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = itemLight.object->getTransform().getMatrix();
-            constantBuffer.prevModelMatrix = itemLight.object->getPrevTransform().getMatrix();
-            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-            constantBuffer.tintColour = math::float4{1.0, 1.0, 1.0, 1.0};
-            constantBuffer.objectID = 0;
-
-            struct LightBuffer
-            {
-                math::Matrix4D lightSpaceMatrix[6];
-                math::float2   clipNearFar;
-                math::float2   viewSliceOffsetCount;
-                math::Vector3D position;
-                math::float4   color;
-                math::float4   attenuation;
-                f32            intensity;
-                f32            temperature;
-                f32            shadowBaseBias;
-                f32           _pad = 0;
-            };
-
-            LightBuffer lightBuffer;
-            lightBuffer.lightSpaceMatrix;
-            lightBuffer.clipNearFar;
-            lightBuffer.viewSliceOffsetCount;
-            lightBuffer.shadowBaseBias;
-            lightBuffer.position = itemLight.object->getTransform().getPosition();
-            lightBuffer.color = light.getColor();
-            lightBuffer.attenuation = light.getAttenuation();
-            lightBuffer.intensity = light.getIntensity();
-            lightBuffer.temperature = light.getTemperature();
-
-            cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 1,
-                {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[entry->pipelineID].cb_Model),
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters[entry->pipelineID].cb_Light),
-                    renderer::Descriptor(samplerState, m_parameters[entry->pipelineID].s_SamplerState),
-                    renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureBaseColor),
-                    renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureNormal),
-                    renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureMaterial),
-                    renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters[entry->pipelineID].t_TextureDepth),
-                });
-
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Light {}", light.getName()), color::rgbaf::LTGREY);
-            if (light.getType() == typeOf<scene::PointLight>())
-            {
-                renderer::GeometryBufferDesc desc(m_sphereVolume->getIndexBuffer(), 0, m_sphereVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
-                cmdList->drawIndexed(desc, 0, m_sphereVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
-            }
-            else if (light.getType() == typeOf<scene::SpotLight>())
-            {
-                renderer::GeometryBufferDesc desc(m_coneVolume->getIndexBuffer(), 0, m_coneVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
-                cmdList->drawIndexed(desc, 0, m_coneVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
-            }
-        }
-
-        cmdList->endRenderTarget();
+        return;
     }
+
+    auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
+        {
+            TRACE_PROFILER_SCOPE("VolumeLights", color::rgba8::GREEN);
+            DEBUG_MARKER_SCOPE(cmdList, "VolumeLights", color::rgbaf::GREEN);
+            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty(), "must not be empty");
+
+            ObjectHandle rt_handle = scene.m_globalResources.get("color_target");
+            ASSERT(rt_handle.isValid(), "must be valid");
+            renderer::Texture2D* renderTargetTexture = rt_handle.as<renderer::Texture2D>();
+
+            ObjectHandle depthStencil_handle = scene.m_globalResources.get("depth_stencil");
+            ASSERT(depthStencil_handle.isValid(), "must be valid");
+            renderer::Texture2D* depthStencilTexture = depthStencil_handle.as<renderer::Texture2D>();
+
+            ObjectHandle gbuffer_albedo_handle = scene.m_globalResources.get("gbuffer_albedo");
+            ASSERT(gbuffer_albedo_handle.isValid(), "must be valid");
+            renderer::Texture2D* gbufferAlbedoTexture = gbuffer_albedo_handle.as<renderer::Texture2D>();
+
+            ObjectHandle gbuffer_normals_handle = scene.m_globalResources.get("gbuffer_normals");
+            ASSERT(gbuffer_normals_handle.isValid(), "must be valid");
+            renderer::Texture2D* gbufferNormalsTexture = gbuffer_normals_handle.as<renderer::Texture2D>();
+
+            ObjectHandle gbuffer_material_handle = scene.m_globalResources.get("gbuffer_material");
+            ASSERT(gbuffer_material_handle.isValid(), "must be valid");
+            renderer::Texture2D* gbufferMaterialTexture = gbuffer_material_handle.as<renderer::Texture2D>();
+
+            ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_clamp");
+            ASSERT(samplerState_handle.isValid(), "must be valid");
+            renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
+
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+            ObjectHandle shadowmaps_handle = scene.m_globalResources.get("shadowmaps_array");
+            if (!shadowmaps_handle.isValid())
+            {
+                shadowmaps_handle = scene.m_globalResources.get("default_cubemap");
+                ASSERT(shadowmaps_handle.isValid(), "must be valid");
+            }
+            renderer::TextureCube* shadowmapsTexture = shadowmaps_handle.as<renderer::TextureCube>();
+
+            m_lightRenderTarget->setColorTexture(0, renderTargetTexture,
+                {
+                    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
+                },
+                {
+                    renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
+                });
+
+            cmdList->beginRenderTarget(*m_lightRenderTarget);
+            cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+            cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)])
+            {
+                const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
+                const scene::PointLight& light = *static_cast<const scene::PointLight*>(itemLight.light);
+
+                cmdList->setPipelineState(*m_pipelines[entry->pipelineID]);
+                cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 0,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters[entry->pipelineID].cb_Viewport)
+                    });
+
+                struct ModelBuffer
+                {
+                    math::Matrix4D modelMatrix;
+                    math::Matrix4D prevModelMatrix;
+                    math::Matrix4D normalMatrix;
+                    math::float4   tintColour;
+                    u64            objectID;
+                    u64           _pad = 0;
+                } constantBuffer;
+
+                constantBuffer.modelMatrix = itemLight.object->getTransform().getMatrix();
+                constantBuffer.prevModelMatrix = itemLight.object->getPrevTransform().getMatrix();
+                constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+                constantBuffer.tintColour = math::float4{ 1.0, 1.0, 1.0, 1.0 };
+                constantBuffer.objectID = 0;
+
+                struct LightBuffer
+                {
+                    math::Matrix4D lightSpaceMatrix[6];
+                    math::float2   clipNearFar;
+                    math::float2   viewSliceOffsetCount;
+                    math::Vector3D position;
+                    math::float4   color;
+                    math::float4   attenuation;
+                    f32            intensity;
+                    f32            temperature;
+                    f32            shadowBaseBias;
+                    f32           _pad = 0;
+                } lightBuffer;
+
+                lightBuffer.lightSpaceMatrix;
+                lightBuffer.clipNearFar;
+                lightBuffer.viewSliceOffsetCount;
+                lightBuffer.shadowBaseBias;
+                lightBuffer.position = itemLight.object->getTransform().getPosition();
+                lightBuffer.color = light.getColor();
+                lightBuffer.attenuation = light.getAttenuation();
+                lightBuffer.intensity = light.getIntensity();
+                lightBuffer.temperature = light.getTemperature();
+
+                cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 1,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[entry->pipelineID].cb_Model),
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters[entry->pipelineID].cb_Light),
+                        renderer::Descriptor(samplerState, m_parameters[entry->pipelineID].s_SamplerState),
+                        renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureBaseColor),
+                        renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureNormal),
+                        renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureMaterial),
+                        renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters[entry->pipelineID].t_TextureDepth),
+                        //renderer::Descriptor(renderer::TextureView(shadowmapsTexture), m_parameters[entry->pipelineID].t_TextureShadowmaps),
+                    });
+
+                DEBUG_MARKER_SCOPE(cmdList, std::format("Light {}", light.getName()), color::rgbaf::LTGREY);
+                if (light.getType() == typeOf<scene::PointLight>())
+                {
+                    renderer::GeometryBufferDesc desc(m_sphereVolume->getIndexBuffer(), 0, m_sphereVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
+                    cmdList->drawIndexed(desc, 0, m_sphereVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                }
+                else if (light.getType() == typeOf<scene::SpotLight>())
+                {
+                    renderer::GeometryBufferDesc desc(m_coneVolume->getIndexBuffer(), 0, m_coneVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
+                    cmdList->drawIndexed(desc, 0, m_coneVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                }
+            }
+
+            cmdList->endRenderTarget();
+        };
+
+    addRenderJob("VolumeLights Job", renderJob, device, scene);
 }
 
-void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_lightRenderTarget == nullptr, "must be nullptr");
-    m_lightRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
+    m_lightRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 1);
 }
 
-void RenderPipelineLightAccumulationStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineLightAccumulationStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_lightRenderTarget, "must be valid");
     V3D_DELETE(m_lightRenderTarget, memory::MemoryLabel::MemoryGame);

@@ -9,6 +9,9 @@
 #include "Scene/Model.h"
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/Material.h"
+#include "Scene/Light.h"
+#include "Scene/Camera/Camera.h"
+
 #include "Resource/Bitmap.h"
 #include "Resource/Loader//ModelFileLoader.h"
 #include "Resource/Loader/ImageFileLoader.h"

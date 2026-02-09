@@ -9,8 +9,10 @@
 #include "Resource/ResourceManager.h"
 #include "Stream/FileLoader.h"
 
-#include "Material.h"
-#include "Geometry/StaticMesh.h"
+#include "Scene/Material.h"
+#include "Scene/Light.h"
+#include "Scene/Geometry/StaticMesh.h"
+#include "Scene/Camera/Camera.h"
 
 namespace v3d
 {

@@ -43,8 +43,8 @@ namespace scene
             SHADER_PARAMETER(t_TextureVelocity);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame);
 
         renderer::RenderTargetState* m_renderTarget;
         renderer::GraphicsPipelineState* m_pipeline;

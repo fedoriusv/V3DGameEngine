@@ -14,6 +14,7 @@
 #include "Scene/ModelHandler.h"
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/Material.h"
+#include "Scene/SceneNode.h"
 
 #include "FrameProfiler.h"
 
@@ -25,7 +26,6 @@ namespace scene
 RenderPipelineGBufferStage::RenderPipelineGBufferStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
     : RenderPipelineStage(technique, "GBuffer")
     , m_modelHandler(modelHandler)
-    , m_cmdList(nullptr)
 
     , m_GBufferRenderTarget(nullptr)
 {
@@ -38,8 +38,7 @@ RenderPipelineGBufferStage::~RenderPipelineGBufferStage()
 
 void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    m_cmdList = device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    createRenderTarget(device, scene);
+    createRenderTarget(device, scene, frame);
 
     //PBR_MetallicRoughness
     {
@@ -218,7 +217,7 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
 
 void RenderPipelineGBufferStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene);
+    destroyRenderTarget(device, scene, frame);
 
     for (auto& pipeline : m_pipelines)
     {
@@ -229,46 +228,50 @@ void RenderPipelineGBufferStage::destroy(renderer::Device* device, scene::SceneD
         pipeline = nullptr;
     }
     m_pipelines.clear();
-
-    device->destroyCommandList(m_cmdList);
-    m_cmdList = nullptr;
 }
 
 void RenderPipelineGBufferStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_GBufferRenderTarget)
     {
-        createRenderTarget(device, scene);
+        createRenderTarget(device, scene, frame);
     }
-    else if (m_GBufferRenderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
+    else if (m_GBufferRenderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene);
-        createRenderTarget(device, scene);
+        destroyRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene, frame);
     }
 }
 
 void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)].empty() 
-        && scene.m_renderLists[toEnumType(scene::RenderPipelinePass::MaskedOpaque)].empty())
+    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
     {
-        return;
+        if (!(entry->passMask & (1 << toEnumType(scene::RenderPipelinePass::Opaque))))
+        {
+            continue;
+        }
+
+        //TODO: record cbo to frame data
     }
 
-    auto renderJob = [this, device](renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
+    auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
             TRACE_PROFILER_SCOPE("GBuffer", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "GBuffer", color::rgbaf::GREEN);
+            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)].empty(), "must not be empty");
 
-            const scene::ViewportState& viewportState = scene.m_viewportState;
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+            ObjectHandle linearSamplerRepeat_handler = scene.m_globalResources.get("linear_sampler_repeat");
+            ASSERT(linearSamplerRepeat_handler.isValid(), "must be valid");
+            renderer::SamplerState* sampler = linearSamplerRepeat_handler.as<renderer::SamplerState>();
 
             cmdList->beginRenderTarget(*m_GBufferRenderTarget);
-            cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-            cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-
-            ObjectHandle linear_sampler_repeat_h = scene.m_globalResources.get("linear_sampler_repeat");
-            ASSERT(linear_sampler_repeat_h.isValid(), "must be valid");
-            renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(linear_sampler_repeat_h);
+            cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+            cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
 
             for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
             {
@@ -277,10 +280,9 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                 const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
 
                 cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
-
                 cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
                     {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
                     });
 
                 struct ModelBuffer
@@ -307,11 +309,11 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                         {
                             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
                             renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), m_parameters[itemMesh.pipelineID].t_TextureNormal),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Roughness"))), m_parameters[itemMesh.pipelineID].t_TextureRoughness),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Metalness"))), m_parameters[itemMesh.pipelineID].t_TextureMetalness),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Displacement"))), m_parameters[itemMesh.pipelineID].t_TextureHeight),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("BaseColor").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Normals").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureNormal),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Roughness").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureRoughness),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Metalness").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureMetalness),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Displacement").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureHeight),
                         });
                 }
                 else if (material.getShadingModel() == scene::MaterialShadingModel::Custom)
@@ -321,9 +323,9 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                         {
                             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
                             renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Diffuse"))), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), m_parameters[itemMesh.pipelineID].t_TextureNormal),
-                            renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Specular"))), m_parameters[itemMesh.pipelineID].t_TextureMaterial),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Diffuse").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Normals").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureNormal),
+                            renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Specular").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureMaterial),
                         });
                 }
                 else
@@ -351,7 +353,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
 
                 cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
                     {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
                     });
 
                 struct ModelBuffer
@@ -376,10 +378,10 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
                         renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
-                        renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
-                        renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Normals"))), m_parameters[itemMesh.pipelineID].t_TextureNormal),
-                        renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Roughness"))), m_parameters[itemMesh.pipelineID].t_TextureRoughness),
-                        renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("Metalness"))), m_parameters[itemMesh.pipelineID].t_TextureMetalness),
+                        renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("BaseColor").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureAlbedo),
+                        renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Normals").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureNormal),
+                        renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Roughness").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureRoughness),
+                        renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("Metalness").as<renderer::Texture2D>()), m_parameters[itemMesh.pipelineID].t_TextureMetalness),
                         renderer::Descriptor(renderer::TextureView(noiseTexture, 0, 0), 6),
                     });
 
@@ -392,17 +394,16 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
             cmdList->endRenderTarget();
         };
 
-    ASSERT(m_cmdList, "must be valid");
-    addRenderJob("GBuffer Job", renderJob, device, m_cmdList, scene, frame);
+    addRenderJob("GBuffer Job", renderJob, device, scene);
 }
 
-void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, scene::SceneData& state)
+void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_GBufferRenderTarget == nullptr, "must be nullptr");
-    m_GBufferRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, state.m_viewportState._viewpotSize, 4, 0);
+    m_GBufferRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 4, 0);
 
     renderer::Texture2D* albedoAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_albedo");
+        renderer::Format::Format_R8G8B8A8_UNorm, scene.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_albedo");
     m_GBufferRenderTarget->setColorTexture(0, albedoAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
@@ -413,7 +414,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
     );
 
     renderer::Texture2D* normalsAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_normals");
+        renderer::Format::Format_R16G16B16A16_SFloat, scene.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_normals");
     m_GBufferRenderTarget->setColorTexture(1, normalsAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
@@ -424,7 +425,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
     );
 
     renderer::Texture2D* materialAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16B16A16_SFloat, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_material");
+        renderer::Format::Format_R16G16B16A16_SFloat, scene.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_material");
     m_GBufferRenderTarget->setColorTexture(2, materialAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
@@ -435,7 +436,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
     );
 
     renderer::Texture2D* velocityAttachment = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R16G16_SFloat, state.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_velocity");
+        renderer::Format::Format_R16G16_SFloat, scene.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "gbuffer_velocity");
     m_GBufferRenderTarget->setColorTexture(3, velocityAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
@@ -445,14 +446,14 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
         }
     );
 
-    state.m_globalResources.bind("gbuffer_albedo", albedoAttachment);
-    state.m_globalResources.bind("gbuffer_normals", normalsAttachment);
-    state.m_globalResources.bind("gbuffer_material", materialAttachment);
-    state.m_globalResources.bind("gbuffer_velocity", velocityAttachment);
+    scene.m_globalResources.bind("gbuffer_albedo", albedoAttachment);
+    scene.m_globalResources.bind("gbuffer_normals", normalsAttachment);
+    scene.m_globalResources.bind("gbuffer_material", materialAttachment);
+    scene.m_globalResources.bind("gbuffer_velocity", velocityAttachment);
 
-    ObjectHandle depth_stencil = state.m_globalResources.get("depth_stencil");
-    ASSERT(depth_stencil.isValid(), "must be valid");
-    renderer::Texture2D* depthAttachment = objectFromHandle<renderer::Texture2D>(depth_stencil);
+    ObjectHandle depthStencil_handle = scene.m_globalResources.get("depth_stencil");
+    ASSERT(depthStencil_handle.isValid(), "must be valid");
+    renderer::Texture2D* depthAttachment = depthStencil_handle.as<renderer::Texture2D>();
     m_GBufferRenderTarget->setDepthStencilTexture(depthAttachment,
         {
             renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
@@ -466,7 +467,7 @@ void RenderPipelineGBufferStage::createRenderTarget(renderer::Device* device, sc
     );
 }
 
-void RenderPipelineGBufferStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineGBufferStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_GBufferRenderTarget, "must be valid");
     renderer::Texture2D* albedoAttachment = m_GBufferRenderTarget->getColorTexture<renderer::Texture2D>(0);

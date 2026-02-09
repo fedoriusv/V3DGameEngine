@@ -40,10 +40,10 @@ namespace scene
             SHADER_PARAMETER(t_LUTTexture);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame);
 
-        renderer::RenderTargetState* m_gammaRenderTarget;
+        renderer::RenderTargetState* m_tonemapRenderTarget;
         renderer::GraphicsPipelineState* m_pipeline;
         MaterialParameters m_parameters;
     };

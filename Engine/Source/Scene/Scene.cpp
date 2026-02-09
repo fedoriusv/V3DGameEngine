@@ -1,5 +1,8 @@
 #include "Scene.h"
 
+#include "SceneNode.h"
+#include "RenderTechniques/RenderPipelineStage.h"
+
 #include "Geometry/Mesh.h"
 #include "Material.h"
 #include "Billboard.h"
@@ -10,66 +13,32 @@ namespace v3d
 namespace scene
 {
 
-SceneNode::SceneNode() noexcept
-    : m_parent(nullptr)
-{
-}
-
-SceneNode::SceneNode(const SceneNode& node) noexcept
-    : m_parent(node.m_parent)
-{
-}
-
-SceneNode::~SceneNode()
-{
-    for (auto& component : m_components)
-    {
-        if (std::get<1>(component))
-        {
-            V3D_DELETE(std::get<0>(component), memory::MemoryLabel::MemoryObject);
-        }
-    }
-    m_components.clear();
-
-    for (auto& child : m_children)
-    {
-        V3D_DELETE(child, memory::MemoryLabel::MemoryObject);
-    }
-    m_children.clear();
-}
-
-void SceneNode::addChild(SceneNode* node)
-{
-    m_children.push_back(node);
-    ASSERT(node->m_parent == nullptr, "node has parend already");
-    node->m_parent = this;
-}
+constexpr u32 k_workerThreadCount = 4;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Scene::Scene() noexcept
-    : m_frameCounter(0)
-    , m_editorMode(false)
-{
-
-    m_frameState.resize(3, {});
-    m_stateIndex = 0;
-}
-
-Scene::~Scene()
+SceneData::SceneData() noexcept
+    : m_taskWorker(k_workerThreadCount, task::TaskDispatcher::WorkerThreadPerCore/* | task::TaskDispatcher::AllowToMainThreadStealTasks*/)
+    , m_stateIndex(0)
 {
 }
 
-void Scene::beginFrame()
+SceneData::~SceneData()
 {
 }
 
-void Scene::endFrame()
+
+scene::FrameData& SceneData::frameData()
 {
-    ++m_frameCounter;
+    return m_frameState[m_stateIndex];
 }
 
-void Scene::finalize()
+const std::vector<SceneNode*>& SceneData::getNodeList() const
+{
+    return m_nodes;
+}
+
+void SceneData::finalize()
 {
     static std::function<void(scene::SceneNode* node)> processNode = [&](scene::SceneNode* node)
         {
@@ -101,7 +70,7 @@ void Scene::finalize()
                     entry->passMask |= 1 << toEnumType(scene::RenderPipelinePass::Shadowmap);
                 }
 
-                m_sceneData.m_generalRenderList.push_back(entry);
+                m_generalRenderList.push_back(entry);
             }
 
             if (scene::Billboard* unlit = node->getComponentByType<scene::Billboard>(); unlit)
@@ -113,7 +82,7 @@ void Scene::finalize()
                 entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::Indicator);
                 entry->pipelineID = 0;
 
-                m_sceneData.m_generalRenderList.push_back(entry);
+                m_generalRenderList.push_back(entry);
             }
 
             if (scene::DirectionalLight* light = node->getComponentByType<scene::DirectionalLight>(); light)
@@ -124,7 +93,7 @@ void Scene::finalize()
                 entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::DirectionLight);
                 entry->pipelineID = 0;
 
-                m_sceneData.m_generalRenderList.push_back(entry);
+                m_generalRenderList.push_back(entry);
             }
             else if (scene::Light* light = node->getComponentByType<scene::Light>(); light)
             {
@@ -133,7 +102,7 @@ void Scene::finalize()
                 entry->light = light;
                 entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::PunctualLights);
 
-                m_sceneData.m_generalRenderList.push_back(entry);
+                m_generalRenderList.push_back(entry);
             }
             else if (scene::Skybox* skybox = node->getComponentByType<scene::Skybox>(); skybox)
             {
@@ -146,7 +115,7 @@ void Scene::finalize()
                 entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::Skybox);
                 entry->pipelineID = material->getProperty<u32>("pipelineID");
 
-                m_sceneData.m_generalRenderList.push_back(entry);
+                m_generalRenderList.push_back(entry);
             }
 
             for (auto& child : node->m_children)
@@ -155,10 +124,103 @@ void Scene::finalize()
             }
         };
 
-    for (auto& node : m_sceneData.m_nodes)
+    for (auto& node : m_nodes)
     {
         processNode(node);
     }
+}
+
+
+SceneHandler::SceneHandler(bool isEditor) noexcept
+    : m_editorMode(isEditor)
+    , m_nodeGraphChanged(true)
+{
+}
+
+SceneHandler::~SceneHandler()
+{
+}
+
+bool SceneHandler::isEditorMode() const
+{
+    return m_editorMode;
+}
+
+void SceneHandler::create(renderer::Device* device)
+{
+    for (auto& frame : m_sceneData.m_frameState)
+    {
+        frame.m_allocator = new memory::ThreadSafeAllocator(4 * 1024 * 1024, m_sceneData.m_taskWorker.getNumberOfCoreThreads());
+    }
+
+    for (auto& technique : m_renderTechniques)
+    {
+        technique->create(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+    }
+}
+
+void SceneHandler::destroy(renderer::Device* device)
+{
+    for (auto& technique : m_renderTechniques)
+    {
+        technique->destroy(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+    }
+
+    for (auto& frame : m_sceneData.m_frameState)
+    {
+        delete frame.m_allocator;
+        frame.m_allocator = nullptr;
+    }
+}
+
+void SceneHandler::preRender(renderer::Device* device, f32 dt)
+{
+    if (m_nodeGraphChanged)
+    {
+        m_sceneData.finalize();
+        m_nodeGraphChanged = false;
+    }
+
+    for (auto& technique : m_renderTechniques)
+    {
+        technique->prepare(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+    }
+}
+
+void SceneHandler::postRender(renderer::Device* device, f32 dt)
+{
+    for (auto& technique : m_renderTechniques)
+    {
+        technique->execute(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+    }
+}
+
+void SceneHandler::submitRender(renderer::Device* device)
+{
+    m_sceneData.m_taskWorker.mainThreadLoop();
+
+    for (auto& technique : m_renderTechniques)
+    {
+        technique->submit(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+    }
+
+    m_sceneData.m_stateIndex = (m_sceneData.m_stateIndex + 1) % m_sceneData.m_frameState.size();
+}
+
+void SceneHandler::addNode(SceneNode* node)
+{
+    m_sceneData.m_nodes.push_back(node);
+    m_nodeGraphChanged = true;
+}
+
+void SceneHandler::registerTechnique(scene::RenderTechnique* technique)
+{
+    m_renderTechniques.push_back(technique);
+}
+
+void SceneHandler::unregisterTechnique(scene::RenderTechnique* technique)
+{
+    //m_renderTechniques.erase(std::destroy(m_renderTechniques.begin(), m_renderTechniques.end(), technique));
 }
 
 } //namespace scene

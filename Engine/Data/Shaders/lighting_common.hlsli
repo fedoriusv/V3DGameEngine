@@ -9,13 +9,12 @@
 
 struct LightBuffer
 {
-    float4 position;
-    float4 direction_range;
+    float3 position;
+    float3 direction;
     float4 color;
     float4 attenuation;
     float  intensity;
     float  temperature;
-    float  type;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////

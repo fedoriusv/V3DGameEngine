@@ -48,10 +48,11 @@ namespace scene
             SHADER_PARAMETER(t_TextureNormal);
             SHADER_PARAMETER(t_TextureMaterial);
             SHADER_PARAMETER(t_TextureDepth);
+            SHADER_PARAMETER(t_TextureShadowmaps);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
         scene::ModelHandler* m_modelHandler;
         renderer::RenderTargetState* m_lightRenderTarget;

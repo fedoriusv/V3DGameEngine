@@ -11,6 +11,7 @@
 
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/Material.h"
+#include "Scene/SceneNode.h"
 
 #include "FrameProfiler.h"
 
@@ -90,117 +91,125 @@ void RenderPipelineUnlitStage::prepare(renderer::Device* device, scene::SceneDat
 {
     if (!m_renderTarget)
     {
-        m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportState._viewpotSize, 2);
+        m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 2);
     }
-    else if (m_renderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
+    else if (m_renderTarget->getRenderArea() != scene.m_viewportSize)
     {
         V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);
-        m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportState._viewpotSize, 2);
+        m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 2);
     }
 }
 
 void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = frame.m_cmdList;
-    scene::ViewportState& viewportState = scene.m_viewportState;
-
-    if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)].empty())
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)].empty())
     {
-        TRACE_PROFILER_SCOPE("Unlit", color::rgba8::GREEN);
-        DEBUG_MARKER_SCOPE(cmdList, "Unlit", color::rgbaf::GREEN);
+        return;
+    }
 
-        ObjectHandle hRT = scene.m_globalResources.get("render_target");
-        ASSERT(hRT.isValid(), "must be valid");
-        renderer::Texture2D* renderTargetTexture = objectFromHandle<renderer::Texture2D>(hRT);
+    auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
+        {
+            TRACE_PROFILER_SCOPE("Unlit", color::rgba8::GREEN);
+            DEBUG_MARKER_SCOPE(cmdList, "Unlit", color::rgbaf::GREEN);
+            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)].empty(), "must not be empty");
 
-        ObjectHandle hGbuffer_material = scene.m_globalResources.get("gbuffer_material");
-        ASSERT(hGbuffer_material.isValid(), "must be valid");
-        renderer::Texture2D* gbufferMaterialTexture = objectFromHandle<renderer::Texture2D>(hGbuffer_material);
+            ObjectHandle renderTarget_handler = scene.m_globalResources.get("color_target");
+            ASSERT(renderTarget_handler.isValid(), "must be valid");
+            renderer::Texture2D* renderTargetTexture = renderTarget_handler.as<renderer::Texture2D>();
 
-        ObjectHandle hDepth_stencil = scene.m_globalResources.get("depth_stencil");
-        ASSERT(hDepth_stencil.isValid(), "must be valid");
-        renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(hDepth_stencil);
+            ObjectHandle Gbuffer_Material_handler = scene.m_globalResources.get("gbuffer_material");
+            ASSERT(Gbuffer_Material_handler.isValid(), "must be valid");
+            renderer::Texture2D* gbufferMaterialTexture = Gbuffer_Material_handler.as<renderer::Texture2D>();
 
-        ObjectHandle hLinearSampler = scene.m_globalResources.get("linear_sampler_repeat");
-        ASSERT(hLinearSampler.isValid(), "must be valid");
-        renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(hLinearSampler);
+            ObjectHandle depthStencil_handler = scene.m_globalResources.get("depth_stencil");
+            ASSERT(depthStencil_handler.isValid(), "must be valid");
+            renderer::Texture2D* depthStencilTexture = depthStencil_handler.as<renderer::Texture2D>();
 
-        m_renderTarget->setColorTexture(0, renderTargetTexture,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
-            },
-            {
-                renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
-            });
+            ObjectHandle linearSampler_handler = scene.m_globalResources.get("linear_sampler_repeat");
+            ASSERT(linearSampler_handler.isValid(), "must be valid");
+            renderer::SamplerState* sampler = linearSampler_handler.as<renderer::SamplerState>();
 
-        m_renderTarget->setColorTexture(1, gbufferMaterialTexture,
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+            m_renderTarget->setColorTexture(0, renderTargetTexture,
                 {
                     renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
                 },
-            {
-                renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
-            });
-
-        m_renderTarget->setDepthStencilTexture(depthStencilTexture,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.f
-            },
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
-            },
-            {
-                renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-            });
-
-        cmdList->beginRenderTarget(*m_renderTarget);
-        cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-        cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-
-        for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)])
-        {
-            const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
-            const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
-
-            cmdList->setStencilRef(0x0);
-            cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
-
-            cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
+                    renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
                 });
 
-            struct ModelBuffer
-            {
-                math::Matrix4D modelMatrix;
-                math::Matrix4D prevModelMatrix;
-                math::Matrix4D normalMatrix;
-                math::float4   tintColour;
-                u64            objectID;
-                u64           _pad = 0;
-            };
-
-            ModelBuffer constantBuffer;
-            constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
-            constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
-            constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
-            constantBuffer.normalMatrix.makeTransposed();
-            constantBuffer.tintColour = material.getProperty<math::float4>("Color");
-            constantBuffer.objectID = itemMesh.object->ID();
-
-            cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
+            m_renderTarget->setColorTexture(1, gbufferMaterialTexture,
                 {
-                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
-                    renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
-                    renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), m_parameters[itemMesh.pipelineID].t_TextureBaseColor)
+                    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
+                },
+                {
+                    renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
                 });
 
-            DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipelines[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
-            cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
-        }
+            m_renderTarget->setDepthStencilTexture(depthStencilTexture,
+                {
+                    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.f
+                },
+                {
+                    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
+                },
+                {
+                    renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+                });
 
-        cmdList->endRenderTarget();
-    }
+            cmdList->beginRenderTarget(*m_renderTarget);
+            cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+            cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)])
+            {
+                const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+                const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+                const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
+                cmdList->setStencilRef(0x0);
+                cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
+                cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters[itemMesh.pipelineID].cb_Viewport)
+                    });
+
+                struct ModelBuffer
+                {
+                    math::Matrix4D modelMatrix;
+                    math::Matrix4D prevModelMatrix;
+                    math::Matrix4D normalMatrix;
+                    math::float4   tintColour;
+                    u64            objectID;
+                    u64           _pad = 0;
+                };
+
+                ModelBuffer constantBuffer;
+                constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+                constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
+                constantBuffer.normalMatrix = constantBuffer.modelMatrix.getInversed();
+                constantBuffer.normalMatrix.makeTransposed();
+                constantBuffer.tintColour = material.getProperty<math::float4>("Color");
+                constantBuffer.objectID = itemMesh.object->ID();
+
+                cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[itemMesh.pipelineID].cb_Model),
+                        renderer::Descriptor(sampler, m_parameters[itemMesh.pipelineID].s_SamplerState),
+                        renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), m_parameters[itemMesh.pipelineID].t_TextureBaseColor)
+                    });
+
+                DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipelines[itemMesh.pipelineID]->getName()), color::rgbaf::LTGREY);
+                cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
+            }
+
+            cmdList->endRenderTarget();
+        };
+
+    addRenderJob("Unlit Job", renderJob, device, scene);
 }
 
 } //namespace scene

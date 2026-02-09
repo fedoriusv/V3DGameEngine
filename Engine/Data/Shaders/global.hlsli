@@ -57,9 +57,13 @@ typedef VS_SIMPLE_OUTPUT PS_SIMPLE_INPUT;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float linearize_depth(in float d, in float zNear, in float zFar)
+float linearize_depth(in float depth, in float nearPlane, in float farPlane)
 {
-    return zNear * zFar / (zNear + d * (zFar - zNear));
+#if REVERSED_DEPTH
+    return (nearPlane * farPlane) / (nearPlane + depth * (farPlane - nearPlane));
+#else
+    return (nearPlane * farPlane) / (farPlane - depth * (farPlane - nearPlane));
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

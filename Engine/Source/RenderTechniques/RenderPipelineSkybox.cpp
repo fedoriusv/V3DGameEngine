@@ -13,6 +13,7 @@
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/Material.h"
 #include "Scene/Skybox.h"
+#include "Scene/SceneNode.h"
 
 #include "FrameProfiler.h"
 
@@ -34,7 +35,7 @@ RenderPipelineSkyboxStage::~RenderPipelineSkyboxStage()
 
 void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, scene);
+    createRenderTarget(device, scene, frame);
 
     // ID 0, Sphere
     {
@@ -113,7 +114,7 @@ void RenderPipelineSkyboxStage::create(renderer::Device* device, scene::SceneDat
 
 void RenderPipelineSkyboxStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene);
+    destroyRenderTarget(device, scene, frame);
 
     for (auto& pipeline : m_pipelines)
     {
@@ -130,98 +131,102 @@ void RenderPipelineSkyboxStage::prepare(renderer::Device* device, scene::SceneDa
 {
     if (!m_renderTarget)
     {
-        createRenderTarget(device, scene);
+        createRenderTarget(device, scene, frame);
     }
-    else if (m_renderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
+    else if (m_renderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene);
-        createRenderTarget(device, scene);
+        destroyRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene, frame);
     }
 }
 
 void RenderPipelineSkyboxStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = frame.m_cmdList;
-    scene::ViewportState& viewportState = scene.m_viewportState;
-
-    TRACE_PROFILER_SCOPE("Skybox", color::rgba8::GREEN);
-    DEBUG_MARKER_SCOPE(cmdList, "Skybox", color::rgbaf::GREEN);
-
-    ObjectHandle render_target = scene.m_globalResources.get("render_target");
-    ASSERT(render_target.isValid(), "must be valid");
-    renderer::Texture2D* renderTargetTexture = objectFromHandle<renderer::Texture2D>(render_target);
-
-    ObjectHandle depth_stencil = scene.m_globalResources.get("depth_stencil");
-    ASSERT(depth_stencil.isValid(), "must be valid");
-    renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(depth_stencil);
-
-    if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)].empty())
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)].empty())
     {
-        const scene::SkyboxNodeEntry& itemMesh = *static_cast<scene::SkyboxNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)].front());
-        const scene::Skybox& skybox = *static_cast<scene::Skybox*>(itemMesh.skybox);
-        const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
-
-        ObjectHandle rt_h = scene.m_globalResources.get("render_target");
-        ASSERT(rt_h.isValid(), "must be valid");
-        renderer::Texture2D* renderTargetTexture = objectFromHandle<renderer::Texture2D>(rt_h);
-
-        ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
-        ASSERT(depth_stencil_h.isValid(), "must be valid");
-        renderer::Texture2D* depthStencilTexture = objectFromHandle<renderer::Texture2D>(depth_stencil_h);
-
-        m_renderTarget->setColorTexture(0, renderTargetTexture,
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
-            },
-            {
-                renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
-            });
-        m_renderTarget->setDepthStencilTexture(depthStencilTexture, 
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
-            },
-            {
-                renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
-            },
-            {
-                renderer::TransitionOp::TransitionOp_DepthStencilReadOnly, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-            });
-
-        cmdList->beginRenderTarget(*m_renderTarget);
-        cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-        cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-        cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
-
-        cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
-            {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
-            });
-
-        ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_repeat");
-        ASSERT(sampler_state_h.isValid(), "must be valid");
-        renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
-
-        cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
-            {
-                renderer::Descriptor(sampler_state, m_parameters.s_SamplerState),
-                renderer::Descriptor(renderer::TextureView(objectFromHandle<renderer::Texture2D>(material.getProperty<ObjectHandle>("BaseColor"))), m_parameters.t_SkyboxTexture),
-            });
-
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Skybox {}", skybox.getName()), color::rgbaf::LTGREY);
-        renderer::GeometryBufferDesc desc(m_volumes[itemMesh.pipelineID]->getIndexBuffer(), 0, m_volumes[itemMesh.pipelineID]->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
-        cmdList->drawIndexed(desc, 0, m_volumes[itemMesh.pipelineID]->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
-
-        cmdList->endRenderTarget();
+        return;
     }
+
+    auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
+        {
+            TRACE_PROFILER_SCOPE("Skybox", color::rgba8::GREEN);
+            DEBUG_MARKER_SCOPE(cmdList, "Skybox", color::rgbaf::GREEN);
+            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)].empty(), "must be not empty");
+
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)])
+            {
+                const scene::SkyboxNodeEntry& itemMesh = *static_cast<scene::SkyboxNodeEntry*>(entry);
+                const scene::Skybox& skybox = *static_cast<scene::Skybox*>(itemMesh.skybox);
+                const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
+                ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+                ASSERT(viewportState_handle.isValid(), "must be valid");
+                scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+                ObjectHandle renderTarget_handle = scene.m_globalResources.get("color_target");
+                ASSERT(renderTarget_handle.isValid(), "must be valid");
+                renderer::Texture2D* renderTargetTexture = renderTarget_handle.as<renderer::Texture2D>();
+
+                ObjectHandle depthStencil_handle = scene.m_globalResources.get("depth_stencil");
+                ASSERT(depthStencil_handle.isValid(), "must be valid");
+                renderer::Texture2D* depthStencilTexture = depthStencil_handle.as<renderer::Texture2D>();
+
+                ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_repeat");
+                ASSERT(samplerState_handle.isValid(), "must be valid");
+                renderer::SamplerState* sampler_state = samplerState_handle.as<renderer::SamplerState>();
+
+                m_renderTarget->setColorTexture(0, renderTargetTexture,
+                    {
+                        renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
+                    },
+                    {
+                        renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
+                    });
+
+                m_renderTarget->setDepthStencilTexture(depthStencilTexture,
+                    {
+                        renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
+                    },
+                    {
+                        renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
+                    },
+                    {
+                        renderer::TransitionOp::TransitionOp_DepthStencilReadOnly, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+                    });
+
+                cmdList->beginRenderTarget(*m_renderTarget);
+                cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+                cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+                cmdList->setPipelineState(*m_pipelines[itemMesh.pipelineID]);
+                cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 0,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
+                    });
+
+                cmdList->bindDescriptorSet(m_pipelines[itemMesh.pipelineID]->getShaderProgram(), 1,
+                    {
+                        renderer::Descriptor(sampler_state, m_parameters.s_SamplerState),
+                        renderer::Descriptor(renderer::TextureView(material.getProperty<ObjectHandle>("BaseColor").as<renderer::Texture2D>()), m_parameters.t_SkyboxTexture),
+                    });
+
+                DEBUG_MARKER_SCOPE(cmdList, std::format("Skybox {}", skybox.getName()), color::rgbaf::LTGREY);
+                renderer::GeometryBufferDesc desc(m_volumes[itemMesh.pipelineID]->getIndexBuffer(), 0, m_volumes[itemMesh.pipelineID]->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
+                cmdList->drawIndexed(desc, 0, m_volumes[itemMesh.pipelineID]->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+            }
+
+            cmdList->endRenderTarget();
+        };
+
+    addRenderJob("Skybox Job", renderJob, device, scene);
 }
 
-void RenderPipelineSkyboxStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineSkyboxStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 1);
 }
 
-void RenderPipelineSkyboxStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineSkyboxStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame)
 {
     ASSERT(m_renderTarget, "must be valid");
     V3D_DELETE(m_renderTarget, memory::MemoryLabel::MemoryGame);

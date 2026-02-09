@@ -5,6 +5,7 @@
 #include "Resource/Loader/AssetSourceFileLoader.h"
 #include "Resource/Loader/ShaderSourceFileLoader.h"
 #include "Resource/Loader/ModelFileLoader.h"
+#include "Scene/SceneNode.h"
 
 #include "Renderer/ShaderProgram.h"
 
@@ -16,8 +17,8 @@ namespace scene
 {
 
 RenderPipelineTonemapStage::RenderPipelineTonemapStage(RenderTechnique* technique) noexcept
-    : RenderPipelineStage(technique, "Gamma")
-    , m_gammaRenderTarget(nullptr)
+    : RenderPipelineStage(technique, "Tonemap")
+    , m_tonemapRenderTarget(nullptr)
     , m_pipeline(nullptr)
 {
 }
@@ -28,15 +29,15 @@ RenderPipelineTonemapStage::~RenderPipelineTonemapStage()
 
 void RenderPipelineTonemapStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, scene);
+    createRenderTarget(device, scene, frame);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
         "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
     const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(device,
         "tonemapping.hlsl", "tonemapping_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
-    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_gammaRenderTarget->getRenderPassDesc(),
-        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "gamma_pipeline");
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_tonemapRenderTarget->getRenderPassDesc(),
+        V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "tonemap_pipeline");
 
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
     m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
@@ -56,7 +57,7 @@ void RenderPipelineTonemapStage::create(renderer::Device* device, scene::SceneDa
 
 void RenderPipelineTonemapStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene);
+    destroyRenderTarget(device, scene, frame);
 
     if (m_pipeline)
     {
@@ -70,86 +71,102 @@ void RenderPipelineTonemapStage::destroy(renderer::Device* device, scene::SceneD
 
 void RenderPipelineTonemapStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (!m_gammaRenderTarget)
+    if (!m_tonemapRenderTarget)
     {
-        createRenderTarget(device, scene);
+        createRenderTarget(device, scene, frame);
     }
-    else if (m_gammaRenderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
+    else if (m_tonemapRenderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene);
-        createRenderTarget(device, scene);
+        destroyRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene, frame);
     }
 }
 
 void RenderPipelineTonemapStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = frame.m_cmdList;
-    scene::ViewportState& viewportState = scene.m_viewportState;
-
-    TRACE_PROFILER_SCOPE("Gamma", color::rgba8::GREEN);
-    DEBUG_MARKER_SCOPE(cmdList, "Gamma", color::rgbaf::GREEN);
-
-    cmdList->beginRenderTarget(*m_gammaRenderTarget);
-    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setPipelineState(*m_pipeline);
-
-    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
-        {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
-        });
-
-    struct Tonemapper
+    ObjectHandle inputTarget_handle = frame.m_frameResources.get("render_target");
+    if (!inputTarget_handle.isValid())
     {
-        u32     tonemapper;
-        u32     lut;
-        f32     ev100;
-        f32     gamma;
-    } tonemapper;
+        inputTarget_handle = scene.m_globalResources.get("color_target");
+    }
 
-    tonemapper.tonemapper = scene.m_settings._tonemapParams._tonemapper;
-    tonemapper.lut = scene.m_settings._tonemapParams._lut;
-    tonemapper.ev100 = scene.m_settings._tonemapParams._ev100; //@see: https://en.wikipedia.org/wiki/Exposure_value#Tabulated_exposure_values
-    tonemapper.gamma = scene.m_settings._tonemapParams._gamma;
+    renderer::Texture2D* inputTargetTexture = inputTarget_handle.as<renderer::Texture2D>();
+    frame.m_frameResources.bind("input_target_tonemap", inputTarget_handle);
+    frame.m_frameResources.bind("render_target", m_tonemapRenderTarget->getColorTexture<renderer::Texture2D>(0));
 
-    ObjectHandle composite_attachment = scene.m_globalResources.get("render_target");
-    ASSERT(composite_attachment.isValid(), "must be valid");
-    renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(composite_attachment);
-
-    ObjectHandle lut_h = scene.m_globalResources.get("current_lut");
-    ASSERT(lut_h.isValid(), "must be valid");
-    renderer::Texture3D* lut = objectFromHandle<renderer::Texture3D>(lut_h);
-
-    ObjectHandle linear_sampler_mirror_h = scene.m_globalResources.get("linear_sampler_mirror");
-    ASSERT(linear_sampler_mirror_h.isValid(), "must be valid");
-    renderer::SamplerState* linear_sampler_mirror_state = objectFromHandle<renderer::SamplerState>(linear_sampler_mirror_h);
-
-    ObjectHandle linear_sampler_repeat_h = scene.m_globalResources.get("linear_sampler_repeat");
-    ASSERT(linear_sampler_repeat_h.isValid(), "must be valid");
-    renderer::SamplerState* linear_sampler_repeat_state = objectFromHandle<renderer::SamplerState>(linear_sampler_repeat_h);
-
-    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
+    auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &tonemapper, 0, sizeof(Tonemapper)}, m_parameters.cb_Tonemapper),
-            renderer::Descriptor(linear_sampler_mirror_state, m_parameters.s_LinearMirrorSampler),
-            renderer::Descriptor(linear_sampler_repeat_state, m_parameters.s_LinearClampSampler),
-            renderer::Descriptor(renderer::TextureView(texture, 0, 0), m_parameters.t_ColorTexture),
-            renderer::Descriptor(renderer::TextureView(lut, 0, 0), m_parameters.t_LUTTexture),
-        });
+            TRACE_PROFILER_SCOPE("Tonemap", color::rgba8::GREEN);
+            DEBUG_MARKER_SCOPE(cmdList, "Tonemap", color::rgbaf::GREEN);
 
-    cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-    cmdList->endRenderTarget();
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+            cmdList->beginRenderTarget(*m_tonemapRenderTarget);
+            cmdList->setViewport({ 0.f, 0.f, (f32)scene.m_viewportSize._width, (f32)scene.m_viewportSize._height });
+            cmdList->setScissor({ 0.f, 0.f, (f32)scene.m_viewportSize._width, (f32)scene.m_viewportSize._height });
+            cmdList->setPipelineState(*m_pipeline);
+            cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
+                {
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
+                });
+
+            struct Tonemapper
+            {
+                u32     tonemapper;
+                u32     lut;
+                f32     ev100;
+                f32     gamma;
+            } tonemapper;
+
+            tonemapper.tonemapper = scene.m_settings._tonemapParams._tonemapper;
+            tonemapper.lut = scene.m_settings._tonemapParams._lut;
+            tonemapper.ev100 = scene.m_settings._tonemapParams._ev100; //@see: https://en.wikipedia.org/wiki/Exposure_value#Tabulated_exposure_values
+            tonemapper.gamma = scene.m_settings._tonemapParams._gamma;
+
+            ObjectHandle inputTarget_handle = frame.m_frameResources.get("input_target_tonemap");
+            ASSERT(inputTarget_handle.isValid(), "must be valid");
+            renderer::Texture2D* inputTargetTexture = inputTarget_handle.as<renderer::Texture2D>();
+
+            ObjectHandle lut_handle = scene.m_globalResources.get("current_lut");
+            ASSERT(lut_handle.isValid(), "must be valid");
+            renderer::Texture3D* LUT = lut_handle.as<renderer::Texture3D>();
+
+            ObjectHandle linearSamplerMirror_handle = scene.m_globalResources.get("linear_sampler_mirror");
+            ASSERT(linearSamplerMirror_handle.isValid(), "must be valid");
+            renderer::SamplerState* linearSamplerMirrorState = linearSamplerMirror_handle.as<renderer::SamplerState>();
+
+            ObjectHandle linearSamplerRepeat_handle = scene.m_globalResources.get("linear_sampler_repeat");
+            ASSERT(linearSamplerRepeat_handle.isValid(), "must be valid");
+            renderer::SamplerState* linearSamplerRepeatState = linearSamplerRepeat_handle.as<renderer::SamplerState>();
+
+            cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
+                {
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &tonemapper, 0, sizeof(Tonemapper)}, m_parameters.cb_Tonemapper),
+                    renderer::Descriptor(linearSamplerMirrorState, m_parameters.s_LinearMirrorSampler),
+                    renderer::Descriptor(linearSamplerRepeatState, m_parameters.s_LinearClampSampler),
+                    renderer::Descriptor(renderer::TextureView(inputTargetTexture, 0, 0), m_parameters.t_ColorTexture),
+                    renderer::Descriptor(renderer::TextureView(LUT, 0, 0), m_parameters.t_LUTTexture),
+                });
+
+            cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+            cmdList->endRenderTarget();
+        };
+
+    addRenderJob("Tonemap Job", renderJob, device, scene);
 }
 
-void RenderPipelineTonemapStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineTonemapStage::createRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame)
 {
-    ASSERT(m_gammaRenderTarget == nullptr, "must be nullptr");
-    m_gammaRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0);
+    ASSERT(m_tonemapRenderTarget == nullptr, "must be nullptr");
+    m_tonemapRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportSize, 1, 0);
 
-    renderer::Texture2D* gamma = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "gamma");
+    renderer::Texture2D* tonemap = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "tonemap");
+    data.m_globalResources.bind("final_target", tonemap);
 
-    m_gammaRenderTarget->setColorTexture(0, gamma,
+    m_tonemapRenderTarget->setColorTexture(0, tonemap,
         {
             renderer::RenderTargetLoadOp::LoadOp_DontCare, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f)
         },
@@ -157,17 +174,16 @@ void RenderPipelineTonemapStage::createRenderTarget(renderer::Device* device, sc
             renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead
         });
 
-    data.m_globalResources.bind("final", gamma);
 }
 
-void RenderPipelineTonemapStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineTonemapStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame)
 {
-    ASSERT(m_gammaRenderTarget, "must be valid");
-    renderer::Texture2D* gamma = m_gammaRenderTarget->getColorTexture<renderer::Texture2D>(0);
-    V3D_DELETE(gamma, memory::MemoryLabel::MemoryGame);
+    ASSERT(m_tonemapRenderTarget, "must be valid");
+    renderer::Texture2D* tonemap = m_tonemapRenderTarget->getColorTexture<renderer::Texture2D>(0);
+    V3D_DELETE(tonemap, memory::MemoryLabel::MemoryGame);
 
-    V3D_DELETE(m_gammaRenderTarget, memory::MemoryLabel::MemoryGame);
-    m_gammaRenderTarget = nullptr;
+    V3D_DELETE(m_tonemapRenderTarget, memory::MemoryLabel::MemoryGame);
+    m_tonemapRenderTarget = nullptr;
 }
 
 } //namespace scene

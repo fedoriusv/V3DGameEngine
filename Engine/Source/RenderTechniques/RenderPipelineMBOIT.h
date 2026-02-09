@@ -30,8 +30,8 @@ namespace scene
 
     private:
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame);
 
         enum Pass
         {

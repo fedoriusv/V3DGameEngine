@@ -41,11 +41,10 @@ namespace scene
             SHADER_PARAMETER(cb_Model);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
         scene::ModelHandler* const       m_modelHandler;
-        renderer::CmdListRender*         m_cmdList;
 
         renderer::RenderTargetState*     m_depthRenderTarget;
         renderer::GraphicsPipelineState* m_depthPipeline;

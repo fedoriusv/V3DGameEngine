@@ -48,11 +48,10 @@ namespace scene
             SHADER_PARAMETER(t_TextureHeight);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& data);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& data);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
         scene::ModelHandler* const                         m_modelHandler;
-        renderer::CmdListRender*                           m_cmdList;
 
         renderer::RenderTargetState*                       m_GBufferRenderTarget;
         std::vector<v3d::renderer::GraphicsPipelineState*> m_pipelines;

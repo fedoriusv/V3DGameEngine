@@ -5,6 +5,7 @@
 
 #include "Scene/Scene.h"
 #include "Task/Task.h"
+#include "Task/TaskScheduler.h"
 #include "Memory/ThreadSafeAllocator.h"
 
 namespace v3d
@@ -36,13 +37,17 @@ namespace scene
 
         void submit(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
+        RenderPipelineStage* getStage(const std::string& id);
+
     protected:
 
         RenderTechnique() noexcept;
         virtual ~RenderTechnique();
 
         void addStage(const std::string& id, RenderPipelineStage* stage);
-        void addRenderJob(renderer::Device* device, renderer::CmdList* cmd, task::Task* renderTask);
+        void addRenderJob(renderer::Device* device, renderer::CmdListRender* cmd, task::TaskScheduler& worker, task::Task* renderTask);
+
+        [[nodiscard]] renderer::CmdListRender* acquireCmdList(renderer::Device* device);
 
         struct Stage
         {
@@ -50,10 +55,9 @@ namespace scene
             RenderPipelineStage* _stage;
         };
 
-        std::vector<Stage>              m_stages;
-
-        task::TaskScheduler                                      m_renderWorker;
-        std::vector<std::tuple<renderer::CmdList*, task::Task*>> m_dependencyList;
+        std::vector<Stage> m_stages;
+        std::vector<std::tuple<renderer::CmdListRender*, task::Task*>> m_dependencyList;
+        std::queue<renderer::CmdListRender*> m_freeCmdList;
 
         friend RenderPipelineStage;
     };
@@ -73,10 +77,12 @@ namespace scene
         virtual void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
         virtual void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
 
+        virtual void onChanged(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+
     protected:
 
         template<typename Func>
-        void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, renderer::CmdListRender* cmd, const scene::SceneData& scene, const scene::FrameData& frame);
+        void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene);
 
         std::string          m_id;
         RenderTechnique&     m_renderTechnique;
@@ -85,12 +91,21 @@ namespace scene
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename Func>
-    inline void RenderPipelineStage::addRenderJob(const std::string& name, Func&& func, renderer::Device* device, renderer::CmdListRender* cmd, const scene::SceneData& scene, const scene::FrameData& frame)
+    inline void RenderPipelineStage::addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene)
     {
-        task::Task* renderTask = new task::Task;
-        renderTask->init(name, std::forward<Func>(func), cmd, scene, frame);
+        renderer::CmdListRender* cmdList = m_renderTechnique.acquireCmdList(device);
+        u32 prevIndex = (scene.m_stateIndex + scene.m_frameState.size() - 1) % scene.m_frameState.size();
 
-        m_renderTechnique.addRenderJob(device, cmd, renderTask);
+        //TODO: Hack to skip first render threads execution due empty data
+        if (scene.m_frameState[prevIndex].m_frameResources.empty())
+        {
+            return;
+        }
+
+        task::Task* renderTask = new task::Task;
+        renderTask->init(name, std::forward<Func>(func), device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(scene.m_frameState[prevIndex]));
+
+        m_renderTechnique.addRenderJob(device, cmdList, scene.m_taskWorker, renderTask);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

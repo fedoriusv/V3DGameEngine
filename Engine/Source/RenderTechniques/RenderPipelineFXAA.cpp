@@ -28,7 +28,7 @@ RenderPipelineFXAAStage::~RenderPipelineFXAAStage()
 
 void RenderPipelineFXAAStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, scene);
+    createRenderTarget(device, scene, frame);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,
         "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
@@ -53,7 +53,7 @@ void RenderPipelineFXAAStage::create(renderer::Device* device, scene::SceneData&
 
 void RenderPipelineFXAAStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene);
+    destroyRenderTarget(device, scene, frame);
 
     const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
     V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
@@ -66,59 +66,73 @@ void RenderPipelineFXAAStage::prepare(renderer::Device* device, scene::SceneData
 {
     if (!m_renderTarget)
     {
-        createRenderTarget(device, scene);
+        createRenderTarget(device, scene, frame);
     }
-    else if (m_renderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
+    else if (m_renderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene);
-        createRenderTarget(device, scene);
+        destroyRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene, frame);
     }
 }
 
 void RenderPipelineFXAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = frame.m_cmdList;
-    scene::ViewportState& viewportState = scene.m_viewportState;
+    ObjectHandle inputTarget_handle = frame.m_frameResources.get("render_target");
+    if (!inputTarget_handle.isValid())
+    {
+        inputTarget_handle = scene.m_globalResources.get("color_target");
+    }
 
-    DEBUG_MARKER_SCOPE(cmdList, "FXAA", color::rgbaf::GREEN);
+    frame.m_frameResources.bind("input_target_taa", inputTarget_handle);
+    frame.m_frameResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 
-    cmdList->beginRenderTarget(*m_renderTarget);
-    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setPipelineState(*m_pipeline);
-
-    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
+    auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
-            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
-        });
+            TRACE_PROFILER_SCOPE("FXAA", color::rgba8::GREEN);
+            DEBUG_MARKER_SCOPE(cmdList, "FXAA", color::rgbaf::GREEN);
 
-    ObjectHandle render_target = scene.m_globalResources.get("render_target");
-    ASSERT(render_target.isValid(), "must be valid");
-    renderer::Texture2D* texture = objectFromHandle<renderer::Texture2D>(render_target);
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
 
-    ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_mirror");
-    ASSERT(sampler_state_h.isValid(), "must be valid");
-    renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
+            cmdList->beginRenderTarget(*m_renderTarget);
+            cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+            cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
+            cmdList->setPipelineState(*m_pipeline);
+            cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
+                {
+                    renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState) }, m_parameters.cb_Viewport)
+                });
 
-    cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
-        {
-            renderer::Descriptor(sampler_state, m_parameters.s_SamplerState),
-            renderer::Descriptor(texture, m_parameters.t_TextureColor)
-        });
+            ObjectHandle renderTarget_handle = scene.m_globalResources.get("render_target");
+            ASSERT(renderTarget_handle.isValid(), "must be valid");
+            renderer::Texture2D* texture = renderTarget_handle.as<renderer::Texture2D>();
 
-    cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
-    cmdList->endRenderTarget();
+            ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_mirror");
+            ASSERT(samplerState_handle.isValid(), "must be valid");
+            renderer::SamplerState* sampler_state = samplerState_handle.as<renderer::SamplerState>();
 
-    scene.m_globalResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
+            cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
+                {
+                    renderer::Descriptor(sampler_state, m_parameters.s_SamplerState),
+                    renderer::Descriptor(texture, m_parameters.t_TextureColor)
+                });
+
+            cmdList->draw(renderer::GeometryBufferDesc(), 0, 3, 0, 1);
+            cmdList->endRenderTarget();
+
+        };
+
+    addRenderJob("FXAA Job", renderJob, device, scene);
 }
 
-void RenderPipelineFXAAStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineFXAAStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1, 0);
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 1, 0);
 
     renderer::Texture2D* texture = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-        renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "fxaa");
+        renderer::Format::Format_R8G8B8A8_UNorm, scene.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "fxaa");
 
     m_renderTarget->setColorTexture(0, texture,
         {
@@ -128,10 +142,10 @@ void RenderPipelineFXAAStage::createRenderTarget(renderer::Device* device, scene
             renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
         });
 
-    data.m_globalResources.bind("fxaa", texture);
+    scene.m_globalResources.bind("fxaa", texture);
 }
 
-void RenderPipelineFXAAStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineFXAAStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* composition = m_renderTarget->getColorTexture<renderer::Texture2D>(0);

@@ -13,6 +13,7 @@
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/Billboard.h"
 #include "Scene/Material.h"
+#include "Scene/SceneNode.h"
 
 #include "FrameProfiler.h"
 
@@ -35,7 +36,7 @@ RenderPipelineSelectionStage::~RenderPipelineSelectionStage()
 
 void RenderPipelineSelectionStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, scene);
+    createRenderTarget(device, scene, frame);
 
     //VertexFormatStandardDesc
     {
@@ -125,7 +126,7 @@ void RenderPipelineSelectionStage::create(renderer::Device* device, scene::Scene
 
 void RenderPipelineSelectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene);
+    destroyRenderTarget(device, scene, frame);
 
     for (auto& pipeline : m_pipelines)
     {
@@ -142,107 +143,113 @@ void RenderPipelineSelectionStage::prepare(renderer::Device* device, scene::Scen
 {
     if (!m_renderTarget)
     {
-        createRenderTarget(device, scene);
+        createRenderTarget(device, scene, frame);
     }
-    else if (m_renderTarget->getRenderArea() != scene.m_viewportState._viewpotSize)
+    else if (m_renderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene);
-        createRenderTarget(device, scene);
+        destroyRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene, frame);
     }
 }
 
 void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    renderer::CmdListRender* cmdList = frame.m_cmdList;
-    scene::ViewportState& viewportState = scene.m_viewportState;
-
-    TRACE_PROFILER_SCOPE("Selection", color::rgba8::GREEN);
-    DEBUG_MARKER_SCOPE(cmdList, "Selection", color::rgbaf::GREEN);
-
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].empty())
-    {
-        cmdList->clear(m_renderTarget->getColorTexture<renderer::Texture2D>(0), { 0.f, 0.f,  0.f,  0.f });
-        return;
-    }
-
-    cmdList->beginRenderTarget(*m_renderTarget);
-    cmdList->setViewport({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setScissor({ 0.f, 0.f, (f32)viewportState._viewpotSize._width, (f32)viewportState._viewpotSize._height });
-    cmdList->setStencilRef(0);
-
-    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)])
-    {
-        const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
-        const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
-
-        static auto selectPipelineFormat = [](const scene::DrawNodeEntry& item) -> std::tuple<u32, u64>
-            {
-                if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Debug)))
-                {
-                    return { 1U, sizeof(VertexFormatSimpleLit) };
-                }
-
-                if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Indicator)))
-                {
-                    return { 2U, 0/*VertexFormatEmpty*/ };
-                }
-
-                return { 0U, sizeof(VertexFormatStandard) };
-            };
-        auto [pipelineID, vertexStride] = selectPipelineFormat(itemMesh);
-
-        cmdList->setPipelineState(*m_pipelines[pipelineID]);
-        cmdList->bindDescriptorSet(m_pipelines[pipelineID]->getShaderProgram(), 0,
-            {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &viewportState._viewportBuffer, 0, sizeof(viewportState._viewportBuffer)}, m_parameters.cb_Viewport)
-            });
-
-        struct ModelBuffer
+    auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
-            math::Matrix4D modelMatrix;
-            math::Matrix4D prevModelMatrix;
-            math::Matrix4D normalMatrix;
-            math::float4   tintColour;
-            u64            objectID;
-            u64           _pad = 0;
+            TRACE_PROFILER_SCOPE("Selection", color::rgba8::GREEN);
+            DEBUG_MARKER_SCOPE(cmdList, "Selection", color::rgbaf::GREEN);
+
+            if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].empty())
+            {
+                cmdList->clear(m_renderTarget->getColorTexture<renderer::Texture2D>(0), { 0.f, 0.f,  0.f,  0.f });
+                return;
+            }
+
+            cmdList->beginRenderTarget(*m_renderTarget);
+            cmdList->setViewport({ 0.f, 0.f, (f32)scene.m_viewportSize._width, (f32)scene.m_viewportSize._height });
+            cmdList->setScissor({ 0.f, 0.f, (f32)scene.m_viewportSize._width, (f32)scene.m_viewportSize._height });
+            cmdList->setStencilRef(0);
+
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)])
+            {
+                const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
+                const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
+
+                static auto selectPipelineFormat = [](const scene::DrawNodeEntry& item) -> std::tuple<u32, u64>
+                    {
+                        if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Debug)))
+                        {
+                            return { 1U, sizeof(VertexFormatSimpleLit) };
+                        }
+
+                        if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Indicator)))
+                        {
+                            return { 2U, 0/*VertexFormatEmpty*/ };
+                        }
+
+                        return { 0U, sizeof(VertexFormatStandard) };
+                    };
+                auto [pipelineID, vertexStride] = selectPipelineFormat(itemMesh);
+
+                cmdList->setPipelineState(*m_pipelines[pipelineID]);
+                cmdList->bindDescriptorSet(m_pipelines[pipelineID]->getShaderProgram(), 0,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
+                    });
+
+                struct ModelBuffer
+                {
+                    math::Matrix4D modelMatrix;
+                    math::Matrix4D prevModelMatrix;
+                    math::Matrix4D normalMatrix;
+                    math::float4   tintColour;
+                    u64            objectID;
+                    u64           _pad = 0;
+                };
+
+                ModelBuffer constantBuffer;
+                constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+                constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
+                constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
+                constantBuffer.tintColour = material.getProperty<math::float4>("ColorDiffuse");
+                constantBuffer.objectID = itemMesh.object->ID();
+
+                cmdList->bindDescriptorSet(m_pipelines[pipelineID]->getShaderProgram(), 1,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Model),
+                    });
+
+                DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipelines[pipelineID]->getName()), color::rgbaf::LTGREY);
+                if (itemMesh.geometry)
+                {
+                    const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+                    renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), vertexStride, 0);
+                    cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                }
+                else
+                {
+                    ASSERT(pipelineID == 2, "must be VertexFormatEmptyDesc pipeline");
+                    cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
+                }
+            }
+
+            cmdList->endRenderTarget();
         };
 
-        ModelBuffer constantBuffer;
-        constantBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
-        constantBuffer.prevModelMatrix = itemMesh.object->getPrevTransform().getMatrix();
-        constantBuffer.normalMatrix = constantBuffer.modelMatrix.getTransposed();
-        constantBuffer.tintColour = material.getProperty<math::float4>("ColorDiffuse");
-        constantBuffer.objectID = itemMesh.object->ID();
-
-        cmdList->bindDescriptorSet(m_pipelines[pipelineID]->getShaderProgram(), 1,
-            {
-                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Model),
-            });
-
-        DEBUG_MARKER_SCOPE(cmdList, std::format("Object {}, pipeline {}", itemMesh.object->ID(), m_pipelines[pipelineID]->getName()), color::rgbaf::LTGREY);
-        if (itemMesh.geometry)
-        {
-            const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
-            renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), vertexStride, 0);
-            cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
-        }
-        else
-        {
-            ASSERT(pipelineID == 2, "must be VertexFormatEmptyDesc pipeline");
-            cmdList->draw(renderer::GeometryBufferDesc(), 0, 4, 0, 1);
-        }
-    }
-
-    cmdList->endRenderTarget();
+    addRenderJob("Selection Job", renderJob, device, scene);
 }
 
-void RenderPipelineSelectionStage::createRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineSelectionStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_renderTarget == nullptr, "must be nullptr");
-    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, data.m_viewportState._viewpotSize, 1);
+    m_renderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 1);
 
     m_renderTarget->setColorTexture(0, V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage::TextureUsage_Write,
-        renderer::Format::Format_R32_SFloat, data.m_viewportState._viewpotSize, renderer::TextureSamples::TextureSamples_x1, "selected_objects"),
+        renderer::Format::Format_R32_SFloat, scene.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "selected_objects"),
         {
             renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, color::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
@@ -250,10 +257,10 @@ void RenderPipelineSelectionStage::createRenderTarget(renderer::Device* device, 
             renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead
         });
 
-    data.m_globalResources.bind("selected_objects", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
+    scene.m_globalResources.bind("selected_objects", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
-void RenderPipelineSelectionStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data)
+void RenderPipelineSelectionStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame)
 {
     ASSERT(m_renderTarget, "must be valid");
     renderer::Texture2D* texture = m_renderTarget->getColorTexture<renderer::Texture2D>(0);
