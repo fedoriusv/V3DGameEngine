@@ -332,6 +332,7 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
 
     cmdList.postSubmit();
 
+    m_internalCmdBufferManager->updateStatus();
     cmdBufferMgr->updateStatus();
     m_semaphoreManager->updateStatus();
 
