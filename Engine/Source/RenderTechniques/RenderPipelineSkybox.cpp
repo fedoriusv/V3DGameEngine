@@ -217,7 +217,7 @@ void RenderPipelineSkyboxStage::execute(renderer::Device* device, scene::SceneDa
             cmdList->endRenderTarget();
         };
 
-    addRenderJob("Skybox Job", renderJob, device, scene);
+    addRenderJob("Skybox Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineSkyboxStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

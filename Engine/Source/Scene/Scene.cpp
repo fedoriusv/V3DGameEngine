@@ -28,9 +28,20 @@ SceneData::~SceneData()
 }
 
 
-scene::FrameData& SceneData::frameData()
+scene::FrameData& SceneData::sceneFrameData() const
 {
     return m_frameState[m_stateIndex];
+}
+
+scene::FrameData& SceneData::renderFrameData() const
+{
+    u32 prevIndex = (m_stateIndex + m_frameState.size() - 1) % m_frameState.size();
+    return m_frameState[prevIndex];
+}
+
+u32 SceneData::numberOfFrames() const
+{
+    return m_frameState.size();
 }
 
 const std::vector<SceneNode*>& SceneData::getNodeList() const

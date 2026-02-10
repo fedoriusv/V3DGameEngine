@@ -240,7 +240,7 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
             cmdList->endRenderTarget();
         };
 
-    addRenderJob("Selection Job", renderJob, device, scene);
+    addRenderJob("Selection Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineSelectionStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

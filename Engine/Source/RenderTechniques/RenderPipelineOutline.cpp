@@ -162,7 +162,7 @@ void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneD
             cmdList->endRenderTarget();
         };
 
-    addRenderJob("Outline Job", renderJob, device, scene);
+    addRenderJob("Outline Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineOutlineStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

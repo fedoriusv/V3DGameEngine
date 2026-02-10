@@ -150,7 +150,7 @@ void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData&
             }
         };
 
-    addRenderJob("TAA Job", renderJob, device, scene);
+    addRenderJob("TAA Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineTAAStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

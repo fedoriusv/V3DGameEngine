@@ -106,7 +106,7 @@ void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage
 void RenderTechnique::addRenderJob(renderer::Device* device, renderer::CmdListRender* cmds, task::TaskScheduler& worker, task::Task* renderTask)
 {
     m_dependencyList.emplace_back(cmds, renderTask);
-    worker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::MainThread);
+    worker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
 }
 
 renderer::CmdListRender* RenderTechnique::acquireCmdList(renderer::Device* device)

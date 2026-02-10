@@ -194,7 +194,7 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, Scen
             cmdList->endRenderTarget();
         };
 
-    addRenderJob("DeferredLighting Job", renderJob, device, scene);
+    addRenderJob("DeferredLighting Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineDeferredLightingStage::createRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame)

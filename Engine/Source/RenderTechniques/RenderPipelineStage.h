@@ -45,6 +45,9 @@ namespace scene
         virtual ~RenderTechnique();
 
         void addStage(const std::string& id, RenderPipelineStage* stage);
+
+    private:
+
         void addRenderJob(renderer::Device* device, renderer::CmdListRender* cmd, task::TaskScheduler& worker, task::Task* renderTask);
 
         [[nodiscard]] renderer::CmdListRender* acquireCmdList(renderer::Device* device);
@@ -58,6 +61,9 @@ namespace scene
         std::vector<Stage> m_stages;
         std::vector<std::tuple<renderer::CmdListRender*, task::Task*>> m_dependencyList;
         std::queue<renderer::CmdListRender*> m_freeCmdList;
+
+        using RenderJobFunc = std::function<void(renderer::Device*, renderer::CmdListRender*, const scene::SceneData&, const scene::FrameData&)>;
+        std::vector<RenderJobFunc> m_batchJobs;
 
         friend RenderPipelineStage;
     };
@@ -81,8 +87,14 @@ namespace scene
 
     protected:
 
+        struct TaskData
+        {
+            u32          _numbersOfDraws;
+            math::float2 _drawRange;
+        };
+
         template<typename Func>
-        void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene);
+        void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch = false);
 
         std::string          m_id;
         RenderTechnique&     m_renderTechnique;
@@ -91,19 +103,39 @@ namespace scene
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename Func>
-    inline void RenderPipelineStage::addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene)
+    inline void RenderPipelineStage::addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch)
     {
-        renderer::CmdListRender* cmdList = m_renderTechnique.acquireCmdList(device);
-        u32 prevIndex = (scene.m_stateIndex + scene.m_frameState.size() - 1) % scene.m_frameState.size();
-
-        //TODO: Hack to skip first render threads execution due empty data
-        if (scene.m_frameState[prevIndex].m_frameResources.empty())
+        if (batch)
         {
+            m_renderTechnique.m_batchJobs.emplace_back(std::forward<Func>(func));
             return;
         }
 
+        renderer::CmdListRender* cmdList = m_renderTechnique.acquireCmdList(device);
+        scene::FrameData& frameData = scene.renderFrameData();
+
         task::Task* renderTask = new task::Task;
-        renderTask->init(name, std::forward<Func>(func), device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(scene.m_frameState[prevIndex]));
+        if (m_renderTechnique.m_batchJobs.empty())
+        {
+            renderTask->init(name, std::forward<Func>(func), device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(frameData));
+        }
+        else
+        {
+            m_renderTechnique.m_batchJobs.emplace_back(std::forward<Func>(func));
+
+            std::vector<RenderTechnique::RenderJobFunc> tempBatchJobs;
+            std::swap(tempBatchJobs, m_renderTechnique.m_batchJobs);
+
+            auto batchFunc = [](std::vector<RenderTechnique::RenderJobFunc>& jobs, renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame)
+                {
+                    for (auto& job : jobs)
+                    {
+                        std::invoke(job, device, cmdList, scene, frame);
+                    }
+                };
+
+            renderTask->init(batchFunc, tempBatchJobs, device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(frameData));
+        }
 
         m_renderTechnique.addRenderJob(device, cmdList, scene.m_taskWorker, renderTask);
     }

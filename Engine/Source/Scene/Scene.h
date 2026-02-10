@@ -112,7 +112,10 @@ namespace scene
         SceneData() noexcept;
         virtual ~SceneData();
 
-        scene::FrameData& frameData();
+        scene::FrameData& sceneFrameData() const;
+        scene::FrameData& renderFrameData() const;
+        u32 numberOfFrames() const;
+
         const std::vector<SceneNode*>& getNodeList() const;
 
     public:
@@ -133,7 +136,7 @@ namespace scene
 
         std::vector<SceneNode*>             m_nodes;
 
-        std::array<scene::FrameData, 1>     m_frameState; //TODO need resorce delete delay for 2 frames
+        mutable std::array<scene::FrameData, 1> m_frameState; //TODO need resorce delete delay for 2 frames
         u32                                 m_stateIndex;
 
         void finalize();

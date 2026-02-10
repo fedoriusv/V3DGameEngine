@@ -209,7 +209,7 @@ void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneDat
             cmdList->endRenderTarget();
         };
 
-    addRenderJob("Unlit Job", renderJob, device, scene);
+    addRenderJob("Unlit Job", renderJob, device, scene, true);
 }
 
 } //namespace scene

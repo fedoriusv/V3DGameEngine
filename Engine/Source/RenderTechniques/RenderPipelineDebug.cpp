@@ -176,7 +176,11 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
             DEBUG_MARKER_SCOPE(cmdList, "Debug", color::rgbaf::GREEN);
             ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)].empty(), "must be not empty");
 
-            ObjectHandle renderTarget_handle = scene.m_globalResources.get("input_target_debug");
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+            ObjectHandle renderTarget_handle = frame.m_frameResources.get("input_target_debug");
             ASSERT(renderTarget_handle.isValid(), "must be valid");
             renderer::Texture2D* renderTargetTexture = renderTarget_handle.as<renderer::Texture2D>();
 
@@ -184,9 +188,6 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
             ASSERT(depthStencilTexture_handle.isValid(), "must be valid");
             renderer::Texture2D* depthStencilTexture = depthStencilTexture_handle.as<renderer::Texture2D>();
 
-            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
-            ASSERT(viewportState_handle.isValid(), "must be valid");
-            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
 
             m_renderTarget->setColorTexture(0, renderTargetTexture,
                 {
@@ -252,6 +253,8 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
 
             cmdList->endRenderTarget();
         };
+
+    addRenderJob("Debug Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineDebugStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
