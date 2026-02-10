@@ -76,6 +76,7 @@ namespace scene
             f32                                         _longRange = 50.0f;
             f32                                         _splitFactor = 0.90f;
             f32                                         _punctualLightBias = 0.0f;
+            f32                                         _PCF = 1.0f; //0 - disable; 1 - 3x3;
             bool                                        _debugShadowCascades = false;
             bool                                        _debugPunctualLightShadows = false;
         } _shadowsParams;

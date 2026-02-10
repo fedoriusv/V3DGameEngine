@@ -23,7 +23,7 @@ namespace editor
 
         static void constructTransformProp(ui::WidgetHandler* handler);
 
-        static void constuctTestUIWindow(ui::WidgetHandler* handler, EditorScene* scene);
+        static void constuctTestUIWindow(ui::WidgetHandler* handler, scene::SceneData& scene);
     };
 
 } //namespace editor

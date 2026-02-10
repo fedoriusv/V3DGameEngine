@@ -48,15 +48,12 @@
 
 using namespace v3d;
 
-constexpr u32 k_workerThreadCount = 8;
-constexpr u32 k_frameAllocationSize = 4 * 1024 * 1024;
-
 bool EditorScreen::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
     return false;
 }
 
-bool EditorScreen::handleInputEvent(v3d::event::InputEventHandler* handler, const v3d::event::InputEvent* event)
+bool EditorScreen::handleInputEvent(event::InputEventHandler* handler, const event::InputEvent* event)
 {
     return false;
 }
@@ -70,7 +67,7 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     new scene::RenderPipelineDeferredLightingStage(this);
     new scene::RenderPipelineLightAccumulationStage(this, modelHandler);
     new scene::RenderPipelineSkyboxStage(this, modelHandler);
-    new scene::RenderPipelineMBOITStage(this);
+    //new scene::RenderPipelineMBOITStage(this);
     new scene::RenderPipelineUnlitStage(this, modelHandler);
     new scene::RenderPipelineOutlineStage(this);
     new scene::RenderPipelineTAAStage(this);
@@ -84,8 +81,7 @@ EditorScene::RenderPipelineScene::~RenderPipelineScene()
 }
 
 EditorScene::EditorScene() noexcept
-    : m_device()
-    , m_taskWorker(k_workerThreadCount, task::TaskDispatcher::WorkerThreadPerCore/* | task::TaskDispatcher::AllowToMainThreadStealTasks*/)
+    : SceneHandler(true)
     , m_modelHandler(new scene::ModelHandler())
     , m_UIHandler(nullptr)
     , m_cameraHandler(new scene::CameraEditorHandler(std::make_unique<scene::Camera>()))
@@ -97,11 +93,10 @@ EditorScene::EditorScene() noexcept
         }))
 
     , m_mainPipeline(m_modelHandler, m_UIHandler)
-    , m_activeIndex(k_emptyIndex)
+    , m_frameCounter(0)
+    , m_selectedIndex(k_emptyIndex)
 
 {
-    m_editorMode = true;
-
     m_inputHandler->bind([this](const event::MouseInputEvent* event)
         {
             if (m_currentViewportRect.isPointInside({ (f32)m_inputHandler->getAbsoluteCursorPosition()._x, (f32)m_inputHandler->getAbsoluteCursorPosition()._y }))
@@ -113,7 +108,7 @@ EditorScene::EditorScene() noexcept
                     {
                         scene::RenderPipelineOutlineStage::MappedData* readback_objectIDData = objectFromHandle<scene::RenderPipelineOutlineStage::MappedData>(selectedObject);
                         scene::SceneNode* selectedNode = nullptr;
-                        m_activeIndex = k_emptyIndex;
+                        m_selectedIndex = k_emptyIndex;
                         if (readback_objectIDData->_ptr)
                         {
                             u32 id = readback_objectIDData->_ptr[0];
@@ -123,7 +118,7 @@ EditorScene::EditorScene() noexcept
                                 }); found != m_sceneData.m_generalRenderList.cend())
                             {
                                 selectedNode = (*found)->object;
-                                m_activeIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
+                                m_selectedIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
                             }
                         }
                         m_gameEventRecevier->sendEvent(new EditorSelectionEvent(selectedNode));
@@ -162,7 +157,7 @@ EditorScene::EditorScene() noexcept
                         return node->object == selectedNode;
                     }); found != m_sceneData.m_generalRenderList.cend())
                 {
-                    m_activeIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
+                    m_selectedIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
                 }
             }
         }
@@ -193,45 +188,59 @@ EditorScene::~EditorScene()
     delete m_cameraHandler;
 }
 
-void EditorScene::create(renderer::Device* device, const math::Dimension2D& viewportSize)
+scene::SceneData& EditorScene::getSceneData()
+{
+    return m_sceneData;
+}
+
+void EditorScene::createScene(renderer::Device* device, const math::Dimension2D& viewportSize)
 {
     m_device = device;
-    m_currentViewportRect = math::Rect(0, 0, viewportSize._width, viewportSize._height);
+    registerTechnique(&m_mainPipeline);
+
+    //load setting from config
+    m_sceneData.m_viewportSize = { (u32)viewportSize._width, (u32)viewportSize._height };
+
     m_cameraHandler->setPerspective(m_sceneData.m_settings._vewportParams._fov, viewportSize, m_sceneData.m_settings._vewportParams._near, m_sceneData.m_settings._vewportParams._far);
     m_cameraHandler->setMoveSpeed(m_sceneData.m_settings._vewportParams._moveSpeed);
     m_cameraHandler->setRotationSpeed(m_sceneData.m_settings._vewportParams._rotateSpeed);
     m_cameraHandler->setTarget({ 0.f, 0.f, 0.f });
     m_cameraHandler->setPosition({ 0.f, 0.25f, -1.f });
+    m_currentViewportRect = math::Rect(0, 0, viewportSize._width, viewportSize._height);
 
-    m_sceneData.m_viewportState._viewpotSize = { (u32)viewportSize._width, (u32)viewportSize._height };
-
-    renderer::CmdListRender* cmdList = m_device->createCommandList<renderer::CmdListRender>(renderer::Device::GraphicMask);
-    for (auto frame : m_frameState)
+    //load default resources
+    loadResources();
+    if (isEditorMode())
     {
-        frame.m_cmdList = cmdList;
-        frame.m_taskWorker = &m_taskWorker;
-        frame.m_allocator = new memory::ThreadSafeAllocator(k_frameAllocationSize, m_taskWorker.getNumberOfWorkingThreads());
+        //editor_loadDebug();
     }
 
-    loadResources();
-    finalize();
-
-    m_mainPipeline.create(m_device, m_sceneData, m_frameState[m_stateIndex]);
+    SceneHandler::create(device);
 }
 
-void EditorScene::destroy()
+void EditorScene::destroyScene()
 {
-    m_mainPipeline.destroy(m_device, m_sceneData, m_frameState[m_stateIndex]);
+    unregisterTechnique(&m_mainPipeline);
 
-    m_device->destroyCommandList(m_frameState[0].m_cmdList);
-    for (auto frame : m_frameState)
-    {
-        delete frame.m_allocator;
-        frame.m_allocator = nullptr;
+    SceneHandler::destroy(m_device);
+    m_device = nullptr;
+}
 
-        frame.m_cmdList = nullptr;
-        frame.m_taskWorker = nullptr;
-    }
+void EditorScene::loadScene()
+{
+    //TODO add open dialog for this
+    test_loadTestScene();
+    //test_loadScene("SunTemple.fbx");
+    /////
+}
+
+void EditorScene::beginFrame()
+{
+}
+
+void EditorScene::endFrame()
+{
+    ++m_frameCounter;
 }
 
 void EditorScene::preRender(f32 dt)
@@ -239,45 +248,61 @@ void EditorScene::preRender(f32 dt)
     TRACE_PROFILER_SCOPE("PreRender", color::rgba8::WHITE);
 
     m_cameraHandler->update(dt);
-    m_sceneData.m_viewportState._camera = m_cameraHandler;
-    m_frameState[m_stateIndex].m_allocator->reset();
+    m_sceneData.m_camera = m_cameraHandler;
 
     s32 posX = (s32)m_inputHandler->getAbsoluteCursorPosition()._x - (s32)m_currentViewportRect.getLeftX();
     posX = (posX < 0) ? 0 : posX;
     s32 posY = (s32)m_inputHandler->getAbsoluteCursorPosition()._y - (s32)m_currentViewportRect.getTopY();
     posY = (posY < 0) ? 0 : posY;
 
-    scene::ViewportState::ViewportBuffer& viewportState = m_sceneData.m_viewportState._viewportBuffer;
-    viewportState.prevProjectionMatrix = viewportState.projectionMatrix;
-    viewportState.prevViewMatrix = viewportState.viewMatrix;
-    viewportState.prevCameraJitter = viewportState.cameraJitter;
-    viewportState.projectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix();
-    viewportState.invProjectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix().getInversed();
-    viewportState.viewMatrix = m_cameraHandler->getCamera().getViewMatrix();
-    viewportState.invViewMatrix = m_cameraHandler->getCamera().getViewMatrix().getInversed();
-    viewportState.cameraJitter = scene::CameraController::calculateJitter(m_frameCounter, m_sceneData.m_viewportState._viewpotSize);
-    viewportState.cameraPosition = { m_cameraHandler->getPosition().getX(), m_cameraHandler->getPosition().getY(), m_cameraHandler->getPosition().getZ(), 0.f };
-    viewportState.viewportSize = { (f32)m_sceneData.m_viewportState._viewpotSize._width, (f32)m_sceneData.m_viewportState._viewpotSize._height };
-    viewportState.clipNearFar = { m_cameraHandler->getNear(), m_cameraHandler->getFar() };
-    viewportState.random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
-    viewportState.cursorPosition = { (f32)posX, (f32)posY };
-    viewportState.time = utils::Timer::getCurrentTime();
+    scene::FrameData& currentFrameData = m_sceneData.sceneFrameData();
+    currentFrameData.m_allocator->reset();
+    currentFrameData.m_frameResources.cleanup();
 
-    m_modelHandler->preUpdate(dt, m_sceneData);
-    if (m_activeIndex != k_emptyIndex)
+    scene::ViewportState* viewportState = currentFrameData.m_allocator->construct<scene::ViewportState>();
+    viewportState->prevProjectionMatrix = viewportState->projectionMatrix;
+    viewportState->prevViewMatrix = viewportState->viewMatrix;
+    viewportState->prevCameraJitter = viewportState->cameraJitter;
+    viewportState->projectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix();
+    viewportState->invProjectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix().getInversed();
+    viewportState->viewMatrix = m_cameraHandler->getCamera().getViewMatrix();
+    viewportState->invViewMatrix = m_cameraHandler->getCamera().getViewMatrix().getInversed();
+    viewportState->cameraJitter = scene::CameraController::calculateJitter(m_frameCounter, m_sceneData.m_viewportSize);
+    viewportState->cameraPosition = { m_cameraHandler->getPosition().getX(), m_cameraHandler->getPosition().getY(), m_cameraHandler->getPosition().getZ(), 0.f };
+    viewportState->viewportSize = { (f32)m_sceneData.m_viewportSize._width, (f32)m_sceneData.m_viewportSize._height };
+    viewportState->clipNearFar = { m_cameraHandler->getNear(), m_cameraHandler->getFar() };
+    viewportState->random = { math::random<f32>(0.f, 0.1f),math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f), math::random<f32>(0.f, 0.1f) };
+    viewportState->cursorPosition = { (f32)posX, (f32)posY };
+    viewportState->time = utils::Timer::getCurrentTime();
+    currentFrameData.m_frameResources.bind("viewport_state", viewportState);
+
+    if (m_frameCounter <= 0 && m_sceneData.numberOfFrames() > 1) //Need to update data for render frame only for first time
     {
-        m_sceneData.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].push_back(m_sceneData.m_generalRenderList[m_activeIndex]);
+        scene::FrameData& renderFrameData = m_sceneData.renderFrameData();
+        renderFrameData.m_allocator->reset();
+        renderFrameData.m_frameResources.cleanup();
+
+        scene::ViewportState* renderViewportState = m_sceneData.renderFrameData().m_allocator->construct<scene::ViewportState>();
+        memcpy(renderViewportState, viewportState, sizeof(scene::ViewportState));
+        renderFrameData.m_frameResources.bind("viewport_state", renderViewportState);
     }
+
     m_sceneData.m_globalResources.bind("current_lut", std::get<1>(m_LUTs[m_sceneData.m_settings._tonemapParams._lut]));
 
-    m_mainPipeline.prepare(m_device, m_sceneData, m_frameState[m_stateIndex]);
+    SceneHandler::preRender(m_device, dt);
+
+    m_modelHandler->preUpdate(dt, m_sceneData);
+    if (m_selectedIndex != k_emptyIndex)
+    {
+        m_sceneData.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].push_back(m_sceneData.m_generalRenderList[m_selectedIndex]);
+    }
 }
 
 void EditorScene::postRender(f32 dt)
 {
     TRACE_PROFILER_SCOPE("PostRender", color::rgba8::WHITE);
 
-    m_mainPipeline.execute(m_device, m_sceneData, m_frameState[m_stateIndex]);
+    SceneHandler::postRender(m_device, dt);
     m_modelHandler->postUpdate(dt, m_sceneData);
 }
 
@@ -285,17 +310,14 @@ void EditorScene::submitRender()
 {
     TRACE_PROFILER_SCOPE("SubmitRender", color::rgba8::WHITE);
 
-    m_mainPipeline.submit(m_device, m_sceneData, m_frameState[m_stateIndex]);
-    m_device->submit(m_frameState[m_stateIndex].m_cmdList, false);
-
-    m_stateIndex = (m_stateIndex + 1) % m_frameState.size();
+    SceneHandler::submitRender(m_device);
 }
 
-void EditorScene::modifyObject(const math::Matrix4D& transform)
+void EditorScene::transformSelectedObject(const math::Matrix4D& transform)
 {
-    if (m_activeIndex != k_emptyIndex)
+    if (m_selectedIndex != k_emptyIndex)
     {
-        m_sceneData.m_generalRenderList[m_activeIndex]->object->setTransform(scene::TransformMode::Local, transform);
+        m_sceneData.m_generalRenderList[m_selectedIndex]->object->setTransform(scene::TransformMode::Local, transform);
     }
 }
 
@@ -305,7 +327,7 @@ void EditorScene::onChanged(const v3d::math::Rect& viewport)
     {
         if (m_currentViewportRect.getWidth() != viewport.getWidth() || m_currentViewportRect.getHeight() != viewport.getHeight())
         {
-            m_sceneData.m_viewportState._viewpotSize = { (u32)viewport.getWidth(), (u32)viewport.getHeight() };
+            m_sceneData.m_viewportSize = { (u32)viewport.getWidth(), (u32)viewport.getHeight() };
         }
 
         m_currentViewportRect = viewport;
@@ -321,7 +343,7 @@ void EditorScene::onChanged(const math::Matrix4D& view)
 
 renderer::Texture2D* EditorScene::getOutputTexture() const
 {
-    ObjectHandle final = m_sceneData.m_globalResources.get("final");
+    ObjectHandle final = m_sceneData.m_globalResources.get("final_target");
     ASSERT(final.isValid(), "must be valid");
     renderer::Texture2D* renderTarget = objectFromHandle<renderer::Texture2D>(final);
     return renderTarget;
@@ -406,14 +428,6 @@ void EditorScene::loadResources()
     m_LUTs.emplace_back("No LUT", default_lut);
     m_LUTs.emplace_back("Default LUT", default_lut);
     m_LUTs.emplace_back("Greyscale LUT", greyscale_lut);
-
-    if (m_editorMode)
-    {
-        //editor_loadDebug();
-    }
-
-    test_loadTestScene();
-    //test_loadScene("SunTemple.fbx");
 }
 
 void EditorScene::test_loadScene(const std::string& name)
@@ -454,7 +468,7 @@ void EditorScene::test_loadScene(const std::string& name)
                 material->setProperty("pipelineID", 1U);
             }
 
-            if (scene::DirectionalLight* dirLight = node->getComponentByType<scene::DirectionalLight>(); dirLight && m_editorMode)
+            if (scene::DirectionalLight* dirLight = node->getComponentByType<scene::DirectionalLight>(); dirLight && isEditorMode())
             {
                 node->setScale(scene::TransformMode::Local, { 1.0f, 1.0f, 1.0f });
 
@@ -488,7 +502,7 @@ void EditorScene::test_loadScene(const std::string& name)
                     debugNode->addComponent(material);
                 }
             }
-            else if (scene::PointLight* pointLight = node->getComponentByType<scene::PointLight>(); pointLight && m_editorMode)
+            else if (scene::PointLight* pointLight = node->getComponentByType<scene::PointLight>(); pointLight && isEditorMode())
             {
                 node->setScale(scene::TransformMode::Local, { 10.0f, 10.0f, 10.0f });
                 pointLight->setRadius(10.0f);
@@ -524,12 +538,12 @@ void EditorScene::test_loadScene(const std::string& name)
             }
         });
 
-    m_sceneData.m_nodes.push_back(scene);
+    addNode(scene);
 
     {
         scene::SceneNode* skyboxNode = new scene::SceneNode();
         skyboxNode->m_name = "Skybox";
-        m_sceneData.m_nodes.push_back(skyboxNode);
+        addNode(skyboxNode);
 
         scene::Skybox* skybox = new scene::Skybox(m_device);
         skyboxNode->addComponent(skybox);
@@ -608,7 +622,7 @@ void EditorScene::test_loadTestScene()
         scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeCube->setPosition(scene::TransformMode::Local, { 3.f, 1.f, -1.f });
         nodeCube->m_name = "cube.fbx";
-        m_sceneData.m_nodes.push_back(nodeCube);
+        addNode(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
         material->setProperty("BaseColor", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Color.png", true));
@@ -629,7 +643,7 @@ void EditorScene::test_loadTestScene()
         scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeCube->m_name = std::format("cube{}", i);
         nodeCube->setPosition(scene::TransformMode::Local, randomVector(-5.f, 5.f));
-        m_sceneData.m_nodes.push_back(nodeCube);
+        addNode(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
         material->setProperty("BaseColor", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Color.png", true));
@@ -645,7 +659,7 @@ void EditorScene::test_loadTestScene()
         resource::ModelFileLoader::ModelPolicy policy;
         scene::Model* nodePlane = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "plane.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodePlane->m_name = "plane.fbx";
-        m_sceneData.m_nodes.push_back(nodePlane);
+        addNode(nodePlane);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
         material->setProperty("BaseColor", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Color.png", true));
@@ -664,7 +678,7 @@ void EditorScene::test_loadTestScene()
         nodeField->m_name = "big_field";
         nodeField->setPosition(scene::TransformMode::Local, { 5.0f, -0.03f, 0.0f });
         nodeField->setRotation(scene::TransformMode::Local, { 90.f, 0.0f, 0.0f });
-        m_sceneData.m_nodes.push_back(nodeField);
+        addNode(nodeField);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
         material->setProperty("BaseColor", uv_h);
@@ -679,7 +693,7 @@ void EditorScene::test_loadTestScene()
     {
         scene::SceneNode* skyboxNode = new scene::SceneNode();
         skyboxNode->m_name = "Skybox";
-        m_sceneData.m_nodes.push_back(skyboxNode);
+        addNode(skyboxNode);
 
         scene::Skybox* skybox = new scene::Skybox(m_device);
         skyboxNode->addComponent(skybox);
@@ -710,7 +724,7 @@ void EditorScene::test_loadLights()
         directionallightNode->m_name = "DirectionLight";
         directionallightNode->setPosition(scene::TransformMode::Local, { -3.f, 3.f, 2.f });
         directionallightNode->setRotation(scene::TransformMode::Local, { 30.f, 90.0f, 0.0f });
-        m_sceneData.m_nodes.push_back(directionallightNode);
+        addNode(directionallightNode);
 
         scene::DirectionalLight* directionalLight = scene::LightHelper::createDirectionLight(m_device, "Sun");
         directionalLight->setColor({ 1.f, 1.f, 1.f, 1.f });
@@ -718,7 +732,7 @@ void EditorScene::test_loadLights()
         directionalLight->setTemperature(4000.0);
         directionallightNode->addComponent(directionalLight);
 
-        if (m_editorMode)
+        if (isEditorMode())
         {
             scene::Billboard* icon = new scene::Billboard(m_device);
             directionallightNode->addComponent(icon);
@@ -752,7 +766,7 @@ void EditorScene::test_loadLights()
         scene::SceneNode* pointLightNode = new scene::SceneNode();
         pointLightNode->m_name = "PointLight0";
         pointLightNode->setPosition(scene::TransformMode::Local, { -1.25f, 0.25f, 0.3f });
-        m_sceneData.m_nodes.push_back(pointLightNode);
+        addNode(pointLightNode);
 
         scene::PointLight* pointLight0 = scene::LightHelper::createPointLight(m_device, 1.f, "Light0");
         pointLight0->setColor({ 1.f, 1.f, 1.f, 1.f });
@@ -761,7 +775,7 @@ void EditorScene::test_loadLights()
         pointLight0->setAttenuation(1.0, 0.09, 0.032, 1.0f);
         pointLightNode->addComponent(pointLight0);
 
-        if (m_editorMode)
+        if (isEditorMode())
         {
             scene::Billboard* icon = new scene::Billboard(m_device);
             pointLightNode->addComponent(icon);
@@ -789,7 +803,7 @@ void EditorScene::test_loadLights()
         }
     }
 
-    {
+   /* {
         scene::SceneNode* spotLightNode = new scene::SceneNode();
         spotLightNode->m_name = "Flashlight";
         spotLightNode->setPosition(scene::TransformMode::Local, { 0.f, 0.f, 0.f });
@@ -829,7 +843,7 @@ void EditorScene::test_loadLights()
                 debugNode->addComponent(material);
             }
         }
-    }
+    }*/
 }
 
 void EditorScene::editor_loadDebug()
@@ -848,7 +862,7 @@ void EditorScene::editor_loadDebug()
 
     scene::SceneNode* editorNode = new scene::SceneNode();
     editorNode->m_name = "Editor";
-    m_sceneData.m_nodes.push_back(editorNode);
+    addNode(editorNode);
 
     {
         scene::SceneNode* node = new scene::SceneNode();

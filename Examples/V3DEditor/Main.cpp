@@ -35,8 +35,6 @@ using namespace v3d::utils;
 using namespace v3d::event;
 using namespace v3d::color;
 
-constexpr math::Dimension2D k_editorResolution = { 1920, 1080 };
-
 class EditorApplication : public v3d::Application, public InputEventHandler
 {
 public:
@@ -52,7 +50,7 @@ public:
         , m_EditorAssetBrowser(new EditorAssetBrowser(m_EditorScene->getGameEventReceiver()))
         , m_EditorViewScreen(new EditorViewScreen(m_EditorScene->getGameEventReceiver()))
     {
-        m_Window = Window::createWindow(k_editorResolution, { 200, 200 }, false, true, new InputEventReceiver(), "MainWindow");
+        m_Window = Window::createWindow({ 1920, 1080 }, { 200, 200 }, false, true, new InputEventReceiver(), "MainWindow");
         ASSERT(m_Window, "windows is nullptr");
     }
     
@@ -207,7 +205,8 @@ private:
         m_Backbuffer = createBackbufferRT(m_Device, m_Swapchain);
         ASSERT(m_Backbuffer, "m_Backbuffer is nullptr");
 
-        m_EditorScene->create(m_Device, k_editorResolution);
+        m_EditorScene->createScene(m_Device, m_Window->getSize());
+        m_EditorScene->loadScene();
 
         //UI
         m_UI = ui::WidgetHandler::createWidgetHander<ui::ImGuiWidgetHandler>(m_Device, m_Backbuffer->getRenderPassDesc(), ui::ImGuiWidgetHandler::ImGui_ViewportMode | ui::ImGuiWidgetHandler::ImGui_Gizmo);
@@ -237,7 +236,7 @@ private:
         ui::WidgetWindow& sceneEditor = m_UI->createWidget<ui::WidgetWindow>("Scene Editor", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
 
         ui::WidgetPopup& viewPopup = m_UI->createWidget<ui::WidgetPopup>("View");
-        m_EditorViewScreen->registerWiget(&viewPopup, m_EditorScene->m_sceneData);
+        m_EditorViewScreen->registerWiget(&viewPopup, m_EditorScene->getSceneData());
 
         ui::WidgetWindow& viewportWin = m_UI->createWidget<ui::WidgetWindow>("Viewport", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable)
             .setActive(true)
@@ -313,12 +312,12 @@ private:
                     .setActive(false)
                     .setOnCreated([this](ui::Widget* w) -> void
                         {
-                            m_EditorGizmo->registerWiget(static_cast<ui::WidgetGizmo*>(w), m_EditorScene->m_sceneData);
+                            m_EditorGizmo->registerWiget(static_cast<ui::WidgetGizmo*>(w), m_EditorScene->getSceneData());
                         })
                     .setOnTransformChangedEvent([this](ui::Widget* w, ui::Widget* p, const math::Matrix4D& tr) -> void
                         {
                             m_EditorGizmo->modify(tr);
-                            m_EditorScene->modifyObject(tr);
+                            m_EditorScene->transformSelectedObject(tr);
                         })
                 )
                 .addWidget(ui::WidgetViewManipulator(m_EditorScene->getCamera())
@@ -330,13 +329,13 @@ private:
             );
 
         ui::WidgetWindow& win1 = m_UI->createWidget<ui::WidgetWindow>("Content", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
-        m_EditorContentScreen->registerWiget(&win1, m_EditorScene->m_sceneData);
+        m_EditorContentScreen->registerWiget(&win1, m_EditorScene->getSceneData());
 
         ui::WidgetWindow& win2 = m_UI->createWidget<ui::WidgetWindow>("Properties", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
-        m_EditorPropertyScreen->registerWiget(&win2, m_EditorScene->m_sceneData);
+        m_EditorPropertyScreen->registerWiget(&win2, m_EditorScene->getSceneData());
 
         ui::WidgetWindow& win3 = m_UI->createWidget<ui::WidgetWindow>("Assest Browser", ui::WidgetWindow::Moveable | ui::WidgetWindow::Resizeable);
-        m_EditorAssetBrowser->registerWiget(&win3, m_EditorScene->m_sceneData);
+        m_EditorAssetBrowser->registerWiget(&win3, m_EditorScene->getSceneData());
 
         sceneEditor.setupWindowLayout(ui::WidgetWindowLayout(&viewportWin, {
                 { ui::WidgetWindowLayout::DirLeft, 0.2f, &win1  },
@@ -344,7 +343,7 @@ private:
                 { ui::WidgetWindowLayout::DirDown, 0.2f, &win3  } 
             }));
 
-        //editor::UI::constuctTestUIWindow(m_UI, m_EditorScene);
+        //editor::UI::constuctTestUIWindow(m_UI, m_EditorScene->getSceneData());
 
         m_cmdListUI = m_Device->createCommandList<renderer::CmdListRender>(Device::GraphicMask);
     }
@@ -359,7 +358,7 @@ private:
         const f32 deltaTime = diffTime / 1'000.f;
         s_prevTime = currentTime;
 
-        //Scene
+        //Editor
         {
             TRACE_PROFILER_SCOPE("Update", rgba8::WHITE);
             m_EditorViewScreen->update(deltaTime);
@@ -368,6 +367,8 @@ private:
             m_EditorPropertyScreen->update(deltaTime);
             m_EditorAssetBrowser->update(deltaTime);
         }
+
+        //Scene
         {
             TRACE_PROFILER_SCOPE("Render", rgba8::WHITE);
             m_EditorScene->preRender(deltaTime);
@@ -406,7 +407,7 @@ private:
         inputEventReceiver->dettach(InputEvent::InputEventType::KeyboardInputEvent, this);
         inputEventReceiver->dettach(InputEvent::InputEventType::SystemEvent, this);
 
-        m_EditorScene->destroy();
+        m_EditorScene->destroyScene();
 
         if (m_Device)
         {

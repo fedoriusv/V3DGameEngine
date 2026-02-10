@@ -71,7 +71,7 @@ void EditorContentScreen::build()
                     rootNode.addWidget(std::move(sceneNode));
                 };
 
-            for (scene::SceneNode* node : m_sceneData->m_nodes)
+            for (scene::SceneNode* node : m_sceneData->getNodeList())
             {
                 processNode(sceneNode, node);
             }

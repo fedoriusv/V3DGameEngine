@@ -71,12 +71,12 @@ void EditorViewScreen::build()
             .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentLeft)
             .addWidget(ui::WidgetText("Near"))
             .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._vewportParams._near)
-                .setRange(0.1f, 1.0f)
+                .setRange(0.01f, 10.0f)
                 .setStep(0.01f)
                 .setSize({ 100, 20 })
                 .setOnChangedValueEvent([this](ui::Widget* w, f32 n)
                     {
-                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_viewportState._camera);
+                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_camera);
                         editorCamera->setNear(n);
                         editorCamera->update(0.0f);
                     })
@@ -88,7 +88,7 @@ void EditorViewScreen::build()
                 .setSize({ 100, 20 })
                 .setOnChangedValueEvent([this](ui::Widget* w, f32 f)
                     {
-                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_viewportState._camera);
+                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_camera);
                         editorCamera->setFar(f);
                         editorCamera->update(0.0f);
                     })
@@ -101,7 +101,7 @@ void EditorViewScreen::build()
                 .setRange(20.f, 120.f)
                 .setOnChangedValueEvent([this](ui::Widget* w, f32 fov)
                     {
-                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_viewportState._camera);
+                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_camera);
                         editorCamera->setFOV(fov);
                         editorCamera->update(0.0f);
                     })
@@ -111,12 +111,12 @@ void EditorViewScreen::build()
             .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentLeft)
             .addWidget(ui::WidgetText("Speed  Move "))
             .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._vewportParams._moveSpeed)
-                .setRange(1.f, 10.f)
+                .setRange(1.f, 100.f)
                 .setStep(1.f)
                 .setSize({ 80, 20 })
                 .setOnChangedValueEvent([this](ui::Widget* w, f32 speed)
                     {
-                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_viewportState._camera);
+                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_camera);
                         editorCamera->setMoveSpeed(speed);
                     })
             )
@@ -127,7 +127,7 @@ void EditorViewScreen::build()
                 .setSize({ 80, 20 })
                 .setOnChangedValueEvent([this](ui::Widget* w, f32 speed)
                     {
-                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_viewportState._camera);
+                        scene::CameraEditorHandler* editorCamera = static_cast<scene::CameraEditorHandler*>(m_sceneData->m_camera);
                         editorCamera->setRotationSpeed(speed);
                     })
             )
@@ -194,10 +194,10 @@ void EditorViewScreen::build()
                 .setColor({ 1.0, 1.0, 0.2, 1.0 })
             )
         )
-        .addWidget(ui::WidgetCheckBox("Show shadow cascades", m_sceneData->m_settings._shadowsParams._debug)
+        .addWidget(ui::WidgetCheckBox("Show shadow cascades", m_sceneData->m_settings._shadowsParams._debugShadowCascades)
             .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
             {
-                m_sceneData->m_settings._shadowsParams._debug = enable;
+                m_sceneData->m_settings._shadowsParams._debugShadowCascades = enable;
             })
         )
         .addWidget(ui::WidgetHorizontalLayout()
@@ -253,6 +253,24 @@ void EditorViewScreen::build()
                 m_sceneData->m_settings._shadowsParams._cascadeSlopeBias[3] = v._w;
             })
         )
+        .addWidget(ui::WidgetHorizontalLayout()
+        .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentLeft)
+            .addWidget(ui::WidgetCheckBox("Show punctual shadows", m_sceneData->m_settings._shadowsParams._debugPunctualLightShadows)
+                .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
+                {
+                    m_sceneData->m_settings._shadowsParams._debugPunctualLightShadows = enable;
+                })
+            )
+            .addWidget(ui::WidgetText("Bias "))
+            .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._shadowsParams._punctualLightBias)
+                .setStep(0.001f)
+                .setSize({ 80, 20 })
+                .setOnChangedValueEvent([this](ui::Widget* w, f32 value)
+                {
+                    m_sceneData->m_settings._shadowsParams._punctualLightBias = value;
+                })
+            )
+        )
         // Shadows
 
         // Debug
@@ -261,12 +279,6 @@ void EditorViewScreen::build()
             .addWidget(ui::WidgetText("Debug")
                 .setColor({ 1.0, 1.0, 0.2, 1.0 })
             )
-        )
-        .addWidget(ui::WidgetCheckBox("Show Debug lines", true)
-            .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
-            {
-                //TODO
-            })
         )
         .addWidget(ui::WidgetCheckBox("Show Ground grid", false)
         .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
@@ -283,7 +295,7 @@ void EditorViewScreen::build()
         .setActiveIndex(0)
         .setOnChangedIndexEvent([this](ui::Widget* w, s32 id)
             {
-                //TODO
+                m_sceneData->m_settings._vewportParams._renderTargetID = id;
             })
         );
         // Debug

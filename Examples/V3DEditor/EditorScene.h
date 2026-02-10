@@ -12,6 +12,7 @@
 #include "RenderTechniques/RenderPipelineStage.h"
 
 #include "Scene/Scene.h"
+#include "Scene/SceneNode.h"
 #include "Scene/Camera/CameraEditorHandler.h"
 #include "Scene/Camera/Camera.h"
 #include "Scene/Material.h"
@@ -71,7 +72,7 @@ public:
 };
 
 
-class EditorScene : public scene::Scene
+class EditorScene : protected scene::SceneHandler
 {
 public:
 
@@ -86,17 +87,23 @@ public:
     EditorScene() noexcept;
     ~EditorScene();
 
-    void create(renderer::Device* device, const math::Dimension2D& viewportSize) final;
-    void destroy() final;
+    scene::SceneData& getSceneData();
 
-    void preRender(f32 dt) final;
-    void postRender(f32 dt) final;
+    void createScene(renderer::Device* device, const math::Dimension2D& viewportSize);
+    void destroyScene();
 
-    void submitRender() final;
+    void loadScene();
+
+    void beginFrame();
+    void endFrame();
+
+    void preRender(f32 dt);
+    void postRender(f32 dt);
+    void submitRender();
 
 public:
 
-    void modifyObject(const math::Matrix4D& transform);
+    void transformSelectedObject(const math::Matrix4D& transform);
 
 public:
 
@@ -119,23 +126,21 @@ private:
     void loadResources();
 
     renderer::Device*               m_device;
-    task::TaskDispatcher            m_taskWorker;
-
     scene::ModelHandler*            m_modelHandler;
     ui::WidgetHandler*              m_UIHandler;
     scene::CameraEditorHandler*     m_cameraHandler;
     event::InputEventHandler*       m_inputHandler;
     event::GameEventHandler*        m_gameHandler;
-
     event::GameEventReceiver*       m_gameEventRecevier;
+
     RenderPipelineScene             m_mainPipeline;
 
     math::Rect                      m_currentViewportRect;
 
 private:
 
-    u32                             m_activeIndex;
-
+    u64                             m_frameCounter;
+    u32                             m_selectedIndex;
     std::vector<std::tuple<std::string, v3d::ObjectHandle>> m_LUTs;
 
     void editor_loadDebug();
