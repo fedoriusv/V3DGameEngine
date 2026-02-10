@@ -197,25 +197,44 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 constantBuffer.tintColour = math::float4{ 1.0, 1.0, 1.0, 1.0 };
                 constantBuffer.objectID = 0;
 
+                //struct LightBuffer
+                //{
+                //    math::Matrix4D lightSpaceMatrix[6];
+                //    math::float2   clipNearFar;
+                //    math::float2   viewSliceOffsetCount;
+                //    math::Vector3D position;
+                //    math::float4   color;
+                //    math::float4   attenuation;
+                //    f32            intensity;
+                //    f32            temperature;
+                //    f32            shadowBaseBias;
+                //    f32           _pad = 0;
+                //} lightBuffer;
+
+                //lightBuffer.lightSpaceMatrix;
+                //lightBuffer.clipNearFar;
+                //lightBuffer.viewSliceOffsetCount;
+                //lightBuffer.shadowBaseBias;
+                //lightBuffer.position = itemLight.object->getTransform().getPosition();
+                //lightBuffer.color = light.getColor();
+                //lightBuffer.attenuation = light.getAttenuation();
+                //lightBuffer.intensity = light.getIntensity();
+                //lightBuffer.temperature = light.getTemperature();
+
                 struct LightBuffer
                 {
-                    math::Matrix4D lightSpaceMatrix[6];
-                    math::float2   clipNearFar;
-                    math::float2   viewSliceOffsetCount;
                     math::Vector3D position;
+                    math::Vector3D direction;
                     math::float4   color;
                     math::float4   attenuation;
                     f32            intensity;
                     f32            temperature;
-                    f32            shadowBaseBias;
-                    f32           _pad = 0;
-                } lightBuffer;
+                    f32           _pad[2];
+                };
 
-                lightBuffer.lightSpaceMatrix;
-                lightBuffer.clipNearFar;
-                lightBuffer.viewSliceOffsetCount;
-                lightBuffer.shadowBaseBias;
+                LightBuffer lightBuffer;
                 lightBuffer.position = itemLight.object->getTransform().getPosition();
+                lightBuffer.direction = { 0.0, 0.0, 0.0 };
                 lightBuffer.color = light.getColor();
                 lightBuffer.attenuation = light.getAttenuation();
                 lightBuffer.intensity = light.getIntensity();
@@ -249,7 +268,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             cmdList->endRenderTarget();
         };
 
-    addRenderJob("VolumeLights Job", renderJob, device, scene);
+    addRenderJob("VolumeLights Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

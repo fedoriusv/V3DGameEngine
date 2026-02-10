@@ -36,14 +36,28 @@ namespace scene
 
     private:
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
+        void createRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame);
+        void destroyRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame);
 
-        static void calculateShadowCascades(const scene::SceneData& data, const math::Vector3D& lightDirection, std::vector<math::Matrix4D>& lightSpaceMatrix, std::vector<f32>& cascadeSplits);
+        struct PipelineData
+        {
+            PipelineData(memory::ThreadSafeAllocator* allocator);
+            
+            math::Dimension2D  _viewportSize;
+            std::array<f32, k_maxShadowmapCascadeCount> _directionLightCascadeSplits;
+            std::array<math::Matrix4D, k_maxShadowmapCascadeCount> _directionLightSpaceMatrix;
+            std::array<std::tuple<std::array<math::Matrix4D, 6>, math::Vector3D, math::float2, u32>, k_maxPunctualShadowmapCount> _punctualLightsData;
+
+            memory::ThreadSafeAllocator* _allocator;
+        };
+
+    private:
+
+
+        static void calculateShadowCascades(const SceneData& data, const math::Vector3D& lightDirection, u32 cascadeCount, math::Matrix4D* lightSpaceMatrixOut, f32* cascadeSplitsOut);
         static void calculateShadowViews(const math::Vector3D& position, f32 nearPlane, f32 farPlane, u32 viewsMask, std::array<math::Matrix4D, 6>& lightSpaceMatrix);
 
         scene::ModelHandler* const                m_modelHandler;
-        renderer::CmdListRender*                  m_cmdList;
 
         renderer::SamplerState*                   m_shadowSamplerState;
 

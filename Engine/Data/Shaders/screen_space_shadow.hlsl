@@ -7,10 +7,6 @@
 #define SHADOWMAP_CASCADE_COUNT 4
 #endif
 
-#ifndef SHADOWMAP_LIGHT_COUNT
-#define SHADOWMAP_LIGHT_COUNT 8
-#endif
-
 struct DirectionLightShadowmapCascade
 {
     matrix lightSpaceMatrix;
@@ -19,23 +15,12 @@ struct DirectionLightShadowmapCascade
     float  slopeBias;
 };
 
-struct PunctualLightShadowmap
-{
-    float4 position;
-    float2 clipNearFar;
-    uint2  sliceOffsetCount;
-    uint   viewMask;
-};
-
 struct ShadowmapBuffer
 {
-    float4 shadowMapResolution;
     
     DirectionLightShadowmapCascade cascade[SHADOWMAP_CASCADE_COUNT];
+    float4 shadowMapResolution;
     float4 directionLight;
-    
-    PunctualLightShadowmap punctualLight[SHADOWMAP_LIGHT_COUNT];
-    uint countLights;
     float  enablePCF;
 };
 
@@ -49,7 +34,7 @@ struct ShadowmapBuffer
 [[vk::binding(3, 1)]] Texture2D t_TextureDepth                              : register(t0, space1);
 [[vk::binding(4, 1)]] Texture2D t_TextureNormals                            : register(t1, space1);
 [[vk::binding(5, 1)]] Texture2DArray t_DirectionCascadeShadows              : register(t2, space1);
-[[vk::binding(6, 1)]] TextureCube t_PunctualShadows                         : register(t3, space1);
+//[[vk::binding(6, 1)]] TextureCube t_PunctualShadows                         : register(t3, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -133,24 +118,24 @@ float direction_light_shadows(in float3 worldPos, in float3 normal, out float ca
     return depth_projection(t_DirectionCascadeShadows, float4(shadowCoord, lightModelViewProj.w), float2(0.0, 0.0), cascadeIndex);
 }
 
-float point_light_shadows(in float3 worldPos)
-{
-    float shadow = 0.0;
-    for (uint i = 0; i < cb_ShadowmapBuffer.countLights; ++i)
-    {
-        float3 lightDirection = worldPos - cb_ShadowmapBuffer.punctualLight[i].position.rgb;
-        float dist = t_PunctualShadows.Sample(s_SamplerState, lightDirection).r;
-        //float linearDepth = linearize_depth(dist, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
+//float point_light_shadows(in float3 worldPos)
+//{
+//    float shadow = 0.0;
+//    for (uint i = 0; i < cb_ShadowmapBuffer.countLights; ++i)
+//    {
+//        float3 lightDirection = worldPos - cb_ShadowmapBuffer.punctualLight[i].position.rgb;
+//        float dist = t_PunctualShadows.Sample(s_SamplerState, lightDirection).r;
+//        //float linearDepth = linearize_depth(dist, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
         
-        float lightDistance = length(lightDirection) / (cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y - cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
-        if (dist < lightDistance)
-        {
-            shadow += 1.0;
-        }
-    }
+//        float lightDistance = length(lightDirection) / (cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y - cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
+//        if (dist < lightDistance)
+//        {
+//            shadow += 1.0;
+//        }
+//    }
 
-    return shadow;
-}
+//    return shadow;
+//}
 
 [[vk::location(0)]] float4 screen_space_shadow_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
@@ -162,9 +147,8 @@ float point_light_shadows(in float3 worldPos)
         
         float cascadeID = 0.0;
         float directShadow = direction_light_shadows(worldPos, normal, cascadeID);
-        float poinLightShadows = 0.0; //point_light_shadows(worldPos);
         
-        return float4(directShadow, cascadeID, poinLightShadows, 0.0);
+        return float4(directShadow, cascadeID, 0.0, 0.0);
     }
     
     return float4(0.0, 0.0, 0.0, 0.0);

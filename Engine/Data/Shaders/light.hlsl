@@ -3,8 +3,12 @@
 #include "offscreen_common.hlsli"
 #include "lighting_common.hlsli"
 
-#ifndef DEBUG_SHADOWMAP
-#define DEBUG_SHADOWMAP 0
+#ifndef DEBUG_SHADOWMAP_CASCADES
+#define DEBUG_SHADOWMAP_CASCADES 0
+#endif
+
+#ifndef DEBUG_PUNCTUAL_SHADOWMAPS
+#define DEBUG_PUNCTUAL_SHADOWMAPS 0
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -19,6 +23,7 @@
 [[vk::binding(6, 1)]] Texture2D t_TextureMaterial           : register(t2, space1);
 [[vk::binding(7, 1)]] Texture2D t_TextureDepth              : register(t3, space1);
 [[vk::binding(8, 1)]] Texture2D t_TextureScreenSpaceShadows : register(t4, space1);
+//[[vk::binding(9, 1)]] Texture2DArray t_TextureShadowmaps    : register(t5, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,10 +62,9 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
         environment.wetness = 0.0f;
         environment.shadowSaturation = 0.01f; //temp
     
-        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction_range.xyz, 0.0, albedo, normals, roughness, metallic, depth);
+        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction.xyz, 0.0, albedo, normals, roughness, metallic, depth);
         float directionShadow = t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).r;
-        float pointShadow = t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).b;
-#if DEBUG_SHADOWMAP
+#if DEBUG_SHADOWMAP_CASCADES
         uint cascade = (uint)t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).g;
         switch (cascade)
         {
@@ -78,7 +82,10 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
                 break;
         }
 #else
-        color.rgb = lerp(color.rgb, albedo * environment.shadowSaturation, saturate(directionShadow + pointShadow));
+        color.rgb = lerp(color.rgb, albedo * environment.shadowSaturation, directionShadow);
+#endif
+#if DEBUG_PUNCTUAL_SHADOWMAPS
+        color.rgb = lerp(color.rgb, float3(1.0, 1.0, 1.0), saturate(pointShadow));
 #endif
         return float4(color.rgb, 1.0);
     }
@@ -88,7 +95,7 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-[[vk::location(0)]] float4 light_volume_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
+[[vk::location(0)]] float4 light_accumulation_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
 {
     float2 positionScreenUV = Input.Position.xy * (1.0 / cb_Viewport.viewportSize.xy);
     float3 albedo = t_TextureBaseColor.SampleLevel(s_SamplerState, positionScreenUV, 0).rgb;
@@ -102,13 +109,15 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
     {
         float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, positionScreenUV, depth);
         float lightDistance = distance(worldPos, cb_Light.position.xyz);
-        clip(cb_Light.direction_range.x - lightDistance);
+        float radius = cb_Light.attenuation.w;
+        clip(radius - lightDistance);
         
         EnvironmentBuffer environment;
         environment.wetness = 0.f;
 
         float3 lightDirection = worldPos - cb_Light.position.xyz;
         float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, lightDirection, lightDistance, albedo, normals, roughness, metallic, depth);
+        
         return float4(color.rgb, 1.0);
     }
     
