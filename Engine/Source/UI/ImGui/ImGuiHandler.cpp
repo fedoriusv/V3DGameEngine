@@ -900,6 +900,8 @@ bool ImGuiWidgetHandler::renderDrawData(ImGuiWidgetViewportData* viewportData, I
 
     if (imDrawData->CmdListsCount > 0)
     {
+        DEBUG_MARKER_SCOPE(viewportData->_cmdList, "UI", color::rgbaf::GREEN);
+
         setupRenderState(viewportData->_cmdList, imDrawData, fbWidth, fbHeight);
 
         s32 global_vtx_offset = 0;
