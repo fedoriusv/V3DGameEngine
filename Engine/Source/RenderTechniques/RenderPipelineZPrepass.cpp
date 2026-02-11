@@ -187,8 +187,7 @@ void RenderPipelineZPrepassStage::createRenderTarget(renderer::Device* device, s
         },
         {
             renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
-        }
-    );
+        });
 }
 
 void RenderPipelineZPrepassStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

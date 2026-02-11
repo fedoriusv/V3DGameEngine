@@ -146,7 +146,8 @@ float4 cook_torrance_BRDF(
     in float3 Normals,
     in float Roughness,
     in float Metallic,
-    in float Depth)
+    in float Depth,
+    in float Shadow)
 {
     // Build TBN matrix
     float3 N = normalize(Normals);
@@ -180,19 +181,19 @@ float4 cook_torrance_BRDF(
     float kLinear = Light.attenuation.y;
     float kQuadratic = Light.attenuation.z;
     float attenuation = 1.0 / max(kConstant + kLinear * Distance + kQuadratic * (Distance * Distance), 1e-5);
-    
+
     // Smooth fade to zero near range 
     float rangeFactor = saturate(1.0 - (Distance / max(Light.attenuation.w, 0.01)));
     attenuation *= rangeFactor * rangeFactor; // sharper falloff near the end
     
     float3 lightColor = temperature_RGB(Light.temperature) * Light.color.rgb * Light.intensity;
-    float3 radiance = lightColor * attenuation;
+    float3 radiance = lightColor * attenuation * Shadow;
     
     float3 Lo = (diffuse + specular) * radiance * NdotL;
     
     // Ambient / IBL (simple ambient approximation)
     float3 ao = float3(1.0, 1.0, 1.0);
-    float3 ambient = float3(0.03, 0.03, 0.03) * Albedo * ao * radiance;
+    float3 ambient = float3(0.03, 0.03, 0.03) * Albedo * ao * radiance * Shadow;
     
     float4 color = float4(Lo + ambient, 1.0);
     return color;

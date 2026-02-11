@@ -121,24 +121,24 @@ namespace scene
 
     public:
 
-        mutable scene::RenderObjectTracker  m_globalResources;
-        Settings                            m_settings;
+        mutable scene::RenderObjectTracker      m_globalResources;
+        Settings                                m_settings;
 
-        std::vector<NodeEntry*>             m_generalRenderList;
-        std::vector<NodeEntry*>             m_renderLists[toEnumType(RenderPipelinePass::Count)];
+        std::vector<NodeEntry*>                 m_generalRenderList;
+        std::vector<NodeEntry*>                 m_renderLists[toEnumType(RenderPipelinePass::Count)];
 
 
-        math::Dimension2D                   m_viewportSize;
-        scene::CameraController*            m_camera;
+        math::Dimension2D                       m_viewportSize;
+        scene::CameraController*                m_camera;
 
     protected:
 
-        mutable task::TaskScheduler         m_taskWorker;
+        mutable task::TaskScheduler             m_taskWorker;
 
-        std::vector<SceneNode*>             m_nodes;
+        std::vector<SceneNode*>                 m_nodes;
 
-        mutable std::array<scene::FrameData, 1> m_frameState; //TODO need resorce delete delay for 2 frames
-        u32                                 m_stateIndex;
+        mutable std::array<scene::FrameData, 1> m_frameState;
+        u32                                     m_stateIndex;
 
         void finalize();
 

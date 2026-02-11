@@ -83,10 +83,7 @@ void RenderPipelineTAAStage::prepare(renderer::Device* device, scene::SceneData&
         destroyRenderTarget(device, scene, frame);
         createRenderTarget(device, scene, frame);
     }
-}
 
-void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
-{
     ObjectHandle inputTarget_handle = frame.m_frameResources.get("render_target");
     if (!inputTarget_handle.isValid())
     {
@@ -95,7 +92,10 @@ void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData&
 
     frame.m_frameResources.bind("input_target_taa", inputTarget_handle);
     frame.m_frameResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
+}
 
+void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+{
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
             {

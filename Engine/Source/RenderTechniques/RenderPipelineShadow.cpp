@@ -215,7 +215,6 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
 
     PipelineData* pipelineData = frame.m_allocator->construct<PipelineData>(frame.m_allocator);
     pipelineData->_viewportSize = scene.m_settings._shadowsParams._size;
-
     frame.m_frameResources.bind("shadow_data", pipelineData);
 
     if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].empty())
@@ -426,7 +425,8 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                     math::Vector4D                  shadowMapResolution;
                     math::Vector3D                  directionLight;
                     f32                             enablePCF;
-                    f32                            _pad[3];
+                    f32                             texelScale;
+                    f32                            _pad[2];
                 } cascadeShadowBuffer;
 
                 for (u32 id = 0; id < pipelineData->_directionLightSpaceMatrix.size(); ++id)
@@ -440,6 +440,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                     1.0f / scene.m_settings._shadowsParams._size._width, 1.0f / scene.m_settings._shadowsParams._size._height);
                 cascadeShadowBuffer.directionLight = itemLight.object->getDirection();
                 cascadeShadowBuffer.enablePCF = scene.m_settings._shadowsParams._PCF;
+                cascadeShadowBuffer.texelScale = scene.m_settings._shadowsParams._textelScale;
 
                 ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");
                 ASSERT(depth_stencil_h.isValid(), "must be valid");
@@ -517,8 +518,7 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, Sce
             },
             {
                 renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ShaderRead
-            }
-        );
+            });
     }
 }
 
@@ -535,19 +535,19 @@ void RenderPipelineShadowStage::destroyRenderTarget(renderer::Device* device, Sc
     }
 
     {
-        ASSERT(m_punctualShadowTextureArray != nullptr, "must be valid");
-        V3D_DELETE(m_punctualShadowTextureArray, memory::MemoryLabel::MemoryGame);
-        m_punctualShadowTextureArray = nullptr;
-
         ASSERT(m_punctualShadowRenderTarget != nullptr, "must be valid");
         V3D_DELETE(m_punctualShadowRenderTarget, memory::MemoryLabel::MemoryGame);
         m_punctualShadowRenderTarget = nullptr;
+
+        ASSERT(m_punctualShadowTextureArray != nullptr, "must be valid");
+        V3D_DELETE(m_punctualShadowTextureArray, memory::MemoryLabel::MemoryGame);
+        m_punctualShadowTextureArray = nullptr;
     }
 
     {
         ASSERT(m_SSShadowsRenderTarget, "must be valid");
-        renderer::Texture2D* gamma = m_SSShadowsRenderTarget->getColorTexture<renderer::Texture2D>(0);
-        V3D_DELETE(gamma, memory::MemoryLabel::MemoryGame);
+        renderer::Texture2D* rednereTarget = m_SSShadowsRenderTarget->getColorTexture<renderer::Texture2D>(0);
+        V3D_DELETE(rednereTarget, memory::MemoryLabel::MemoryGame);
 
         V3D_DELETE(m_SSShadowsRenderTarget, memory::MemoryLabel::MemoryGame);
         m_SSShadowsRenderTarget = nullptr;

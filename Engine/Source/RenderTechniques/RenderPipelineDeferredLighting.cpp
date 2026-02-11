@@ -41,7 +41,6 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, Scene
     const renderer::Shader::DefineList defines =
     {
         { "DEBUG_SHADOWMAP_CASCADES", std::to_string(m_debugShadowCascades) },
-        { "DEBUG_PUNCTUAL_SHADOWMAPS", std::to_string(m_debugPunctualLightShadows) }
     };
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(device,

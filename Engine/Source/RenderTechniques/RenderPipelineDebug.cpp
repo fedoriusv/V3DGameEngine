@@ -143,6 +143,11 @@ void RenderPipelineDebugStage::destroy(renderer::Device* device, scene::SceneDat
 
 void RenderPipelineDebugStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)].empty())
+    {
+        return;
+    }
+
     if (!m_renderTarget)
     {
         createRenderTarget(device, scene, frame);
@@ -151,14 +156,6 @@ void RenderPipelineDebugStage::prepare(renderer::Device* device, scene::SceneDat
     {
         destroyRenderTarget(device, scene, frame);
         createRenderTarget(device, scene, frame);
-    }
-}
-
-void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
-{
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)].empty())
-    {
-        return;
     }
 
     ObjectHandle inputTarget_handle = frame.m_frameResources.get("render_target");
@@ -169,6 +166,14 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
 
     frame.m_frameResources.bind("input_target_debug", inputTarget_handle);
     frame.m_frameResources.bind("render_target", inputTarget_handle);
+}
+
+void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+{
+    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)].empty())
+    {
+        return;
+    }
 
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {

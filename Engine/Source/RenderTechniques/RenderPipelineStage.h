@@ -64,6 +64,7 @@ namespace scene
 
         using RenderJobFunc = std::function<void(renderer::Device*, renderer::CmdListRender*, const scene::SceneData&, const scene::FrameData&)>;
         std::vector<RenderJobFunc> m_batchJobs;
+        std::vector<std::tuple<Object*, memory::MemoryLabel>> m_delayedDeleteList;
 
         friend RenderPipelineStage;
     };
@@ -95,6 +96,7 @@ namespace scene
 
         template<typename Func>
         void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch = false);
+        //void delayedDelete(v3d::Object* object, memory::MemoryLabel label);
 
         std::string          m_id;
         RenderTechnique&     m_renderTechnique;

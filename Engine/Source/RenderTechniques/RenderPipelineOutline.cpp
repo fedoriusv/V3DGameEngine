@@ -91,10 +91,7 @@ void RenderPipelineOutlineStage::prepare(renderer::Device* device, scene::SceneD
         destroyRenderTarget(device, scene, frame);
         createRenderTarget(device, scene, frame);
     }
-}
 
-void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
-{
     ObjectHandle inputTarget_handle = frame.m_frameResources.get("render_target");
     if (!inputTarget_handle.isValid())
     {
@@ -103,7 +100,10 @@ void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneD
 
     frame.m_frameResources.bind("input_target_outline", inputTarget_handle);
     frame.m_frameResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
+}
 
+void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+{
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
             TRACE_PROFILER_SCOPE("Outline", color::rgba8::GREEN);

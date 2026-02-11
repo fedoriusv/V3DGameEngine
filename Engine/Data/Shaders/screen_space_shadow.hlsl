@@ -22,6 +22,7 @@ struct ShadowmapBuffer
     float4 shadowMapResolution;
     float4 directionLight;
     float  enablePCF;
+    float  texelScale;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +112,7 @@ float direction_light_shadows(in float3 worldPos, in float3 normal, out float ca
     if (cb_ShadowmapBuffer.enablePCF)
     {
         float2 texelSize = 1.0 / cb_ShadowmapBuffer.shadowMapResolution.xy;
-        float2 scaleFactor = texelSize * 0.75;
+        float2 scaleFactor = texelSize * cb_ShadowmapBuffer.texelScale;
         return depth_projection_PCF_3x3(t_DirectionCascadeShadows, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
     }
 

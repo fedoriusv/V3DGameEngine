@@ -21,6 +21,11 @@ void RenderPipelineStage::onChanged(renderer::Device* device, scene::SceneData& 
 {
 }
 
+//void RenderPipelineStage::delayedDelete(v3d::Object* object, memory::MemoryLabel label)
+//{
+//    m_renderTechnique.m_delayedDeleteList.emplace_back(object, label);
+//}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RenderTechnique::RenderTechnique() noexcept

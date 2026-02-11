@@ -62,8 +62,8 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
         environment.wetness = 0.0f;
         environment.shadowSaturation = 0.01f; //temp
     
-        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction.xyz, 0.0, albedo, normals, roughness, metallic, depth);
         float directionShadow = t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).r;
+        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, cb_Light.direction.xyz, 0.0, albedo, normals, roughness, metallic, depth, 1.0 - directionShadow);
 #if DEBUG_SHADOWMAP_CASCADES
         uint cascade = (uint)t_TextureScreenSpaceShadows.SampleLevel(s_SamplerState, Input.UV, 0).g;
         switch (cascade)
@@ -116,7 +116,7 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
         environment.wetness = 0.f;
 
         float3 lightDirection = worldPos - cb_Light.position.xyz;
-        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, lightDirection, lightDistance, albedo, normals, roughness, metallic, depth);
+        float4 color = cook_torrance_BRDF(cb_Viewport, cb_Light, environment, worldPos, lightDirection, lightDistance, albedo, normals, roughness, metallic, depth, 1.0);
         
         return float4(color.rgb, 1.0);
     }
