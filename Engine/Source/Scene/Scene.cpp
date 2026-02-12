@@ -184,7 +184,7 @@ void SceneHandler::destroy(renderer::Device* device)
     }
 }
 
-void SceneHandler::preRender(renderer::Device* device, f32 dt)
+void SceneHandler::updateScene(f32 dt)
 {
     if (m_nodeGraphChanged)
     {
@@ -192,6 +192,56 @@ void SceneHandler::preRender(renderer::Device* device, f32 dt)
         m_nodeGraphChanged = false;
     }
 
+    for (u32 i = 0; i < toEnumType(RenderPipelinePass::Count); ++i)
+    {
+        m_sceneData.m_renderLists[toEnumType(RenderPipelinePass(i))].clear();
+    }
+
+    auto callback = [](SceneNode* parent, SceneNode* node)
+        {
+            if (parent)
+            {
+                const math::Matrix4D transform = parent->m_transform[toEnumType(TransformMode::Global)].getMatrix() * node->m_transform[toEnumType(TransformMode::Local)].getMatrix();
+                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(transform);
+            }
+            else
+            {
+                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(node->m_transform[toEnumType(TransformMode::Local)].getMatrix());
+            }
+        };
+
+    //group by type
+    for (auto& item : m_sceneData.m_generalRenderList)
+    {
+        if (item->object->m_dirty)
+        {
+            SceneNode::forEach(item->object, callback);
+            item->object->m_dirty = false;
+        }
+
+        //fructum test
+        //TODO
+
+        if (item->object->m_visible)
+        {
+            u32 count = std::bit_width(item->passMask);
+            for (u32 index = 0; index < count; ++index)
+            {
+                u32 passID = 1 << index;
+                if ((item->passMask & passID) == 0)
+                {
+                    continue;
+                }
+
+                ASSERT(index < toEnumType(RenderPipelinePass::Count), "out of range");
+                m_sceneData.m_renderLists[index].push_back(item);
+            }
+        }
+    }
+}
+
+void SceneHandler::preRender(renderer::Device* device, f32 dt)
+{
     for (auto& technique : m_renderTechniques)
     {
         technique->prepare(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);

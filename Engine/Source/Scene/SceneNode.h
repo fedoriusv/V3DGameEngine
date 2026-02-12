@@ -18,6 +18,7 @@ namespace scene
     class Component;
     class Model;
     class ModelHandler;
+    class SceneHandler;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -93,6 +94,7 @@ namespace scene
         friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
         friend Model;
         friend ModelHandler;
+        friend SceneHandler;
     };
 
     inline void SceneNode::addComponent(Component* component, bool owner)
