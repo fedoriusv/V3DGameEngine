@@ -98,11 +98,11 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     }");
                 const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
-                resource::ShaderDecoder::ShaderPolicy vertexPolicy;
-                vertexPolicy._type = renderer::ShaderType::Vertex;
-                vertexPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
-                vertexPolicy._content = renderer::ShaderContent::Source;
-                vertexPolicy._entryPoint = "main";
+                renderer::Shader::LoadPolicy vertexPolicy;
+                vertexPolicy.type = renderer::ShaderType::Vertex;
+                vertexPolicy.shaderModel = renderer::ShaderModel::HLSL_6_2;
+                vertexPolicy.content = renderer::ShaderContent::Source;
+                vertexPolicy.entryPoint = "main";
 
                 vertexShader = resource::ShaderCompiler::compileShader<renderer::VertexShader>(device, "vertex", vertexPolicy, vertexStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
                 stream::StreamManager::destroyStream(vertexStream);
@@ -126,11 +126,11 @@ TextureRender::TextureRender(renderer::Device* device, renderer::CmdListRender& 
                     }");
                 const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-                resource::ShaderDecoder::ShaderPolicy fragmentPolicy;
-                fragmentPolicy._type = renderer::ShaderType::Fragment;
-                fragmentPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
-                fragmentPolicy._content = renderer::ShaderContent::Source;
-                fragmentPolicy._entryPoint = "main";
+                renderer::Shader::LoadPolicy fragmentPolicy;
+                fragmentPolicy.type = renderer::ShaderType::Fragment;
+                fragmentPolicy.shaderModel = renderer::ShaderModel::HLSL_6_2;
+                fragmentPolicy.content = renderer::ShaderContent::Source;
+                fragmentPolicy.entryPoint = "main";
 
                 fragmentShader = resource::ShaderCompiler::compileShader<renderer::FragmentShader>(device, "fragment", fragmentPolicy, fragmentStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
                 stream::StreamManager::destroyStream(fragmentStream);

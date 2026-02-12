@@ -78,11 +78,11 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
         }");
         const stream::Stream* vertexStream = stream::StreamManager::createMemoryStream(vertexSource);
 
-        resource::ShaderDecoder::ShaderPolicy vertexPolicy;
-        vertexPolicy._type = renderer::ShaderType::Vertex;
-        vertexPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
-        vertexPolicy._content = renderer::ShaderContent::Source;
-        vertexPolicy._entryPoint = "main";
+        renderer::Shader::LoadPolicy vertexPolicy;
+        vertexPolicy.type = renderer::ShaderType::Vertex;
+        vertexPolicy.shaderModel = renderer::ShaderModel::HLSL_6_2;
+        vertexPolicy.content = renderer::ShaderContent::Source;
+        vertexPolicy.entryPoint = "main";
 
         vertShader = resource::ShaderCompiler::compileShader<renderer::VertexShader>(m_Device, "vertex", vertexPolicy, vertexStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         stream::StreamManager::destroyStream(vertexStream);
@@ -103,11 +103,11 @@ void SimpleTriangle::init(renderer::Device* device, renderer::Swapchain* swapcha
         }");
         const stream::Stream* fragmentStream = stream::StreamManager::createMemoryStream(fragmentSource);
 
-        resource::ShaderDecoder::ShaderPolicy fragmentPolicy;
-        fragmentPolicy._type = renderer::ShaderType::Fragment;
-        fragmentPolicy._shaderModel = renderer::ShaderModel::HLSL_6_2;
-        fragmentPolicy._content = renderer::ShaderContent::Source;
-        fragmentPolicy._entryPoint = "main";
+        renderer::Shader::LoadPolicy fragmentPolicy;
+        fragmentPolicy.type = renderer::ShaderType::Fragment;
+        fragmentPolicy.shaderModel = renderer::ShaderModel::HLSL_6_2;
+        fragmentPolicy.content = renderer::ShaderContent::Source;
+        fragmentPolicy.entryPoint = "main";
 
         fragShader = resource::ShaderCompiler::compileShader<renderer::FragmentShader>(m_Device, "fragment", fragmentPolicy, fragmentStream, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         stream::StreamManager::destroyStream(fragmentStream);
@@ -187,7 +187,7 @@ void SimpleTriangle::render()
     desc1._resource = renderer::Descriptor::ConstantBuffer{ &ubo1, 0, sizeof(UBO) };
 
     m_CmdList->bindDescriptorSet(m_Program, 0, { desc1 });
-    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
+    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
 
     UBO ubo2;
     ubo2.projectionMatrix = m_Camera.getCamera().getProjectionMatrix();
@@ -198,7 +198,7 @@ void SimpleTriangle::render()
     desc2._resource = renderer::Descriptor::ConstantBuffer{ &ubo2, 0, sizeof(UBO) };
 
     m_CmdList->bindDescriptorSet(m_Program, 0, { desc2 });
-    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, 0, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
+    m_CmdList->draw(renderer::GeometryBufferDesc(m_Geometry, sizeof(math::TVector3D<f32>) + sizeof(math::TVector3D<f32>)), 0, 3, 0, 1);
 
     m_CmdList->endRenderTarget();
 

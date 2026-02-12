@@ -267,8 +267,8 @@ namespace renderer
             , _vertexBufferCount(1)
         {
             _vertexBuffers[0] = vertex->m_buffer;
-            _vertexOffsets[0] = 0;
             _vertexStrides[0] = stride;
+            _vertexOffsets[0] = 0;
         }
 
         GeometryBufferDesc(const VertexBuffer* vertex, u32 stride, u32 offset) noexcept
@@ -278,8 +278,8 @@ namespace renderer
             , _vertexBufferCount(1)
         {
             _vertexBuffers[0] = vertex->m_buffer;
-            _vertexOffsets[0] = offset;
             _vertexStrides[0] = stride;
+            _vertexOffsets[0] = offset;
         }
 
         GeometryBufferDesc(const IndexBuffer* index, u32 indexOffset, const VertexBuffer* vertex, u32 stride, u32 vertexOffset) noexcept
@@ -289,8 +289,8 @@ namespace renderer
             , _vertexBufferCount(1)
         {
             _vertexBuffers[0] = vertex->m_buffer;
-            _vertexOffsets[0] = vertexOffset;
             _vertexStrides[0] = stride;
+            _vertexOffsets[0] = vertexOffset;
         }
 
         ~GeometryBufferDesc() = default;

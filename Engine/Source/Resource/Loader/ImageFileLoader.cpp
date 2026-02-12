@@ -31,7 +31,7 @@ BitmapFileLoader::BitmapFileLoader() noexcept
 #endif //USE_GLI
 }
 
-resource::Bitmap* BitmapFileLoader::load(const std::string& name, const PolicyType& policy, u32 flags)
+resource::Bitmap* BitmapFileLoader::load(const std::string& name, const Resource::LoadPolicy& policy, u32 flags)
 {
     for (std::string& root : m_roots)
     {

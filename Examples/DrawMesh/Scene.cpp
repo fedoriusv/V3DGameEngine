@@ -27,8 +27,21 @@ Scene::Scene(v3d::renderer::Device* device, renderer::Swapchain* swapchain) noex
     , m_Camera(nullptr)
     , m_Render(nullptr)
 {
-    resource::ResourceManager::createInstance();
-    resource::ResourceManager::getInstance()->addPath("../../../../examples/drawmesh/data/");
+    {
+        resource::ResourceManager::createInstance();
+
+        auto textureLoader = std::make_unique<resource::BitmapFileLoader>();
+        textureLoader->addPath("../../../../examples/drawmesh/data/");
+        resource::ResourceManager::getInstance()->registerLoader<resource::BitmapFileLoader::ResourceType>(std::move(textureLoader));
+
+        auto modelLoader = std::make_unique<resource::ModelFileLoader>(m_Device);
+        modelLoader->addPath("../../../../examples/drawmesh/data/");
+        resource::ResourceManager::getInstance()->registerLoader<resource::ModelFileLoader::ResourceType>(std::move(modelLoader));
+
+        auto shaderLoader = std::make_unique<resource::ShaderSourceFileLoader>(m_Device, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        shaderLoader->addPath("../../../../examples/drawmesh/data/");
+        resource::ResourceManager::getInstance()->registerLoader<resource::ShaderSourceFileLoader::ResourceType>(std::move(shaderLoader));
+    }
 }
 
 Scene::~Scene()
@@ -95,8 +108,8 @@ void Scene::Load()
         const renderer::Shader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.vert.glsl", "main", {}, {}, resource::ShaderCompile_ShaderModelFromExt);
         const renderer::Shader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.frag.glsl", "main", {}, {}, resource::ShaderCompile_ShaderModelFromExt);
 #else
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.hlsl", "main_vs");
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(m_Device, "shaders/mesh.hlsl", "main_ps");
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("shaders/mesh.hlsl", "main_vs");
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("shaders/mesh.hlsl", "main_ps");
 #endif
         m_Render = new app::TextureRender(m_Device, *m_CmdList, m_Swapchain, {vertShader, fragShader}, m_Models.front()->m_InputAttrib);
     }
@@ -107,11 +120,13 @@ void Scene::LoadVoyager()
     Model* voyager = new Model();
 
     {
+        renderer::Texture::LoadPolicy policy;
+
 #if defined(PLATFORM_ANDROID)
-        resource::Image* image = resource::ResourceManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("models/voyager/voyager_astc_8x8_unorm.ktx");
+        resource::Image* image = resource::ResourceManager::getInstance()->load<resource::Image, resource::ImageFileLoader>("models/voyager/voyager_astc_8x8_unorm.ktx", policy);
         voyager->m_Sampler = m_CommandList->createObject<renderer::SamplerState>(renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
 #else
-        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::BitmapFileLoader>("models/voyager/voyager_bc3_unorm.ktx");
+        resource::Bitmap* image = resource::ResourceManager::getInstance()->load<resource::Bitmap, resource::BitmapFileLoader>("models/voyager/voyager_bc3_unorm.ktx", policy);
         voyager->m_Sampler = new renderer::SamplerState(m_Device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
 #endif
         voyager->m_Sampler->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
@@ -121,11 +136,11 @@ void Scene::LoadVoyager()
     }
 
     {
-        resource::ModelFileLoader::ModelPolicy policy;
+        scene::Model::LoadPolicy policy;
         policy.scaleFactor = 1.0f;
-        policy.vertexProperies = resource::ModelFileLoader::VertexProperies_Position | resource::ModelFileLoader::VertexProperies_Normals | resource::ModelFileLoader::VertexProperies_TextCoord0;
+        policy.vertexProperies = scene::Model::VertexProperies_Position | scene::Model::VertexProperies_Normals | scene::Model::VertexProperies_TextCoord0;
 
-        scene::Model* model = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_Device, "models/voyager/voyager.dae", policy,
+        scene::Model* model = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("models/voyager/voyager.dae", policy,
             resource::ModelFileLoader::ModelLoaderFlag::FlipYTextureCoord | resource::ModelFileLoader::ModelLoaderFlag::SkipMaterial | resource::ModelFileLoader::ModelLoaderFlag::Optimization);
         voyager->m_Model = model;
 

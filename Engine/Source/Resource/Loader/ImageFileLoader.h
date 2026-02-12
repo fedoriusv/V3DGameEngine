@@ -42,7 +42,7 @@ namespace resource
         * @param u32 flags [optional]
         * @return Bitmap pointer
         */
-        [[nodiscard]] resource::Bitmap* load(const std::string& name, const PolicyType& policy, u32 flags = 0);
+        [[nodiscard]] resource::Bitmap* load(const std::string& name, const Resource::LoadPolicy& policy, u32 flags = 0) override;
 
     private:
 
