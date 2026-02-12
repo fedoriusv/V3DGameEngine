@@ -223,6 +223,25 @@ void EditorViewScreen::build()
                 })
             )
         )
+        .addWidget(ui::WidgetHorizontalLayout()
+        .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentLeft)
+        .addWidget(ui::WidgetCheckBox("PCF", m_sceneData->m_settings._shadowsParams._PCF)
+            .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
+                {
+                    m_sceneData->m_settings._shadowsParams._PCF = enable ? 1.0f : 0.0f;
+                })
+            )
+        .addWidget(ui::WidgetText("Textel scale "))
+            .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._shadowsParams._textelScale)
+            .setRange(0.0f, 1.f)
+            .setStep(0.01f)
+            .setSize({ 80, 20 })
+            .setOnChangedValueEvent([this](ui::Widget* w, f32 value)
+                {
+                    m_sceneData->m_settings._shadowsParams._textelScale = value;
+                })
+            )
+        )
         .addWidget(ui::WidgetText("Shadow cascades bias (1 = 1.0)"))
         .addWidget(ui::WidgetInputDragFloat4(
             m_sceneData->m_settings._shadowsParams._cascadeBaseBias[0] * 1.0f,
