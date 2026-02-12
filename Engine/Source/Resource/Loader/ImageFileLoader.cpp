@@ -21,9 +21,7 @@ namespace resource
 static std::vector<std::string> k_bitmapSupportedFormats = { "jpg", "png", "bmp", "tga", "hdr" };
 static std::vector<std::string> k_textureSupportedFormats = { "ktx", "kmg", "dds" };
 
-BitmapFileLoader::BitmapFileLoader(ImageLoaderFlags flags) noexcept
-    : m_policy()
-    , m_flags(flags)
+BitmapFileLoader::BitmapFileLoader() noexcept
 {
 #if USE_STB
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(BitmapStbDecoder, memory::MemoryLabel::MemorySystem)(k_bitmapSupportedFormats));
@@ -31,11 +29,9 @@ BitmapFileLoader::BitmapFileLoader(ImageLoaderFlags flags) noexcept
 #if USE_GLI
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(BitmapGLiDecoder, memory::MemoryLabel::MemorySystem)(k_textureSupportedFormats));
 #endif //USE_GLI
-
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-resource::Bitmap* BitmapFileLoader::load(const std::string& name, const std::string& alias)
+resource::Bitmap* BitmapFileLoader::load(const std::string& name, const PolicyType& policy, u32 flags)
 {
     for (std::string& root : m_roots)
     {
@@ -56,7 +52,7 @@ resource::Bitmap* BitmapFileLoader::load(const std::string& name, const std::str
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
+            Resource* resource = decoder->decode(file, &policy, flags, name);
 
             stream::FileLoader::close(file);
             file = nullptr;
@@ -78,9 +74,7 @@ resource::Bitmap* BitmapFileLoader::load(const std::string& name, const std::str
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TextureFileLoader::TextureFileLoader(renderer::Device* device, const ImageDecoder::TexturePolicy& policy, ImageLoaderFlags flags) noexcept
-    : m_policy(policy)
-    , m_flags(flags)
+TextureFileLoader::TextureFileLoader(renderer::Device* device) noexcept
 {
 #if USE_STB
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(TextureStbDecoder, memory::MemoryLabel::MemorySystem)(device, k_bitmapSupportedFormats));
@@ -88,11 +82,9 @@ TextureFileLoader::TextureFileLoader(renderer::Device* device, const ImageDecode
 #if USE_GLI
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(TextureGLiDecoder, memory::MemoryLabel::MemorySystem)(device, k_textureSupportedFormats));
 #endif //USE_GLI
-
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-renderer::Texture* TextureFileLoader::load(const std::string& name, const std::string& alias)
+renderer::Texture* TextureFileLoader::load(const std::string& name, const Resource::LoadPolicy& policy, u32 flags)
 {
     for (std::string& root : m_roots)
     {
@@ -113,7 +105,7 @@ renderer::Texture* TextureFileLoader::load(const std::string& name, const std::s
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
+            Resource* resource = decoder->decode(file, &policy, flags, name);
 
             stream::FileLoader::close(file);
             file = nullptr;

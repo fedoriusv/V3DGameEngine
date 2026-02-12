@@ -19,13 +19,13 @@ namespace resource
     {
     public:
 
-        explicit AssetDecoder() noexcept;
+        AssetDecoder() noexcept;
         explicit AssetDecoder(const std::vector<std::string>& supportedExtensions) noexcept;
         explicit AssetDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
 
         ~AssetDecoder() = default;
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -260,12 +260,12 @@ static renderer::TextureTarget convertTarget(gli::target target)
 
 
 BitmapGLiDecoder::BitmapGLiDecoder(const std::vector<std::string>& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
 {
 }
 
 BitmapGLiDecoder::BitmapGLiDecoder(std::vector<std::string>&& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
 {
 }
 
@@ -273,7 +273,7 @@ BitmapGLiDecoder::~BitmapGLiDecoder()
 {
 }
 
-Resource* BitmapGLiDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* BitmapGLiDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -283,6 +283,7 @@ Resource* BitmapGLiDecoder::decode(const stream::Stream* stream, const Policy* p
         timer.start();
 #endif //LOG_LOADIMG_TIME
 
+        const BitmapFileLoader::PolicyType& bitmapPolicy = *static_cast<const BitmapFileLoader::PolicyType*>(policy);
         u8* source = stream->map(stream->size());
         gli::texture texture = gli::load(reinterpret_cast<c8*>(source), stream->size());
         stream->unmap();
@@ -294,13 +295,13 @@ Resource* BitmapGLiDecoder::decode(const stream::Stream* stream, const Policy* p
             return nullptr;
         }
 
-        if (flags & ImageLoaderFlag::ImageLoader_FlipY)
+        if (bitmapPolicy.flipY)
         {
             texture = gli::flip(texture);
             ASSERT(!texture.empty(), "fail");
         }
 
-        if ((flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps) && texture.max_level() == 0)
+        if (bitmapPolicy.generateMipmaps && texture.max_level() == 0)
         {
             ASSERT(false, "not impl");
             //linkage error
@@ -346,13 +347,13 @@ Resource* BitmapGLiDecoder::decode(const stream::Stream* stream, const Policy* p
 }
 
 TextureGLiDecoder::TextureGLiDecoder(renderer::Device* device, const std::vector<std::string>& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
     , m_device(device)
 {
 }
 
 TextureGLiDecoder::TextureGLiDecoder(renderer::Device* device, std::vector<std::string>&& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
     , m_device(device)
 {
 }
@@ -361,7 +362,7 @@ TextureGLiDecoder::~TextureGLiDecoder()
 {
 }
 
-Resource* TextureGLiDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* TextureGLiDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -372,7 +373,7 @@ Resource* TextureGLiDecoder::decode(const stream::Stream* stream, const Policy* 
 #endif //LOG_LOADIMG_TIME
 
         u8* source = stream->map(stream->size());
-        const ImageDecoder::TexturePolicy& texturePolicy = *static_cast<const ImageDecoder::TexturePolicy*>(policy);
+        const TextureFileLoader::PolicyType& texturePolicy = *static_cast<const TextureFileLoader::PolicyType*>(policy);
         gli::texture texture = gli::load(reinterpret_cast<c8*>(source), stream->size());
         stream->unmap();
 
@@ -383,13 +384,13 @@ Resource* TextureGLiDecoder::decode(const stream::Stream* stream, const Policy* 
             return nullptr;
         }
 
-        if (flags & ImageLoaderFlag::ImageLoader_FlipY)
+        if (texturePolicy.flipY)
         {
             texture = gli::flip(texture);
             ASSERT(!texture.empty(), "fail");
         }
 
-        if ((flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps) && texture.max_level() == 0)
+        if (texturePolicy.generateMipmaps && texture.max_level() == 0)
         {
             ASSERT(false, "not impl");
             //linkage error

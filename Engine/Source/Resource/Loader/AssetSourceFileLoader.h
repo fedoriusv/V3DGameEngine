@@ -9,7 +9,7 @@ namespace resource
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Resource;
+    class Asset;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -17,14 +17,14 @@ namespace resource
     * @brief AssetSourceFileLoader class. Loader an asset from the file
     * @see Resource. Supports internal format ".v3dasset"
     */
-    class AssetSourceFileLoader : public ResourceLoader<Resource*>, public ResourceDecoderRegistration
+    class AssetSourceFileLoader : public ResourceLoader<Asset>, public ResourceDecoderRegistration
     {
     public:
 
         /**
         * @brief AssetSourceFileLoader constructor
         */
-        explicit AssetSourceFileLoader(u32 flags = 0) noexcept;
+        AssetSourceFileLoader() noexcept;
 
         /**
         * @brief AssetSourceFileLoader destructor
@@ -38,7 +38,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return Resource pointer
         */
-        [[nodiscard]] Resource* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] Asset* load(const std::string& name, const resource::Resource::LoadPolicy& policy, u32 flags = 0) override;
 
     private:
 

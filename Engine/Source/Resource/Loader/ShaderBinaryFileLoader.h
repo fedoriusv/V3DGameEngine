@@ -21,26 +21,18 @@ namespace resource
     * @see ShaderSpirVDecoder
     * @see ShaderHLSLDecoder
     */
-    class ShaderBinaryFileLoader : public ResourceLoader<renderer::Shader*>, public ResourceDecoderRegistration
+    class ShaderBinaryFileLoader : public ResourceLoader<renderer::Shader>, public ResourceDecoderRegistration
     {
     public:
 
-        /**
-        * @brief ShaderBinaryFileLoader constructor
-        * @param const renderer::Device* device [required]
-        * @param ShaderBinaryBuildFlags flags [optional]
-        * @see ShaderBinaryBuildFlags
-        */
-        explicit ShaderBinaryFileLoader(const renderer::Device* device, ShaderCompileFlags flags = 0) noexcept;
+        using ResourceType = renderer::Shader;
+        using PolicyType = renderer::Shader::LoadPolicy;
 
         /**
         * @brief ShaderBinaryFileLoader constructor
         * @param const renderer::Device* device [required]
-        * @param ShaderDecoder::ShaderPolicy& policy [required]
-        * @param ShaderBinaryBuildFlags flags [optional]
-        * @see ShaderBinaryBuildFlags
         */
-        explicit ShaderBinaryFileLoader(const renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags = 0) noexcept;
+        explicit ShaderBinaryFileLoader(const renderer::Device* device, ShaderCompileFlags compileFlags = 0) noexcept;
 
         /**
         * @brief ShaderBinaryFileLoader destructor
@@ -51,18 +43,16 @@ namespace resource
         * @brief Load binary shader by name from file
         * @see Shader
         * @param const std::string& name [required]
-        * @param const std::string& alias [optional]
+        * @param const Resource::LoadPolicy& policy [required]
+        * @param u32 flags [optional]
         * @return Shader pointer
         */
-        [[nodiscard]] renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] renderer::Shader* load(const std::string& name, const Resource::LoadPolicy& policy, u32 flags = 0) override;
 
     private:
 
         ShaderBinaryFileLoader() = delete;
         ShaderBinaryFileLoader(const ShaderBinaryFileLoader&) = delete;
-
-        ShaderDecoder::ShaderPolicy m_policy;
-        ShaderCompileFlags          m_flags;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

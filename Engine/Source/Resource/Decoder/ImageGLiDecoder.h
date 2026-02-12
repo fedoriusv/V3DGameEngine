@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ResourceDecoder.h"
-#include "ImageDecoder.h"
 
 #ifdef USE_GLI
 namespace v3d
@@ -22,7 +21,7 @@ namespace resource
     * Support formats: "ktx", "kmg", "dds"
     * @see: https://github.com/g-truc/gli.git
     */
-    class BitmapGLiDecoder final : public ImageDecoder
+    class BitmapGLiDecoder final : public ResourceDecoder
     {
     public:
 
@@ -30,7 +29,7 @@ namespace resource
         explicit BitmapGLiDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
         ~BitmapGLiDecoder();
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
 
     private:
     };
@@ -42,7 +41,7 @@ namespace resource
     * Support formats: "ktx", "kmg", "dds"
     * @see: https://github.com/g-truc/gli.git
     */
-    class TextureGLiDecoder final : public ImageDecoder
+    class TextureGLiDecoder final : public ResourceDecoder
     {
     public:
 
@@ -50,7 +49,7 @@ namespace resource
         explicit TextureGLiDecoder(renderer::Device* device, std::vector<std::string>&& supportedExtensions) noexcept;
         ~TextureGLiDecoder();
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
 
     private:
 

@@ -54,21 +54,24 @@ static bool checkBytecodeSigning(IDxcBlob* bytecode);
 static bool disassembleSpirv(IDxcBlob* binaryBlob, std::string& assembleSPIV);
 #endif //USE_SPIRV
 
-ShaderDXCDecoder::ShaderDXCDecoder() noexcept
+ShaderDXCDecoder::ShaderDXCDecoder(ShaderCompileFlags compileFlags) noexcept
+    : m_compileFlags(compileFlags)
 {
 }
 
-ShaderDXCDecoder::ShaderDXCDecoder(const std::vector<std::string>& supportedExtensions) noexcept
+ShaderDXCDecoder::ShaderDXCDecoder(const std::vector<std::string>& supportedExtensions, ShaderCompileFlags compileFlags) noexcept
     : ShaderDecoder(supportedExtensions)
+    , m_compileFlags(compileFlags)
 {
 }
 
-ShaderDXCDecoder::ShaderDXCDecoder(std::vector<std::string>&& supportedExtensions) noexcept
+ShaderDXCDecoder::ShaderDXCDecoder(std::vector<std::string>&& supportedExtensions, ShaderCompileFlags compileFlags) noexcept
     : ShaderDecoder(std::move(supportedExtensions))
+    , m_compileFlags(compileFlags)
 {
 }
 
-Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (!stream || stream->size() == 0)
     {
@@ -78,20 +81,19 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const Policy* p
 
     stream->seekBeg(0);
 
-    bool reflections = !(flags & ShaderCompileFlag::ShaderCompile_DontUseReflection);
     auto isHLSL_ShaderModel6 = [](renderer::ShaderModel model) -> bool
     {
         return model == renderer::ShaderModel::Default || (model >= renderer::ShaderModel::HLSL_6_0 && model <= renderer::ShaderModel::HLSL_6_6);
     };
 
-    const ShaderPolicy* shaderPolicy = static_cast<const ShaderPolicy*>(policy);
-    if (!isHLSL_ShaderModel6(shaderPolicy->_shaderModel))
+    const renderer::Shader::LoadPolicy& shaderPolicy = *static_cast<const renderer::Shader::LoadPolicy*>(policy);
+    if (!isHLSL_ShaderModel6(shaderPolicy.shaderModel))
     {
         LOG_ERROR("ShaderDXCDecoder::decode support HLSL SM6.0 and above");
         return nullptr;
     }
 
-    if (shaderPolicy->_content == renderer::ShaderContent::Source)
+    if (shaderPolicy.content == renderer::ShaderContent::Source)
     {
         std::string source;
         source.resize(stream->size());
@@ -102,7 +104,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const Policy* p
 #endif //LOG_LOADIMG_TIME
 
         IDxcBlob* binaryShader = nullptr;
-        if (!ShaderDXCDecoder::compile(source, shaderPolicy, flags, binaryShader, name))
+        if (!ShaderDXCDecoder::compile(source, shaderPolicy, m_compileFlags, binaryShader, name))
         {
             if (binaryShader)
             {
@@ -117,14 +119,14 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const Policy* p
         u32 bytecodeSize = static_cast<u32>(binaryShader->GetBufferSize());
         stream::Stream* resourceBinary = stream::StreamManager::createMemoryStream();
 
-        resourceBinary->write<renderer::ShaderType>(shaderPolicy->_type);
-        resourceBinary->write<renderer::ShaderModel>(shaderPolicy->_shaderModel);
-        resourceBinary->write(shaderPolicy->_entryPoint);
+        resourceBinary->write<renderer::ShaderType>(shaderPolicy.type);
+        resourceBinary->write<renderer::ShaderModel>(shaderPolicy.shaderModel);
+        resourceBinary->write(shaderPolicy.entryPoint);
         resourceBinary->write<u32>(bytecodeSize);
         resourceBinary->write(binaryShader->GetBufferPointer(), bytecodeSize);
-        resourceBinary->write<bool>(reflections);
+        resourceBinary->write<bool>(shaderPolicy.useReflection);
 
-        if (reflections && !ShaderDXCDecoder::reflect(resourceBinary, shaderPolicy, flags, binaryShader, name))
+        if (shaderPolicy.useReflection && !ShaderDXCDecoder::reflect(resourceBinary, shaderPolicy, m_compileFlags, binaryShader, name))
         {
             LOG_ERROR("ShaderDXCDecoder::decode: reflect is failed");
 
@@ -135,7 +137,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const Policy* p
         }
         binaryShader->Release();
 
-        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy->_type);
+        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy.type);
         resource::ResourceHeader::fill(&shaderHeader, name, resourceBinary->size(), 0);
 
         Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
@@ -163,7 +165,7 @@ Resource* ShaderDXCDecoder::decode(const stream::Stream* stream, const Policy* p
     }
 }
 
-bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob*& shader, const std::string& name) const
+bool ShaderDXCDecoder::compile(const std::string& source, const renderer::Shader::LoadPolicy& policy, ShaderCompileFlags flags, IDxcBlob*& shader, const std::string& name)
 {
     auto getShaderTarget = [](renderer::ShaderType type, renderer::ShaderModel model) -> std::wstring
     {
@@ -326,8 +328,8 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
         std::set<std::string> m_paths;
     };
 
-    const std::wstring entryPoint = std::wstring(policy->_entryPoint.cbegin(), policy->_entryPoint.cend());
-    const std::wstring target = getShaderTarget(policy->_type, policy->_shaderModel);
+    const std::wstring entryPoint = std::wstring(policy.entryPoint.cbegin(), policy.entryPoint.cend());
+    const std::wstring target = getShaderTarget(policy.type, policy.shaderModel);
 
     IDxcCompiler3* DXCompiler = nullptr;
     {
@@ -391,12 +393,12 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
     }
 
     std::vector<std::wstring> defines;
-    for (u32 i = 0; i < policy->_defines.size(); ++i)
+    for (u32 i = 0; i < policy.defines.size(); ++i)
     {
         std::wstring defineArg;
-        defineArg.append(std::move(std::wstring(policy->_defines[i].first.cbegin(), policy->_defines[i].first.cend())));
+        defineArg.append(std::move(std::wstring(policy.defines[i].first.cbegin(), policy.defines[i].first.cend())));
         defineArg.append(L"=");
-        defineArg.append(std::move(std::wstring(policy->_defines[i].second.cbegin(), policy->_defines[i].second.cend())));
+        defineArg.append(std::move(std::wstring(policy.defines[i].second.cbegin(), policy.defines[i].second.cend())));
 
         defines.push_back(std::move(defineArg));
 
@@ -406,15 +408,15 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
 
     DXCIncludeHandler includer(DXUtils);
     std::vector<std::wstring> includes;
-    for (u32 i = 0; i < policy->_includes.size(); ++i)
+    for (u32 i = 0; i < policy.includes.size(); ++i)
     {
-        includes.push_back(std::move(std::wstring(policy->_includes[i].cbegin(), policy->_includes[i].cend())));
+        includes.push_back(std::move(std::wstring(policy.includes[i].cbegin(), policy.includes[i].cend())));
 
         arguments.push_back(L"-I");
         arguments.push_back(includes[i].c_str());
     }
 
-    for (auto& path : policy->_paths)
+    for (auto& path : policy.paths)
     {
         includer.addIncludePath(path);
     }
@@ -631,7 +633,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const ShaderPolicy* po
     return true;
 }
 
-bool ShaderDXCDecoder::reflect(stream::Stream* stream, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob* shader, const std::string& name) const
+bool ShaderDXCDecoder::reflect(stream::Stream* stream, const renderer::Shader::LoadPolicy& policy, ShaderCompileFlags flags, IDxcBlob* shader, const std::string& name)
 {
     if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
     {
@@ -641,7 +643,7 @@ bool ShaderDXCDecoder::reflect(stream::Stream* stream, const ShaderPolicy* polic
         ASSERT(spirv[0] == 0x07230203, "invalid spirv magic number in head");
 
         //TODO: parses twice for HLSL and dublicate all binding.
-        ShaderReflectionSpirV reflector(policy->_shaderModel);
+        ShaderReflectionSpirV reflector(policy.shaderModel);
         return reflector.reflect(spirv, stream);
 #endif //USE_SPIRV
     }

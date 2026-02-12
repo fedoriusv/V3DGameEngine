@@ -65,10 +65,10 @@ bool Material::load(const stream::Stream* stream, u32 offset)
                 std::string name;
                 stream->read(name);
                 
-                resource::ImageDecoder::TexturePolicy policy;
+                renderer::Texture::LoadPolicy policy;
                 policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
 
-                renderer::Texture2D* texture = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, name, policy);
+                renderer::Texture2D* texture = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(name, policy);
                 ASSERT(texture, "is not loaded");
                 return texture;
             }

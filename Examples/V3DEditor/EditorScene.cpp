@@ -48,6 +48,25 @@
 
 using namespace v3d;
 
+static auto loadTexture2D = [](const std::string& name, bool generateMips) -> renderer::Texture2D*
+    {
+        renderer::Texture::LoadPolicy policy;
+        policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
+        policy.generateMipmaps = generateMips;
+
+        return resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(name, policy);
+    };
+
+static auto randomVector = [](f32 min, f32 max) -> math::Vector3D
+    {
+        f32 x = math::random<f32>(min, max);
+        f32 y = math::random<f32>(min, max);
+        f32 z = math::random<f32>(min, max);
+
+        return math::Vector3D(x, y, z);
+    };
+
+
 bool EditorScreen::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
     return false;
@@ -164,15 +183,6 @@ EditorScene::EditorScene() noexcept
     );
 
     m_gameEventRecevier->attach(m_gameHandler);
-
-    resource::ResourceManager::createInstance();
-    resource::ResourceManager::getInstance()->addPath("../../../../examples/v3deditor/data/textures/");
-    resource::ResourceManager::getInstance()->addPath("../../../../examples/v3deditor/data/models/");
-    resource::ResourceManager::getInstance()->addPath("../../../../examples/v3deditor/data/skybox/");
-    resource::ResourceManager::getInstance()->addPath("../../../../examples/v3deditor/data/");
-    resource::ResourceManager::getInstance()->addPath("../../../../engine/data/textures/");
-    resource::ResourceManager::getInstance()->addPath("../../../../engine/data/models/");
-    resource::ResourceManager::getInstance()->addPath("../../../../engine/data/shaders/");
 }
 
 EditorScene::~EditorScene()
@@ -196,6 +206,30 @@ scene::SceneData& EditorScene::getSceneData()
 void EditorScene::createScene(renderer::Device* device, const math::Dimension2D& viewportSize)
 {
     m_device = device;
+
+    {
+        resource::ResourceManager::createInstance();
+
+        auto textureLoader = std::make_unique<resource::TextureFileLoader>(m_device);
+        textureLoader->addRoot("../../../../examples/v3deditor/data/");
+        textureLoader->addRoot("../../../../engine/data/");
+        textureLoader->addPath("textures/");
+        textureLoader->addPath("skybox/");
+        resource::ResourceManager::getInstance()->registerLoader<resource::TextureFileLoader::ResourceType>(std::move(textureLoader));
+
+        auto modelLoader = std::make_unique<resource::ModelFileLoader>(m_device);
+        modelLoader->addRoot("../../../../examples/v3deditor/data/");
+        modelLoader->addRoot("../../../../engine/data/");
+        modelLoader->addPath("models/");
+        resource::ResourceManager::getInstance()->registerLoader<resource::ModelFileLoader::ResourceType>(std::move(modelLoader));
+
+        auto shaderLoader = std::make_unique<resource::ShaderSourceFileLoader>(m_device, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        shaderLoader->addRoot("../../../../examples/v3deditor/data/");
+        shaderLoader->addRoot("../../../../engine/data/");
+        shaderLoader->addPath("shaders/");
+        resource::ResourceManager::getInstance()->registerLoader<resource::ShaderSourceFileLoader::ResourceType>(std::move(shaderLoader));
+    }
+
     registerTechnique(&m_mainPipeline);
 
     //load setting from config
@@ -289,13 +323,13 @@ void EditorScene::preRender(f32 dt)
 
     m_sceneData.m_globalResources.bind("current_lut", std::get<1>(m_LUTs[m_sceneData.m_settings._tonemapParams._lut]));
 
-    SceneHandler::preRender(m_device, dt);
-
-    m_modelHandler->preUpdate(dt, m_sceneData);
+    SceneHandler::updateScene(dt);
     if (m_selectedIndex != k_emptyIndex)
     {
         m_sceneData.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].push_back(m_sceneData.m_generalRenderList[m_selectedIndex]);
     }
+
+    SceneHandler::preRender(m_device, dt);
 }
 
 void EditorScene::postRender(f32 dt)
@@ -377,20 +411,21 @@ event::GameEventReceiver* EditorScene::getGameEventReceiver()
 
 void EditorScene::loadResources()
 {
-    resource::ImageDecoder::TexturePolicy policy;
+    renderer::Texture::LoadPolicy policy;
     policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
+    policy.generateMipmaps = false;
 
-    renderer::Texture2D* default_black = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_black.dds", policy);
-    renderer::Texture2D* default_white = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_white.dds", policy);
-    renderer::Texture2D* default_normal = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_normal.dds", policy);
-    renderer::Texture2D* default_material = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_material.dds", policy);
-    renderer::Texture2D* default_roughness = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_black.dds", policy);
-    renderer::Texture2D* default_metalness = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "default_black.dds", policy);
-    renderer::Texture2D* uv_grid = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "uv_grid.dds", policy);
-    renderer::Texture2D* noise_blue = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "noise_blue.dds", policy);
-    renderer::Texture2D* tiling_noise = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(m_device, "good64x64tilingnoisehighfreq.dds", policy);
-    renderer::Texture3D* default_lut = resource::ResourceManager::getInstance()->load<renderer::Texture3D, resource::TextureFileLoader>(m_device, "default_lut.dds", policy);
-    renderer::Texture3D* greyscale_lut = resource::ResourceManager::getInstance()->load<renderer::Texture3D, resource::TextureFileLoader>(m_device, "greyscale_lut.dds", policy);
+    renderer::Texture2D* default_black = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("default_black.dds", policy);
+    renderer::Texture2D* default_white = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("default_white.dds", policy);
+    renderer::Texture2D* default_normal = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("default_normal.dds", policy);
+    renderer::Texture2D* default_material = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("default_material.dds", policy);
+    renderer::Texture2D* default_roughness = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("default_black.dds", policy);
+    renderer::Texture2D* default_metalness = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("default_black.dds", policy);
+    renderer::Texture2D* uv_grid = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("uv_grid.dds", policy);
+    renderer::Texture2D* noise_blue = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("noise_blue.dds", policy);
+    renderer::Texture2D* tiling_noise = resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>("good64x64tilingnoisehighfreq.dds", policy);
+    renderer::Texture3D* default_lut = resource::ResourceManager::getInstance()->load<renderer::Texture3D, resource::TextureFileLoader>("default_lut.dds", policy);
+    renderer::Texture3D* greyscale_lut = resource::ResourceManager::getInstance()->load<renderer::Texture3D, resource::TextureFileLoader>("greyscale_lut.dds", policy);
 
     m_sceneData.m_globalResources.bind("default_black", default_black);
     m_sceneData.m_globalResources.bind("default_white", default_white);
@@ -439,26 +474,11 @@ void EditorScene::test_loadScene(const std::string& name)
     m_sceneData.m_settings._shadowsParams._cascadeBaseBias = { 0.1f, 0.12f, 0.15f, 0.5f };
     m_sceneData.m_settings._shadowsParams._cascadeSlopeBias = { 1.0f, 1.5f, 2.0f, 3.0f };
 
-    static auto loadTexture2D = [](renderer::Device* device, const std::string& name, bool generateMips) -> renderer::Texture2D*
-        {
-            resource::ImageDecoder::TexturePolicy policy;
-            policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
-
-            resource::ImageLoaderFlags flags = 0;
-            if (generateMips)
-            {
-                flags |= resource::ImageLoaderFlag::ImageLoader_GenerateMipmaps;
-            }
-
-            return resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(device, name, policy, flags);
-        };
-
-    resource::ModelFileLoader::ModelPolicy policy;
+    scene::Model::LoadPolicy policy;
     policy.scaleFactor = 0.01f;
     policy.overridedShadingModel = scene::MaterialShadingModel::Custom;
 
-    scene::Model* scene = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, name, policy, 
-        resource::ModelFileLoader::Optimization | resource::ModelFileLoader::OverridedShadingModel | 0);
+    scene::Model* scene = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(name, policy, resource::ModelFileLoader::Optimization | resource::ModelFileLoader::OverridedShadingModel | 0);
     ASSERT(scene, "nullptr");
 
     scene::SceneNode::forEach(scene, [this](scene::SceneNode* parent, scene::SceneNode* node)
@@ -549,7 +569,7 @@ void EditorScene::test_loadScene(const std::string& name)
         skyboxNode->addComponent(skybox);
 
         scene::Material* material = new scene::Material(m_device);
-        material->setProperty("BaseColor", loadTexture2D(m_device, "SunTemple_Skybox.dds", false));
+        material->setProperty("BaseColor", loadTexture2D("SunTemple_Skybox.dds", false));
         material->setProperty("pipelineID", 0U);
         skyboxNode->addComponent(material);
     }
@@ -594,42 +614,19 @@ void EditorScene::test_loadTestScene()
     ASSERT(default_black_h.isValid(), "must be valid");
     renderer::Texture2D* default_black = objectFromHandle<renderer::Texture2D>(default_black_h);
 
-    static auto loadTexture2D = [](renderer::Device* device, const std::string& name, bool generateMips) -> renderer::Texture2D*
-        {
-            resource::ImageDecoder::TexturePolicy policy;
-            policy.usage = renderer::TextureUsage::TextureUsage_Sampled | renderer::TextureUsage_Shared | renderer::TextureUsage_Write;
-
-            resource::ImageLoaderFlags flags = 0;
-            if (generateMips)
-            {
-                flags |= resource::ImageLoaderFlag::ImageLoader_GenerateMipmaps;
-            }
-
-            return resource::ResourceManager::getInstance()->load<renderer::Texture2D, resource::TextureFileLoader>(device, name, policy, flags);
-        };
-
-    static auto randomVector = [](f32 min, f32 max) -> math::Vector3D
-        {
-            f32 x = math::random<f32>(min, max);
-            f32 y = math::random<f32>(min, max);
-            f32 z = math::random<f32>(min, max);
-
-            return math::Vector3D(x, y, z);
-        };
-
     {
-        resource::ModelFileLoader::ModelPolicy policy;
-        scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        scene::Model::LoadPolicy policy;
+        scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeCube->setPosition(scene::TransformMode::Local, { 3.f, 1.f, -1.f });
         nodeCube->m_name = "cube.fbx";
         addNode(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
-        material->setProperty("BaseColor", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Color.png", true));
-        material->setProperty("Normals", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_NormalGL.png", true));
-        material->setProperty("Roughness", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Roughness.png", true));
-        material->setProperty("Metalness", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Metalness.png", true));
-        material->setProperty("Displacement", loadTexture2D(m_device, "DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Displacement.png", true));
+        material->setProperty("BaseColor", loadTexture2D("DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Color.png", true));
+        material->setProperty("Normals", loadTexture2D("DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_NormalGL.png", true));
+        material->setProperty("Roughness", loadTexture2D("DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Roughness.png", true));
+        material->setProperty("Metalness", loadTexture2D("DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Metalness.png", true));
+        material->setProperty("Displacement", loadTexture2D("DiamondPlate008C_1K/DiamondPlate008C_1K-PNG_Displacement.png", true));
         material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
         nodeCube->addComponent(material);
     }
@@ -637,44 +634,44 @@ void EditorScene::test_loadTestScene()
     u32 objects = 10;
     for (u32 i = 0; i < objects; ++i)
     {
-        resource::ModelFileLoader::ModelPolicy policy;
+        scene::Model::LoadPolicy policy;
         policy.scaleFactor = 0.5f;
 
-        scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        scene::Model* nodeCube = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("cube.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeCube->m_name = std::format("cube{}", i);
         nodeCube->setPosition(scene::TransformMode::Local, randomVector(-5.f, 5.f));
         addNode(nodeCube);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
-        material->setProperty("BaseColor", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Color.png", true));
-        material->setProperty("Normals", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_NormalGL.png", true));
-        material->setProperty("Roughness", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Roughness.png", true));
+        material->setProperty("BaseColor", loadTexture2D("Bricks054/Bricks054_1K-PNG_Color.png", true));
+        material->setProperty("Normals", loadTexture2D("Bricks054/Bricks054_1K-PNG_NormalGL.png", true));
+        material->setProperty("Roughness", loadTexture2D("Bricks054/Bricks054_1K-PNG_Roughness.png", true));
         material->setProperty("Metalness", default_metalness);
-        material->setProperty("Displacement", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_Displacement.png", true));
+        material->setProperty("Displacement", loadTexture2D("Bricks054/Bricks054_1K-PNG_Displacement.png", true));
         material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
         nodeCube->addComponent(material);
     }
 
     {
-        resource::ModelFileLoader::ModelPolicy policy;
-        scene::Model* nodePlane = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "plane.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        scene::Model::LoadPolicy policy;
+        scene::Model* nodePlane = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("plane.fbx", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodePlane->m_name = "plane.fbx";
         addNode(nodePlane);
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
-        material->setProperty("BaseColor", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Color.png", true));
-        material->setProperty("Normals", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_NormalGL.png", true));
-        material->setProperty("Roughness", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Roughness.png", true));
+        material->setProperty("BaseColor", loadTexture2D("PavingStones142_1K/PavingStones142_1K-PNG_Color.png", true));
+        material->setProperty("Normals", loadTexture2D("PavingStones142_1K/PavingStones142_1K-PNG_NormalGL.png", true));
+        material->setProperty("Roughness", loadTexture2D("PavingStones142_1K/PavingStones142_1K-PNG_Roughness.png", true));
         material->setProperty("Metalness", default_metalness);
-        material->setProperty("Displacement", loadTexture2D(m_device, "PavingStones142_1K/PavingStones142_1K-PNG_Displacement.png", true));
+        material->setProperty("Displacement", loadTexture2D("PavingStones142_1K/PavingStones142_1K-PNG_Displacement.png", true));
         material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
         nodePlane->addComponent(material);
     }
 
     {
-        resource::ModelFileLoader::ModelPolicy policy;
+        scene::Model::LoadPolicy policy;
         policy.scaleFactor = 1.0f;
-        scene::Model* nodeField = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>(m_device, "big_field.dae", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
+        scene::Model* nodeField = resource::ResourceManager::getInstance()->load<scene::Model, resource::ModelFileLoader>("big_field.dae", policy, resource::ModelFileLoader::SkipMaterial | resource::ModelFileLoader::Optimization);
         nodeField->m_name = "big_field";
         nodeField->setPosition(scene::TransformMode::Local, { 5.0f, -0.03f, 0.0f });
         nodeField->setRotation(scene::TransformMode::Local, { 90.f, 0.0f, 0.0f });
@@ -682,7 +679,7 @@ void EditorScene::test_loadTestScene()
 
         scene::Material* material = new scene::Material(m_device, scene::MaterialShadingModel::PBR_MetallicRoughness);
         material->setProperty("BaseColor", uv_h);
-        material->setProperty("Normals", loadTexture2D(m_device, "Bricks054/Bricks054_1K-PNG_NormalGL.png", true));
+        material->setProperty("Normals", loadTexture2D("Bricks054/Bricks054_1K-PNG_NormalGL.png", true));
         material->setProperty("Roughness", default_roughness);
         material->setProperty("Metalness", default_metalness);
         material->setProperty("Displacement", default_black);
@@ -699,7 +696,7 @@ void EditorScene::test_loadTestScene()
         skyboxNode->addComponent(skybox);
 
         scene::Material* material = new scene::Material(m_device);
-        material->setProperty("BaseColor", loadTexture2D(m_device, "Skybox/DaySkyHDRI026A_4K-HDR.dds", false));
+        material->setProperty("BaseColor", loadTexture2D("Skybox/DaySkyHDRI026A_4K-HDR.dds", false));
         material->setProperty("pipelineID", 0U);
         skyboxNode->addComponent(material);
     }

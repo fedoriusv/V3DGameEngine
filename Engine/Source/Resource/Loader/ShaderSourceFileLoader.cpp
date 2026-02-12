@@ -24,114 +24,38 @@ static std::map<std::string, renderer::ShaderModel> k_extensionList =
     { "glsl", renderer::ShaderModel::GLSL_450 }
 };
 
-ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags) noexcept
-    : m_policy(policy)
-    , m_flags(flags)
-{
-    switch (device->getRenderType())
-    {
-    case renderer::Device::RenderType::Vulkan:
-#ifdef USE_SPIRV
-        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)());
-        break;
-#endif //USE_SPIRV
-
-#if D3D_RENDER
-    case renderer::Device::RenderType::Vulkan:
-    {
-#if !defined(PLATFORM_XBOX)
-        if (flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL)
-        {
-            renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
-            header._optLevel = optimizationLevel;
-
-            ResourceDecoderRegistration::registerDecoder(
-                V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "vs", "ps", "cs" }, header, entrypoint, defines, includes, flags)
-            );
-        }
-        else
-#endif //!PLATFORM_XBOX
-        {
-            renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
-            header._optLevel = optimizationLevel;
-
-            ResourceDecoderRegistration::registerDecoder(
-                V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "vs", "ps", "cs" }, header, entrypoint, defines, includes, header._shaderModel, flags)
-            );
-        }
-
-        break;
-    }
-#endif //D3D_RENDER
-    default:
-        ASSERT(false, "not suppported");
-    }
-
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
-}
-
-ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, renderer::ShaderType type, const std::string& entryPoint,
-    const std::vector<std::pair<std::string, std::string>>& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags) noexcept
-    : m_flags(flags)
+ShaderSourceFileLoader::ShaderSourceFileLoader(renderer::Device* device, ShaderCompileFlags compileFlags) noexcept
 {
     if (device->getRenderType() == renderer::Device::RenderType::Vulkan)
     {
-        m_policy._content = renderer::ShaderContent::Source;
-        m_policy._shaderModel = (flags & ShaderCompileFlag::ShaderCompile_UseLegacyCompilerForHLSL) ? renderer::ShaderModel::HLSL_5_1 : renderer::ShaderModel::HLSL;
-        m_policy._type = type;
-        m_policy._defines = defines;
-        m_policy._includes = includes;
-        m_policy._entryPoint = entryPoint;
-
-        if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
+        if (compileFlags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
         {
-            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }));
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, compileFlags));
         }
+#ifdef USE_SPIRV
         else
         {
-            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl", "glsl" }));
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl", "glsl" }, compileFlags));
         }
+#endif //USE_SPIRV
     }
 #if D3D_RENDER
-    else if (context->getRenderType() == renderer::Context::RenderType::DirectXRender)
-    {
-#if !defined(PLATFORM_XBOX)
-        if (flags & renderer::ShaderCompileFlag::ShaderSource_UseLegacyCompilerForHLSL)
+        else if (device->getRenderType() == renderer::Device::RenderType::DirectX)
         {
-            renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_5_1;
-            header._shaderType = type;
-            header._optLevel = optimizationLevel;
-
-            ResourceDecoderRegistration::registerDecoder(
-                V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, flags)
-            );
-    }
+#if !defined(PLATFORM_XBOX)
+        if (compileFlags & ShaderCompileFlag::ShaderCompile_UseLegacyCompilerForHLSL)
+        {
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "vs", "ps", "cs" }, header, entrypoint, defines, includes, flags));
+        }
         else
 #endif //!PLATFORM_XBOX
         {
-            renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderContent::Source;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::HLSL_6_1;
-            header._shaderType = type;
-            header._optLevel = optimizationLevel;
-
-            ResourceDecoderRegistration::registerDecoder(
-                V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "hlsl" }, header, entrypoint, defines, includes, header._shaderModel, flags)
-            );
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)({ "vs", "ps", "cs" }, header, entrypoint, defines, includes, header._shaderModel, flags));
         }
-    }
-#endif
-
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
+#endif //D3D_RENDER
 }
 
-renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const std::string& alias)
+renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const Resource::LoadPolicy& policy, ShaderCompileFlags flags)
 {
     for (std::string& root : m_roots)
     {
@@ -149,18 +73,19 @@ renderer::Shader* ShaderSourceFileLoader::load(const std::string& name, const st
             if (decoder)
             {
                 // Get shader model from extension
-                if (m_flags & ShaderCompileFlag::ShaderCompile_ShaderModelFromExt)
+                PolicyType newPolicy(*static_cast<const PolicyType*>(&policy));
+                if (flags & ShaderCompileFlag::ShaderCompile_ShaderModelFromExt)
                 {
                     auto ext = k_extensionList.find(fileExtension);
                     ASSERT(ext != k_extensionList.cend(), "unknown extention");
                     if (ext != k_extensionList.cend())
                     {
-                        m_policy._shaderModel = ext->second;
+                        newPolicy.shaderModel = ext->second;
                     }
                 }
-                m_policy._paths.push_back(path);
+                newPolicy.paths.push_back(root + path);
 
-                Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
+                Resource* resource = decoder->decode(file, &newPolicy, flags, name);
 
                 stream::FileLoader::close(file);
                 file = nullptr;

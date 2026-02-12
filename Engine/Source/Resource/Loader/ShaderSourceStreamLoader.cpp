@@ -17,10 +17,8 @@ namespace v3d
 namespace resource
 {
 
-ShaderSourceStreamLoader::ShaderSourceStreamLoader(renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags) noexcept
-    : m_policy(policy)
-    , m_stream(stream)
-    , m_flags(flags)
+ShaderSourceStreamLoader::ShaderSourceStreamLoader(renderer::Device* device, const stream::Stream* stream, ShaderCompileFlags flags) noexcept
+    : m_stream(stream)
 {
     switch (device->getRenderType())
     {
@@ -29,11 +27,11 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(renderer::Device* device, con
     {
         if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
         {
-            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)());
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderDXCDecoder, memory::MemoryLabel::MemorySystem)(flags));
         }
         else
         {
-            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)());
+            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)(flags));
         }
 
         break;
@@ -60,7 +58,7 @@ ShaderSourceStreamLoader::ShaderSourceStreamLoader(renderer::Device* device, con
     };
 }
 
-renderer::Shader* ShaderSourceStreamLoader::load(const std::string& name, const std::string& alias)
+renderer::Shader* ShaderSourceStreamLoader::load(const std::string& name, const Resource::LoadPolicy& policy, ShaderCompileFlags flags)
 {
     if (ShaderSourceStreamLoader::getDecoders().empty())
     {
@@ -76,7 +74,7 @@ renderer::Shader* ShaderSourceStreamLoader::load(const std::string& name, const 
     const ResourceDecoder* decoder = getDecoders().front();
     if (decoder)
     {
-        Resource* resource = decoder->decode(m_stream, &m_policy, m_flags, name);
+        Resource* resource = decoder->decode(m_stream, &policy, flags, name);
         if (!resource)
         {
             LOG_ERROR("ShaderSourceStreamLoader: Streaming error read stream [%s]", name.c_str());

@@ -116,6 +116,15 @@ namespace resource
     {
     public:
 
+        /**
+        * @brief LoadPolicy
+        */
+        struct LoadPolicy
+        {
+            LoadPolicy() = default;
+            virtual ~LoadPolicy() = default;
+        };
+
         virtual bool load(const stream::Stream* stream, u32 offset = 0) = 0;
         virtual bool save(stream::Stream* stream, u32 offset = 0) const = 0;
 

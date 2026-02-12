@@ -42,22 +42,25 @@ static const std::map<std::string, renderer::ShaderType> k_SPIRV_ExtensionList =
 
 constexpr u32 g_SPIRVIndifier = 0x07230203; //Spirv
 
- ShaderSpirVDecoder::ShaderSpirVDecoder() noexcept
+ ShaderSpirVDecoder::ShaderSpirVDecoder(ShaderCompileFlags compileFlags) noexcept
      : ShaderDecoder()
+     , m_compileFlags(compileFlags)
 {
 }
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(const std::vector<std::string>& supportedExtensions) noexcept
+ShaderSpirVDecoder::ShaderSpirVDecoder(const std::vector<std::string>& supportedExtensions, ShaderCompileFlags compileFlags) noexcept
     : ShaderDecoder(supportedExtensions)
+    , m_compileFlags(compileFlags)
 {
 }
 
-ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string>&& supportedExtensions) noexcept
+ShaderSpirVDecoder::ShaderSpirVDecoder(std::vector<std::string>&& supportedExtensions, ShaderCompileFlags compileFlags) noexcept
     : ShaderDecoder(std::move(supportedExtensions))
+    , m_compileFlags(compileFlags)
 {
 }
 
-Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (!stream || stream->size() == 0)
     {
@@ -67,8 +70,8 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
 
     stream->seekBeg(0); //read from beginning
 
-    const ShaderDecoder::ShaderPolicy* shaderPolicy = static_cast<const ShaderDecoder::ShaderPolicy*>(policy);
-    if (shaderPolicy->_content == renderer::ShaderContent::Source)
+    const renderer::Shader::LoadPolicy& shaderPolicy = *static_cast<const renderer::Shader::LoadPolicy*>(policy);
+    if (shaderPolicy.content == renderer::ShaderContent::Source)
     {
         class Includer : public shaderc::CompileOptions::IncluderInterface
         {
@@ -162,11 +165,11 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
 
         shaderc::CompileOptions options;
 
-        if (flags & ShaderCompileFlag::ShaderCompile_OptimizationPerformance || flags & ShaderCompileFlag::ShaderCompile_OptimizationFull)
+        if (m_compileFlags & ShaderCompileFlag::ShaderCompile_OptimizationPerformance || m_compileFlags & ShaderCompileFlag::ShaderCompile_OptimizationFull)
         {
             options.SetOptimizationLevel(shaderc_optimization_level_performance);
         }
-        else if (flags & ShaderCompileFlag::ShaderCompile_OptimizationSize)
+        else if (m_compileFlags & ShaderCompileFlag::ShaderCompile_OptimizationSize)
         {
             options.SetOptimizationLevel(shaderc_optimization_level_size);
         }
@@ -178,7 +181,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
         options.SetWarningsAsErrors();
 #endif
 
-        switch (shaderPolicy->_shaderModel)
+        switch (shaderPolicy.shaderModel)
         {
         case renderer::ShaderModel::Default:
         case renderer::ShaderModel::GLSL_450:
@@ -228,12 +231,12 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             break;
 
         default:
-            LOG_ERROR("ShaderSpirVDecoder::decode: shader model %d is not supported", shaderPolicy->_shaderModel);
+            LOG_ERROR("ShaderSpirVDecoder::decode: shader model %d is not supported", shaderPolicy.shaderModel);
             ASSERT(false, "shader lang doesn't support");
             return nullptr;
         }
 
-        for (auto& define : shaderPolicy->_defines)
+        for (auto& define : shaderPolicy.defines)
         {
             if (define.second.empty())
             {
@@ -246,7 +249,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
         }
 
         std::unique_ptr<Includer> includer(new Includer); //Use default deleter
-        for (auto& path : shaderPolicy->_paths)
+        for (auto& path : shaderPolicy.paths)
         {
             includer->addPath(path);
         }
@@ -276,17 +279,17 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
                 return shaderc_shader_kind::shaderc_vertex_shader;
             };
 
-        shaderc_shader_kind scShaderType = getShaderType(shaderPolicy->_type);
+        shaderc_shader_kind scShaderType = getShaderType(shaderPolicy.type);
         if (!validShaderType)
         {
             LOG_ERROR("ShaderSpirVDecoder::decode: Invalid shader type or unsupport");
             return nullptr;
         }
-        ASSERT(shaderPolicy->_shaderModel != renderer::ShaderModel::GLSL_450 || shaderPolicy->_entryPoint == "main", "glslang supports only on entry point with main name");
+        ASSERT(shaderPolicy.shaderModel != renderer::ShaderModel::GLSL_450 || shaderPolicy.entryPoint == "main", "glslang supports only on entry point with main name");
         LOG_DEBUG("Compile Shader %s to SpirV:\n %s\n", name.c_str(), source.c_str());
 
         shaderc::Compiler compiler;
-        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, scShaderType, "shader", shaderPolicy->_entryPoint.c_str(), options);
+        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, scShaderType, "shader", shaderPolicy.entryPoint.c_str(), options);
         if (!compiler.IsValid())
         {
             LOG_ERROR("ShaderSpirVDecoder::decode: CompileGlslToSpv is invalid");
@@ -389,21 +392,21 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
         }
 #endif //PATCH_SYSTEM
 
-        bool reflections = !(flags & ShaderCompileFlag::ShaderCompile_DontUseReflection);
+        bool reflections = shaderPolicy.useReflection;
 
         u32 size = static_cast<u32>(spirvBinary.size()) * sizeof(u32);
         stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream();
 
-        resourceSpirvBinary->write<renderer::ShaderType>(shaderPolicy->_type);
-        resourceSpirvBinary->write<renderer::ShaderModel>(shaderPolicy->_shaderModel);
-        resourceSpirvBinary->write(shaderPolicy->_entryPoint);
+        resourceSpirvBinary->write<renderer::ShaderType>(shaderPolicy.type);
+        resourceSpirvBinary->write<renderer::ShaderModel>(shaderPolicy.shaderModel);
+        resourceSpirvBinary->write(shaderPolicy.entryPoint);
         resourceSpirvBinary->write<u32>(size);
         resourceSpirvBinary->write(spirvBinary.data(), size);
         resourceSpirvBinary->write<bool>(reflections);
 
         if (reflections)
         {
-            ShaderReflectionSpirV reflector(shaderPolicy->_shaderModel);
+            ShaderReflectionSpirV reflector(shaderPolicy.shaderModel);
             if (!reflector.reflect(spirvBinary, resourceSpirvBinary))
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
@@ -413,7 +416,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             }
         }
 
-        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy->_type);
+        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy.type);
         resource::ResourceHeader::fill(&shaderHeader, name, resourceSpirvBinary->size(), 0);
 
         Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);
@@ -440,7 +443,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
         utils::Timer timer;
         timer.start();
 #endif
-        bool reflections = !(flags & ShaderCompileFlag::ShaderCompile_DontUseReflection);
+        bool reflections = shaderPolicy.useReflection;
 
         std::vector<u32> bytecode(stream->size() / sizeof(u32));
         stream->read(bytecode.data(), sizeof(u32), static_cast<u32>(bytecode.size()));
@@ -448,16 +451,16 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
 
         stream::Stream* resourceSpirvBinary = stream::StreamManager::createMemoryStream();
 
-        resourceSpirvBinary->write<renderer::ShaderType>(shaderPolicy->_type);
-        resourceSpirvBinary->write<renderer::ShaderModel>(shaderPolicy->_shaderModel);
-        resourceSpirvBinary->write(shaderPolicy->_entryPoint);
+        resourceSpirvBinary->write<renderer::ShaderType>(shaderPolicy.type);
+        resourceSpirvBinary->write<renderer::ShaderModel>(shaderPolicy.shaderModel);
+        resourceSpirvBinary->write(shaderPolicy.entryPoint);
         resourceSpirvBinary->write<u32>(stream->size());
         resourceSpirvBinary->write(bytecode.data(), stream->size());
         resourceSpirvBinary->write<bool>(reflections);
 
         if (reflections)
         {
-            ShaderReflectionSpirV reflector(shaderPolicy->_shaderModel);
+            ShaderReflectionSpirV reflector(shaderPolicy.shaderModel);
             if (!reflector.reflect({ bytecode.cbegin(), bytecode.cend() }, resourceSpirvBinary))
             {
                 LOG_ERROR("ShaderSpirVDecoder::decode: parseReflections failed for shader: %s", name.c_str());
@@ -467,7 +470,7 @@ Resource* ShaderSpirVDecoder::decode(const stream::Stream* stream, const Policy*
             }
         }
 
-        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy->_type);
+        renderer::Shader::ShaderHeader shaderHeader(shaderPolicy.type);
         resource::ResourceHeader::fill(&shaderHeader, name, resourceSpirvBinary->size(), 0);
 
         Resource* resource = V3D_NEW(renderer::Shader, memory::MemoryLabel::MemoryObject)(shaderHeader);

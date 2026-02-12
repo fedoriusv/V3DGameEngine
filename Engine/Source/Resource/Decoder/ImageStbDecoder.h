@@ -2,7 +2,6 @@
 
 #include "ResourceDecoder.h"
 #include "Resource/Bitmap.h"
-#include "ImageDecoder.h"
 
 #ifdef USE_STB
 namespace v3d
@@ -13,8 +12,6 @@ namespace renderer
 } // namespace renderer
 namespace resource
 {
-    class Resource;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -22,7 +19,7 @@ namespace resource
     * Support formats: "jpeg", "png", "bmp", "tga"
     * @see: https://github.com/nothings/stb.git
     */
-    class BitmapStbDecoder final : public ImageDecoder
+    class BitmapStbDecoder final : public ResourceDecoder
     {
     public:
 
@@ -30,7 +27,7 @@ namespace resource
         explicit BitmapStbDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
         ~BitmapStbDecoder();
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +37,7 @@ namespace resource
     * Support formats: "jpeg", "png", "bmp", "tga"
     * @see: https://github.com/nothings/stb.git
     */
-    class TextureStbDecoder final : public ImageDecoder
+    class TextureStbDecoder final : public ResourceDecoder
     {
     public:
 
@@ -48,7 +45,7 @@ namespace resource
         explicit TextureStbDecoder(renderer::Device* device, std::vector<std::string>&& supportedExtensions) noexcept;
         ~TextureStbDecoder();
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
 
     private:
 

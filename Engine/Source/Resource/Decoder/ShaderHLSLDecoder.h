@@ -8,8 +8,6 @@ namespace v3d
 {
 namespace resource
 {
-    class Resource;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -30,7 +28,7 @@ namespace resource
 
         ~ShaderHLSLDecoder() = default;
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
 
     private:
 

@@ -1,9 +1,13 @@
 #pragma once
 
 #include "Common.h"
-#include "Resource.h"
+
 #include "Utils/Singleton.h"
 #include "Utils/Timer.h"
+
+#include "Resource.h"
+#include "Loader/ResourceLoader.h"
+
 #include "Renderer/Shader.h"
 #include "Resource/Decoder/ShaderDecoder.h"
 
@@ -24,6 +28,36 @@ namespace resource
     {
     public:
 
+        template<class TBaseResource>
+        void registerLoader(std::unique_ptr<ResourceLoader<TBaseResource>> loader);
+
+        /**
+        * @brief load interface.
+        * Create resource from file and upload data to GPU. Supports: AssetFileLoader, ModelFileLoader, TextureFileLoader, ShaderSourceFileLoader
+        *
+        * @param sconst std::string& filename [required]
+        * @param const TPolicy& policy [required]
+        * @param u32 flags [optional]
+        * @return current resource, nullptr if failed
+        */
+        template<class TResource, class TResourceLoader, typename TPolicy = TResourceLoader::PolicyType>
+        [[nodiscard]]  TResource* load(const std::string& filename, const TPolicy& policy, u32 flags = 0);
+
+        /**
+        * @brief loadShader
+        * Create shader from the file. Suppotrs ShaderSourceFileLoader
+        *
+        * @param const std::string& filename [required]
+        * @param const std::string& entrypoint [optional]
+        * @param const renderer::Shader::DefineList& defines [optional]
+        * @param const std::vector<std::string>& includes [optional]
+        * @param u32 flags [optional]
+        * @return Shader resource, nullptr if failed
+        */
+        template<class TResource = renderer::Shader, class TResourceLoader>
+        [[nodiscard]] TResource* loadShader(const std::string& filename,
+            const std::string& entrypoint = "main", const renderer::Shader::DefineList& defines = {}, const std::vector<std::string>& includes = {}, u32 flags = 0);
+
         /**
         * @brief composeShader interface.
         * Create a shader from steam data. Supports: ShaderSourceStreamLoader
@@ -35,48 +69,8 @@ namespace resource
         * @param u32 flags [optional]
         * @return Shader resource, nullptr if failed
         */
-        template<class TResource = renderer::Shader, class TResourceLoader>
-        [[nodiscard]] const TResource* composeShader(renderer::Device* device, const std::string& name, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags);
-
-        /**
-        * @brief loadShader
-        * Create shader from the file. Suppotrs ShaderSourceFileLoader
-        *
-        * @param renderer::Device* device [required]
-        * @param const std::string& filename [required]
-        * @param const std::string& entrypoint [optional]
-        * @param const renderer::Shader::DefineList& defines [optional]
-        * @param const std::vector<std::string>& includes [optional]
-        * @param u32 flags [optional]
-        * @return Shader resource, nullptr if failed
-        */
-        template<class TResource = renderer::Shader, class TResourceLoader>
-        [[nodiscard]] const TResource* loadShader(renderer::Device* device, const std::string& filename,
-            const std::string& entrypoint = "main", const renderer::Shader::DefineList& defines = {}, const std::vector<std::string>& includes = {}, ShaderCompileFlags flags = 0);
-
-        /**
-        * @brief load interface.
-        * Create resource from file. Supports: AssetFileLoader, ImageFileLoader, ModelFileLoader, ShaderBinaryFileLoader
-        * 
-        * @param std::string filename [required]
-        * @param u32 flags [optional]
-        * @return current resource, nullptr if failed
-        */
-        template<class TResource, class TResourceLoader>
-        [[nodiscard]] TResource* load(const std::string& filename, u32 flags = 0);
-
-        /**
-        * @brief load interface.
-        * Create resource from file and upload data to GPU. Supports: AssetFileLoader, ModelFileLoader, TextureFileLoader
-        *
-        * @param renderer::Device* device [required]
-        * @param sconst std::string& filename [required]
-        * @param const TResourceLoader::PolicyType& policy [required]
-        * @param u32 flags [optional]
-        * @return current resource, nullptr if failed
-        */
-        template<class TResource, class TResourceLoader, typename TPolicy = TResourceLoader::PolicyType>
-        [[nodiscard]] TResource* load(renderer::Device* device, const std::string& filename, const TPolicy& policy, u32 flags = 0);
+        template<class TResource = renderer::Shader, class TResourceLoader = ShaderSourceStreamLoader>
+        [[nodiscard]] const TResource* composeShader(renderer::Device* device, const std::string& name, const renderer::Shader::LoadPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags);
 
         /**
         * @brief clear
@@ -105,66 +99,80 @@ namespace resource
         friend utils::Singleton<ResourceManager>;
 
         /**
+        * @brief getLoader 
+        * @retrun resourceLoader<TBaseResource>&
+        */
+        template<class TBaseResource>
+        ResourceLoader<TBaseResource>* getLoader();
+
+        /**
         * @brief ResourceManager constructor
         */
         ResourceManager() noexcept = default;
 
-        std::map<std::string, Resource*> m_resources;
-        std::vector<std::string>         m_paths;
+        std::unordered_map<TypePtr, std::unique_ptr<BaseLoader>> m_registerLoaders;
+        std::map<std::string, Resource*>        m_resources;
+        std::vector<std::string>                m_paths;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    template<class TResource, class TResourceLoader>
-    inline const TResource* ResourceManager::composeShader(renderer::Device* device, const std::string& name, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags)
+    template<class TBaseResource>
+    inline void ResourceManager::registerLoader(std::unique_ptr<ResourceLoader<TBaseResource>> loader)
     {
-        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
-        std::string innerName(name);
-        std::transform(name.cbegin(), name.cend(), innerName.begin(), ::tolower);
+        TypePtr typePtr = typeOf<TBaseResource>();
+        ASSERT(m_registerLoaders.find(typePtr) == m_registerLoaders.end(), "loader is dublicated");
+        m_registerLoaders.emplace(typePtr, std::move(loader));
+    }
 
-        renderer::Shader::DefineList innerDefines(policy._defines);
-        std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
-            {
-                return macros1.first < macros2.first;
-            });
-
-        auto composeResourceName = [](const std::string& name, const std::string& entrypoint, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
+    template<class TBaseResource>
+    inline ResourceLoader<TBaseResource>* ResourceManager::getLoader()
+    {
+        TypePtr typePtr = typeOf<TBaseResource>();
+        auto found = m_registerLoaders.find(typePtr);
+        if (found != m_registerLoaders.end())
         {
-            std::string outString = name;
-            outString.append("#");
-            outString.append(entrypoint);
-
-            for (auto& define : defines)
-            {
-                outString.append("#");
-                outString.append(define.first);
-                outString.append(define.second);
-            }
-
-            return outString;
-        };
-        const std::string resourceName = composeResourceName(innerName, policy._entryPoint, innerDefines);
-
-        auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
-        if (resourceIter.second)
-        {
-            TResourceLoader loader(device, policy, stream, flags);
-            Resource* res = loader.load(innerName);
-            if (!res)
-            {
-                m_resources.erase(resourceIter.first);
-                return nullptr;
-            }
-
-            resourceIter.first->second = res;
-            return static_cast<TResource*>(res);
+            return static_cast<ResourceLoader<TBaseResource>*>(found->second.get());
         }
 
-        return static_cast<TResource*>(resourceIter.first->second);
+        return nullptr;
+    }
+
+    template<class TResource, class TResourceLoader, typename TPolicy>
+    inline TResource* ResourceManager::load(const std::string& filename, const TPolicy& policy, u32 flags)
+    {
+        std::string innerName(filename);
+        std::transform(filename.cbegin(), filename.cend(), innerName.begin(), ::tolower);
+
+        auto found = m_resources.find(innerName);
+        if (found != m_resources.end() && policy.unique)
+        {
+            return static_cast<TResource*>(found->second);
+        }
+        else
+        {
+            if (found != m_resources.end())
+            {
+                innerName = std::format("{}_copy_{}", innerName, utils::Timer::getCurrentTime());
+            }
+
+            auto loader = ResourceManager::getLoader<typename TResourceLoader::ResourceType>();
+            if (loader)
+            {
+                typename TResourceLoader::ResourceType* resource = loader->load(filename, policy, flags);
+                if (resource)
+                {
+                    m_resources.insert(std::make_pair(innerName, resource));
+                    return static_cast<TResource*>(resource);
+                }
+            }
+        }
+
+        return nullptr;
     }
 
     template<class TResource, class TResourceLoader>
-    inline const TResource* ResourceManager::loadShader(renderer::Device* device, const std::string& filename,
+    inline TResource* ResourceManager::loadShader(const std::string& filename, 
         const std::string& entrypoint, const renderer::Shader::DefineList& defines, const std::vector<std::string>& includes, ShaderCompileFlags flags)
     {
         static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
@@ -173,9 +181,9 @@ namespace resource
 
         renderer::Shader::DefineList innerDefines(defines);
         std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
-        {
-            return macros1.first < macros2.first;
-        });
+            {
+                return macros1.first < macros2.first;
+            });
 
         auto composeResourceName = [](const std::string& name, const std::string& entrypoint, const std::vector<std::pair<std::string, std::string>>& defines) -> std::string
             {
@@ -194,76 +202,82 @@ namespace resource
             };
         const std::string resourceName = composeResourceName(innerName, entrypoint, innerDefines);
 
-        auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
-        if (resourceIter.second)
-        {
-            TResourceLoader loader(device, renderer::getShaderTypeByClass<TResource>(), entrypoint, defines, includes, flags);
-            Resource* res = loader.load(innerName);
-            if (!res)
-            {
-                m_resources.erase(resourceIter.first);
-                return nullptr;
-            }
-
-            resourceIter.first->second = res;
-            return static_cast<TResource*>(res);
-        }
-
-        return static_cast<TResource*>(resourceIter.first->second);
-    }
-
-    template<class TResource, class TResourceLoader>
-    inline TResource* ResourceManager::load(const std::string& filename, u32 flags)
-    {
-        std::string innerName(filename);
-        std::transform(filename.cbegin(), filename.cend(), innerName.begin(), ::tolower);
-
-        auto resourceIter = m_resources.emplace(std::make_pair(innerName, nullptr));
-        if (resourceIter.second)
-        {
-            TResourceLoader loader(flags);
-            Resource* res = loader.load(innerName);
-            if (!res)
-            {
-                m_resources.erase(resourceIter.first);
-                return nullptr;
-            }
-
-            resourceIter.first->second = res;
-            return static_cast<TResource*>(res);
-        }
-
-        return static_cast<TResource*>(resourceIter.first->second);
-    }
-
-    template<class TResource, class TResourceLoader, typename TPolicy>
-    inline TResource* ResourceManager::load(renderer::Device* device, const std::string& filename, const TPolicy& policy, u32 flags)
-    {
-        std::string innerName(filename);
-        std::transform(filename.cbegin(), filename.cend(), innerName.begin(), ::tolower);
-
-        auto found = m_resources.find(innerName);
-        if (found != m_resources.end() && policy.unique)
+        auto found = m_resources.find(resourceName);
+        if (found != m_resources.end())
         {
             return static_cast<TResource*>(found->second);
         }
         else
         {
-            if (found != m_resources.end())
+            auto loader = getLoader<typename TResourceLoader::ResourceType>();
+            if (loader)
             {
-                innerName = std::format("{}_copy_{}", innerName, utils::Timer::getCurrentTime());
-            }
+                renderer::Shader::LoadPolicy policy;
+                policy.content = renderer::ShaderContent::Source;
+                policy.shaderModel = (flags & ShaderCompileFlag::ShaderCompile_UseLegacyCompilerForHLSL) ? renderer::ShaderModel::HLSL_5_1 : renderer::ShaderModel::HLSL;
+                policy.type = renderer::getShaderTypeByClass<TResource>();
+                policy.defines = defines;
+                policy.includes = includes;
+                policy.entryPoint = entrypoint;
 
-            TResourceLoader loader(device, policy, flags);
-            Resource* resource = loader.load(filename);
-            if (resource)
-            {
-                m_resources.insert(std::make_pair(innerName, resource));
-                return static_cast<TResource*>(resource);
+                typename TResourceLoader::ResourceType* resource = loader->load(innerName, policy, flags);
+                if (resource)
+                {
+                    m_resources.insert(std::make_pair(resourceName, resource));
+                    return static_cast<TResource*>(resource);
+                }
             }
         }
 
         return nullptr;
+    }
+
+    template<class TResource, class TResourceLoader>
+    inline const TResource* ResourceManager::composeShader(renderer::Device* device, const std::string& name, const renderer::Shader::LoadPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags)
+    {
+        static_assert(std::is_base_of<renderer::Shader, TResource>(), "wrong type");
+        std::string innerName(name);
+        std::transform(name.cbegin(), name.cend(), innerName.begin(), ::tolower);
+
+        renderer::Shader::DefineList innerDefines(policy.defines);
+        std::sort(innerDefines.begin(), innerDefines.end(), [](const std::pair<std::string, std::string>& macros1, const std::pair<std::string, std::string>& macros2) -> bool
+            {
+                return macros1.first < macros2.first;
+            });
+
+        auto composeResourceName = [](const std::string& name, const std::string& entrypoint, const std::vector<std::pair<std::string, std::string>>& defines)->std::string
+            {
+                std::string outString = name;
+                outString.append("#");
+                outString.append(entrypoint);
+
+                for (auto& define : defines)
+                {
+                    outString.append("#");
+                    outString.append(define.first);
+                    outString.append(define.second);
+                }
+
+                return outString;
+            };
+        const std::string resourceName = composeResourceName(innerName, policy.entryPoint, innerDefines);
+
+        auto resourceIter = m_resources.emplace(std::make_pair(resourceName, nullptr));
+        if (resourceIter.second)
+        {
+            TResourceLoader loader(device, stream, flags);
+            Resource* res = loader.load(innerName, policy, flags);
+            if (!res)
+            {
+                m_resources.erase(resourceIter.first);
+                return nullptr;
+            }
+
+            resourceIter.first->second = res;
+            return static_cast<TResource*>(res);
+        }
+
+        return static_cast<TResource*>(resourceIter.first->second);
     }
 
     inline void ResourceManager::clear()

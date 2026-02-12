@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Common.h"
+#include "Utils/ResourceID.h"
+#include "Resource/Resource.h"
 #include "Resource/Decoder/ResourceDecoder.h"
 
 namespace v3d
@@ -9,13 +11,24 @@ namespace resource
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class BaseLoader
+    {
+    public:
+
+        BaseLoader() noexcept = default;
+        virtual ~BaseLoader() = default;
+    };
+
     /**
     * @brief Interface of ResourceLoader
     */
     template <class TResource>
-    class ResourceLoader
+    class ResourceLoader : public BaseLoader
     {
     public:
+
+        using ResourceType = TResource;
+        using PolicyType = Resource::LoadPolicy;
 
         /**
         * @brief ResourceLoader constructor
@@ -28,43 +41,55 @@ namespace resource
         virtual ~ResourceLoader();
 
         /**
-        * @brief load interface.
+        * @brief Load resource by name
         * @param const std::string& name [required]
-        * @param const std::string& alias [optional]
-        * @return TResource
+        * @param const PolicyType& policy [required]
+        * @param  u32 flags [optional]
+        * @return Texture pointer
         */
-        [[nodiscard]] virtual TResource load(const std::string& name, const std::string& alias = "") = 0;
-
-        void registerRoot(const std::string& path);
-        void unregisterRoot(const std::string& path);
+        [[nodiscard]] virtual TResource* load(const std::string& name, const Resource::LoadPolicy& policy, u32 flags = 0) = 0;
 
         /**
-        * @brief registerPath interface.
+        * @brief addRoot interface.
+        * Register a new root foder
+        * @param const std::string& path [required]
+        */
+        void addRoot(const std::string& path);
+
+        /**
+        * @brief removeRoot interface.
+        * Unregister root folder, remove from list
+        * @param const std::string& path [required]
+        */
+        void removeRoot(const std::string& path);
+
+        /**
+        * @brief addPath interface.
         * Register a new path to the resource
         * @param const std::string& path [required]
         */
-        void registerPath(const std::string& path);
+        void addPath(const std::string& path);
 
         /**
-        * @brief registerPaths interface.
+        * @brief addPaths interface.
         * Register new pathes to the resources
         * @param const std::vector<std::string> &paths [required]
         */
-        void registerPaths(const std::vector<std::string> &paths);
+        void addPaths(const std::vector<std::string> &paths);
 
         /**
-        * @brief unregisterPath interface.
+        * @brief removePath interface.
         * Unregister the path, remove from list
         * @param const std::string& path [required]
         */
-        void unregisterPath(const std::string& path);
+        void removePath(const std::string& path);
 
         /**
-        * @brief unregisterPathes interface.
+        * @brief removePathes interface.
         * Unregister pathes, remove from list
         * @param const std::vector<std::string> &pathes [required]
         */
-        void unregisterPathes(const std::vector<std::string>& pathes);
+        void removePathes(const std::vector<std::string>& pathes);
 
     protected:
 
@@ -78,8 +103,8 @@ namespace resource
     template<class TResource>
     inline ResourceLoader<TResource>::ResourceLoader() noexcept
     {
-        ResourceLoader<TResource>::registerRoot("");
-        ResourceLoader<TResource>::registerPath("");
+        ResourceLoader<TResource>::addRoot("");
+        ResourceLoader<TResource>::addPath("");
     }
 
     template<class TResource>
@@ -90,7 +115,7 @@ namespace resource
     }
 
     template<class TResource>
-    inline void ResourceLoader<TResource>::registerRoot(const std::string& path)
+    inline void ResourceLoader<TResource>::addRoot(const std::string& path)
     {
         std::string innerRoot(path);
         std::transform(innerRoot.begin(), innerRoot.end(), innerRoot.begin(), ::tolower);
@@ -103,7 +128,7 @@ namespace resource
     }
 
     template<class TResource>
-    inline void ResourceLoader<TResource>::unregisterRoot(const std::string& path)
+    inline void ResourceLoader<TResource>::removeRoot(const std::string& path)
     {
         auto it = std::find(m_roots.begin(), m_roots.end(), path);
         if (it != m_roots.end())
@@ -113,7 +138,7 @@ namespace resource
     }
 
     template<class TResource>
-    inline void ResourceLoader<TResource>::registerPath(const std::string & path)
+    inline void ResourceLoader<TResource>::addPath(const std::string & path)
     {
         std::string innerPath(path);
         std::transform(innerPath.begin(), innerPath.end(), innerPath.begin(), ::tolower);
@@ -126,7 +151,7 @@ namespace resource
     }
 
     template<class TResource>
-    inline void ResourceLoader<TResource>::registerPaths(const std::vector<std::string>& paths)
+    inline void ResourceLoader<TResource>::addPaths(const std::vector<std::string>& paths)
     {
         for (const std::string& path : paths)
         {
@@ -142,7 +167,7 @@ namespace resource
     }
 
     template<class TResource>
-    inline void ResourceLoader<TResource>::unregisterPath(const std::string & path)
+    inline void ResourceLoader<TResource>::removePath(const std::string & path)
     {
         auto it = std::find(m_paths.begin(), m_paths.end(), path);
         if (it != m_paths.end())
@@ -152,7 +177,7 @@ namespace resource
     }
 
     template<class TResource>
-    inline void ResourceLoader<TResource>::unregisterPathes(const std::vector<std::string>& pathes)
+    inline void ResourceLoader<TResource>::removePathes(const std::vector<std::string>& pathes)
     {
         for (const std::string& path : m_paths)
         {

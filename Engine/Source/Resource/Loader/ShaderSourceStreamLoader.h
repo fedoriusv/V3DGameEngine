@@ -25,20 +25,20 @@ namespace resource
     * @see ShaderHLSLDecoder
     * @see ShaderDXCDecoder
     */
-    class ShaderSourceStreamLoader : public ResourceLoader<renderer::Shader*>, public ResourceDecoderRegistration
+    class ShaderSourceStreamLoader : public ResourceLoader<renderer::Shader>, public ResourceDecoderRegistration
     {
     public:
 
-        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        using ResourceType = renderer::Shader;
+        using PolicyType = renderer::Shader::LoadPolicy;
 
         /**
         * @brief ShaderSourceStreamLoader constructor.
         * @param const renderer::Device* device [required]
         * @param const stream::Stream* stream [required]
-        * @param const renderer::ShaderPolicy* policy [required]
         * @param bool ShaderCompileFlags flags [optional]
         */
-        explicit ShaderSourceStreamLoader(renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, const stream::Stream* stream, ShaderCompileFlags flags = 0) noexcept;
+        explicit ShaderSourceStreamLoader(renderer::Device* device, const stream::Stream* stream, ShaderCompileFlags flags = 0) noexcept;
 
         /**
         * @brief Load a Shader source from by name from stream
@@ -47,7 +47,7 @@ namespace resource
         * @param const std::string& alias [optional]
         * @return a Shader pointer
         */
-        [[nodiscard]] renderer::Shader* load(const std::string& name, const std::string& alias = "") override;
+        [[nodiscard]] renderer::Shader* load(const std::string& name, const Resource::LoadPolicy& policy, ShaderCompileFlags flags = 0) override;
 
         /**
         * @brief ShaderSourceStreamLoader destructor.
@@ -59,10 +59,7 @@ namespace resource
         ShaderSourceStreamLoader() = delete;
         ShaderSourceStreamLoader(const ShaderSourceStreamLoader&) = delete;
 
-        const stream::Stream* const         m_stream;
-        const ShaderDecoder::ShaderPolicy   m_policy;
-        ShaderCompileFlags                  m_flags;
-
+        const stream::Stream* const m_stream;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

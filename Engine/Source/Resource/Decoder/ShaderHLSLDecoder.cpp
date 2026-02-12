@@ -62,7 +62,7 @@ ShaderHLSLDecoder::ShaderHLSLDecoder(std::vector<std::string> supportedExtension
 {
 }
 
-Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const std::string& name) const
+Resource* ShaderHLSLDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {

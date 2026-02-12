@@ -326,6 +326,13 @@ namespace renderer
         * @return count mipmap levels
         */
         [[nodiscard]] static u32 calculateMipmapCount(const math::Dimension3D& size);
+
+        /**
+        * @brief convertToSRGB functions.
+        * @param Format format
+        * @return sRGB Format
+        */
+        [[nodiscard]] static Format convertToSRGB(Format format);
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

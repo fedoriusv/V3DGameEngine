@@ -17,48 +17,12 @@ namespace v3d
 namespace resource
 {
 
- ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Device* device, ShaderCompileFlags flags) noexcept
-     : m_policy()
-     , m_flags(flags)
- {
-     if (device->getRenderType() == renderer::Device::RenderType::Vulkan)
-     {
-#ifdef USE_SPIRV
-         m_policy._content = renderer::ShaderContent::Bytecode;
-         m_policy._shaderModel = renderer::ShaderModel::Default;
-
-         ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }));
-#else //USE_SPIRV
-         ASSERT(false, "not supported");
-#endif //USE_SPIRV
-         }
-     else if (device->getRenderType() == renderer::Device::RenderType::DirectX)
-     {
-#ifdef D3D_RENDER
-         {
-             renderer::ShaderHeader header;
-             header._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
-             header._shaderModel = renderer::ShaderHeader::ShaderModel::Default;
-             header._optLevel = 0;
-
-             ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }));
-     }
-#else //D3D_RENDER
-         ASSERT(false, "not supported");
-#endif //D3D_RENDER
- }
-
-     ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
- }
-
-ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Device* device, const ShaderDecoder::ShaderPolicy& policy, ShaderCompileFlags flags) noexcept
-    : m_policy(policy)
-    , m_flags(flags)
+ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Device* device, ShaderCompileFlags compileFlags) noexcept
 {
     if (device->getRenderType() == renderer::Device::RenderType::Vulkan)
     {
 #ifdef USE_SPIRV
-        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)());
+        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderSpirVDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }, compileFlags) );
 #else //USE_SPIRV
         ASSERT(false, "not supported");
 #endif //USE_SPIRV
@@ -66,23 +30,14 @@ ShaderBinaryFileLoader::ShaderBinaryFileLoader(const renderer::Device* device, c
     else if (device->getRenderType() == renderer::Device::RenderType::DirectX)
     {
 #ifdef D3D_RENDER
-        {
-            renderer::ShaderHeader header;
-            header._contentType = renderer::ShaderHeader::ShaderContent::Bytecode;
-            header._shaderModel = renderer::ShaderHeader::ShaderModel::Default;
-            header._optLevel = 0;
-
-            ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }));
-        }
+        ResourceDecoderRegistration::registerDecoder(V3D_NEW(ShaderHLSLDecoder, memory::MemoryLabel::MemorySystem)({ "vspv", "fspv", "cspv" }, compileFlags));
 #else //D3D_RENDER
         ASSERT(false, "not supported");
 #endif //D3D_RENDER
     }
-
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-renderer::Shader* ShaderBinaryFileLoader::load(const std::string& name, const std::string& alias)
+renderer::Shader* ShaderBinaryFileLoader::load(const std::string& name, const Resource::LoadPolicy& policy, ShaderCompileFlags flags)
 {
     for (std::string& root : m_roots)
     {
@@ -99,7 +54,7 @@ renderer::Shader* ShaderBinaryFileLoader::load(const std::string& name, const st
             const ResourceDecoder* decoder = findDecoder(fileExtension);
             if (decoder)
             {
-                Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
+                Resource* resource = decoder->decode(file, &policy, flags, name);
 
                 file->close();
                 V3D_DELETE(file, memory::MemoryLabel::MemorySystem);

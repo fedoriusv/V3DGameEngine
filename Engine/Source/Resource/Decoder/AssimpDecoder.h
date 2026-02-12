@@ -33,7 +33,7 @@ namespace resource
         explicit AssimpDecoder(renderer::Device* device, std::vector<std::string>&& supportedExtensions) noexcept;
         ~AssimpDecoder();
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
 
     private:
 

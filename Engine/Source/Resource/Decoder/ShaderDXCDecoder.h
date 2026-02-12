@@ -27,18 +27,20 @@ namespace resource
     {
     public:
 
-        explicit ShaderDXCDecoder() noexcept;
-        explicit ShaderDXCDecoder(const std::vector<std::string>& supportedExtensions) noexcept;
-        explicit ShaderDXCDecoder(std::vector<std::string>&& supportedExtensions) noexcept;
+        explicit ShaderDXCDecoder(ShaderCompileFlags compileFlags) noexcept;
+        explicit ShaderDXCDecoder(const std::vector<std::string>& supportedExtensions, ShaderCompileFlags compileFlags) noexcept;
+        explicit ShaderDXCDecoder(std::vector<std::string>&& supportedExtensions, ShaderCompileFlags compileFlags) noexcept;
 
         ~ShaderDXCDecoder() = default;
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
 
     private:
 
-        bool compile(const std::string& source, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob*& shader, const std::string& name = "") const;
-        bool reflect(stream::Stream* stream, const ShaderPolicy* policy, ShaderCompileFlags flags, IDxcBlob* shader, const std::string& name = "") const;
+        static bool compile(const std::string& source, const renderer::Shader::LoadPolicy& policy, ShaderCompileFlags flags, IDxcBlob*& shader, const std::string& name = "");
+        static bool reflect(stream::Stream* stream, const renderer::Shader::LoadPolicy& policy, ShaderCompileFlags flags, IDxcBlob* shader, const std::string& name = "");
+
+        ShaderCompileFlags m_compileFlags;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

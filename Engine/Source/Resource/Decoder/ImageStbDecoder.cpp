@@ -86,12 +86,13 @@ static stream::Stream* generateMipMaps(void* baseMipmap, u32 width, u32 height, 
     return dataStream;
 }
 
-static stream::Stream* readImage(u8* source, u32 sizeInBytes, u32 flags, s32& width, s32& height, u32& layers, u32& mipmaps, s32& componentCount, renderer::Format& format)
+template<typename TPolicy>
+static stream::Stream* readImage(u8* source, u32 sizeInBytes, const TPolicy& policy, s32& width, s32& height, u32& layers, u32& mipmaps, s32& componentCount, renderer::Format& format)
 {
     s32 reqestedComponentCount = 0;
     stream::Stream* dataStream = nullptr;
 
-    if (flags & ImageLoaderFlag::ImageLoader_FlipY)
+    if (policy.flipY)
     {
         stbi_set_flip_vertically_on_load(true);
         reqestedComponentCount = 4;
@@ -130,7 +131,7 @@ static stream::Stream* readImage(u8* source, u32 sizeInBytes, u32 flags, s32& wi
         format = convertFloatFormat(componentCount);
         ASSERT(!(format == renderer::Format::Format_R32G32B32_SFloat), "fromat is not supported");
 
-        if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
+        if (policy.generateMipmaps)
         {
             dataStream = generateMipMaps(stbData, width, height, componentCount, sizeof(f32), STBIR_TYPE_FLOAT, mipmaps);
         }
@@ -180,7 +181,7 @@ static stream::Stream* readImage(u8* source, u32 sizeInBytes, u32 flags, s32& wi
             };
         format = convert16BitFormat(componentCount);
 
-        if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
+        if (policy.generateMipmaps)
         {
             dataStream = generateMipMaps(stbData, width, height, componentCount, sizeof(u16), STBIR_TYPE_UINT16, mipmaps);
         }
@@ -231,7 +232,7 @@ static stream::Stream* readImage(u8* source, u32 sizeInBytes, u32 flags, s32& wi
             };
         format = convert8BitFormat(componentCount);
 
-        if (flags & ImageLoaderFlag::ImageLoader_GenerateMipmaps)
+        if (policy.generateMipmaps)
         {
             dataStream = generateMipMaps(stbData, width, height, componentCount, sizeof(u8), STBIR_TYPE_UINT8, mipmaps);
         }
@@ -249,12 +250,12 @@ static stream::Stream* readImage(u8* source, u32 sizeInBytes, u32 flags, s32& wi
 }
 
 BitmapStbDecoder::BitmapStbDecoder(const std::vector<std::string>& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
 {
 }
 
 BitmapStbDecoder::BitmapStbDecoder(std::vector<std::string>&& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
 {
 }
 
@@ -262,7 +263,7 @@ BitmapStbDecoder::~BitmapStbDecoder()
 {
 }
 
-Resource* BitmapStbDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* BitmapStbDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -280,7 +281,8 @@ Resource* BitmapStbDecoder::decode(const stream::Stream* stream, const Policy* p
         renderer::Format format = renderer::Format::Format_Undefined;
         u8* source = stream->map(stream->size());
         u32 sizeInBytes = stream->size();
-        stream::Stream* dataStream = readImage(source, sizeInBytes, flags, width, height, layers, mipmaps, componentCount, format);
+        const BitmapFileLoader::PolicyType& bitmapPolicy = *static_cast<const BitmapFileLoader::PolicyType*>(policy);
+        stream::Stream* dataStream = readImage(source, sizeInBytes, bitmapPolicy, width, height, layers, mipmaps, componentCount, format);
         stream->unmap();
 
         if (!dataStream)
@@ -294,6 +296,8 @@ Resource* BitmapStbDecoder::decode(const stream::Stream* stream, const Policy* p
         stream::Stream* imageStream = stream::StreamManager::createMemoryStream(nullptr, imageStreamSize + sizeof(u32));
 
         math::Dimension3D dimension(static_cast<u32>(width), static_cast<u32>(height), 1);
+        format = bitmapPolicy.srgb ? renderer::ImageFormat::convertToSRGB(format) : format;
+
         imageStream->write<math::Dimension3D>(dimension);
         imageStream->write<renderer::Format>(format);
         imageStream->write<u32>(layers);
@@ -331,13 +335,13 @@ Resource* BitmapStbDecoder::decode(const stream::Stream* stream, const Policy* p
 
 
 TextureStbDecoder::TextureStbDecoder(renderer::Device* device, const std::vector<std::string>& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
     , m_device(device)
 {
 }
 
 TextureStbDecoder::TextureStbDecoder(renderer::Device* device, std::vector<std::string>&& supportedExtensions) noexcept
-    : ImageDecoder(supportedExtensions)
+    : ResourceDecoder(supportedExtensions)
     , m_device(device)
 {
 }
@@ -346,7 +350,7 @@ TextureStbDecoder::~TextureStbDecoder()
 {
 }
 
-Resource* TextureStbDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* TextureStbDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -362,10 +366,10 @@ Resource* TextureStbDecoder::decode(const stream::Stream* stream, const Policy* 
         u32 mipmaps = 1;
         s32 componentCount = 0;
         renderer::Format format = renderer::Format::Format_Undefined;
-        const ImageDecoder::TexturePolicy& texturePolicy = *static_cast<const ImageDecoder::TexturePolicy*>(policy);
+        const TextureFileLoader::PolicyType& texturePolicy = *static_cast<const TextureFileLoader::PolicyType*>(policy);
         u8* source = stream->map(stream->size());
         u32 sizeInBytes = stream->size();
-        stream::Stream* dataStream = readImage(source, sizeInBytes, flags, width, height, layers, mipmaps, componentCount, format);
+        stream::Stream* dataStream = readImage(source, sizeInBytes, texturePolicy, width, height, layers, mipmaps, componentCount, format);
         stream->unmap();
 
         if (!dataStream)
@@ -381,6 +385,8 @@ Resource* TextureStbDecoder::decode(const stream::Stream* stream, const Policy* 
 
         renderer::TextureTarget target = renderer::TextureTarget::Texture2D; //2d texture only
         math::Dimension3D dimension(static_cast<u32>(width), static_cast<u32>(height), 1U);
+        format = texturePolicy.srgb ? renderer::ImageFormat::convertToSRGB(format) : format;
+
         imageStream->write<renderer::TextureTarget>(target);
         imageStream->write<math::Dimension3D>(dimension);
         imageStream->write<renderer::Format>(format);

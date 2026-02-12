@@ -8,10 +8,6 @@ namespace resource
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Resource;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
     * @brief AssetJSONDecoder decoder.
     */
@@ -25,7 +21,7 @@ namespace resource
 
         ~AssetJSONDecoder() = default;
 
-        [[nodiscard]] Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const override;
+        [[nodiscard]] Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const override;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

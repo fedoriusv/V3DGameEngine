@@ -26,6 +26,18 @@ namespace renderer
     public:
 
         /**
+        * @brief LoadPolicy
+        */
+        struct LoadPolicy : resource::Resource::LoadPolicy
+        {
+            renderer::TextureUsageFlags usage = 0;
+            bool                        unique = true;
+            bool                        generateMipmaps = false;
+            bool                        srgb = false;
+            bool                        flipY = false;
+        };
+
+        /**
         * @brief ShaderHeader struct.
         */
         struct TextureHeader : resource::ResourceHeader

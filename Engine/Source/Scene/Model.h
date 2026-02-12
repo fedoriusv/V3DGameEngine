@@ -5,6 +5,7 @@
 #include "Stream/Stream.h"
 #include "Renderer/PipelineState.h"
 #include "Scene/SceneNode.h"
+#include "Scene/Material.h"
 
 namespace v3d
 {
@@ -45,6 +46,38 @@ namespace scene
     public:
 
         /**
+        * @brief VertexProperies enum
+        */
+        enum VertexProperies : u32
+        {
+            VertexProperies_Empty = 0,
+            VertexProperies_Position = 1 << 0,
+            VertexProperies_Normals = 1 << 1,
+            VertexProperies_Tangent = 1 << 2,
+            VertexProperies_Bitangent = 1 << 3,
+            VertexProperies_TextCoord0 = 1 << 4,
+            VertexProperies_TextCoord1 = 1 << 5,
+            VertexProperies_TextCoord2 = 1 << 6,
+            VertexProperies_TextCoord3 = 1 << 7,
+            VertexProperies_Color0 = 1 << 8,
+            VertexProperies_Color1 = 1 << 9,
+            VertexProperies_Color2 = 1 << 10,
+            VertexProperies_Color3 = 1 << 11,
+        };
+        typedef u32 VertexProperiesFlags;
+
+        /**
+        * @brief LoadPolicy
+        */
+        struct LoadPolicy : resource::Resource::LoadPolicy
+        {
+            VertexProperiesFlags        vertexProperies = VertexProperies_Empty;
+            f32                         scaleFactor = 1.f;
+            scene::MaterialShadingModel overridedShadingModel = scene::MaterialShadingModel::Custom;
+            bool                        unique = false;
+        };
+
+        /**
         * @brief ModelHeader meta info about Model
         */
         struct ModelHeader : resource::ResourceHeader
@@ -83,4 +116,20 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 } //namespace scene
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<scene::Model>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 } //namespace v3d

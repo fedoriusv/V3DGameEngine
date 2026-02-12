@@ -118,6 +118,21 @@ namespace renderer
         using DefineList = std::vector<std::pair<std::string, std::string>>;
 
         /**
+        * @brief LoadPolicy
+        */
+        struct LoadPolicy : resource::Resource::LoadPolicy
+        {
+            renderer::ShaderType            type = renderer::ShaderType::First;
+            renderer::ShaderContent         content = renderer::ShaderContent::Source;
+            renderer::ShaderModel           shaderModel = renderer::ShaderModel::Default;
+            std::string                     entryPoint = "main";
+            renderer::Shader::DefineList    defines = {};
+            std::vector<std::string>        includes = {};
+            std::vector<std::string>        paths = {};
+            bool                            useReflection = true;
+        };
+
+        /**
         * @brief ShaderHeader struct.
         */
         struct ShaderHeader : resource::ResourceHeader
@@ -397,4 +412,19 @@ namespace renderer
     }
 
 } //namespace renderer
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template<>
+    struct TypeOf<renderer::Shader>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 } //namespace v3d

@@ -1,15 +1,12 @@
 #pragma once
 
 #include "Stream/Stream.h"
+#include "Resource/Resource.h"
 
 namespace v3d
 {
 namespace resource
 {
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class Resource;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -18,12 +15,6 @@ namespace resource
     class ResourceDecoder
     {
     public:
-
-        struct Policy
-        {
-            Policy() = default;
-            virtual ~Policy() = default;
-        };
 
         ResourceDecoder() noexcept = default;
 
@@ -42,7 +33,7 @@ namespace resource
             m_supportedExtensions.clear();
         }
 
-        [[nodiscard]] virtual Resource* decode(const stream::Stream* stream, const Policy* policy, u32 flags = 0, const std::string& name = "") const = 0;
+        [[nodiscard]] virtual Resource* decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags = 0, const std::string& name = "") const = 0;
 
         bool isExtensionSupported(const std::string& extension) const;
         void setSupportedExtensions(const std::vector<std::string> supportedExtensions);

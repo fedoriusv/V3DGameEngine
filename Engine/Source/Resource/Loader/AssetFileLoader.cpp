@@ -10,14 +10,12 @@ namespace v3d
 {
 namespace resource
 {
-AssetFileLoader::AssetFileLoader(AssetLoaderFlags flags) noexcept
-    : m_flags(flags)
+AssetFileLoader::AssetFileLoader() noexcept
 {
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssetDecoder, memory::MemoryLabel::MemorySystem)({ "v3dasset" }));
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-Resource* AssetFileLoader::load(const std::string& name, const std::string& alias)
+Asset* AssetFileLoader::load(const std::string& name, const resource::Resource::LoadPolicy& policy, u32 flags)
 {
     for (std::string& root : m_roots)
     {
@@ -38,7 +36,7 @@ Resource* AssetFileLoader::load(const std::string& name, const std::string& alia
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, nullptr, m_flags, name);
+            Resource* resource = decoder->decode(file, &policy, flags, name);
 
             file->close();
             V3D_DELETE(file, memory::MemoryLabel::MemorySystem);
@@ -51,7 +49,7 @@ Resource* AssetFileLoader::load(const std::string& name, const std::string& alia
             }
 
             LOG_INFO("AssetFileLoader::load: [%s] is loaded", name.c_str());
-            return resource;
+            return nullptr;
         }
     }
 

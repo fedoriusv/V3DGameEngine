@@ -31,12 +31,12 @@ namespace v3d
 namespace resource
 {
 
-const ModelFileLoader::VertexProperiesFlags k_defaultVertexProps =
-    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position) |
-    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals) |
-    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent) |
-    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent) |
-    toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord0) |
+const scene::Model::VertexProperiesFlags k_defaultVertexProps =
+    toEnumType(scene::Model::VertexProperies::VertexProperies_Position) |
+    toEnumType(scene::Model::VertexProperies::VertexProperies_Normals) |
+    toEnumType(scene::Model::VertexProperies::VertexProperies_Tangent) |
+    toEnumType(scene::Model::VertexProperies::VertexProperies_Bitangent) |
+    toEnumType(scene::Model::VertexProperies::VertexProperies_TextCoord0) |
     0;
 
 AssimpDecoder::AssimpDecoder(renderer::Device* device, const std::vector<std::string>& supportedExtensions) noexcept
@@ -55,7 +55,7 @@ AssimpDecoder::~AssimpDecoder()
 {
 }
 
-Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* AssimpDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (stream->size() > 0)
     {
@@ -66,8 +66,8 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
         timer.start();
 #endif //LOG_LOADIMG_TIME
 
-        const ModelFileLoader::ModelPolicy* modlePolicy = static_cast<const ModelFileLoader::ModelPolicy*>(policy);
-        ModelFileLoader::VertexProperiesFlags vertexProps = modlePolicy->vertexProperies ? modlePolicy->vertexProperies : k_defaultVertexProps;
+        const scene::Model::LoadPolicy& modlePolicy = *static_cast<const  scene::Model::LoadPolicy*>(policy);
+        scene::Model::VertexProperiesFlags vertexProps = modlePolicy.vertexProperies ? modlePolicy.vertexProperies : k_defaultVertexProps;
 
         u32 assimpFlags =
             aiProcess_ValidateDataStructure |
@@ -87,18 +87,18 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
             assimpFlags |= aiProcess_JoinIdenticalVertices;
         }
 
-        if (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals))
+        if (vertexProps & toEnumType(scene::Model::VertexProperies::VertexProperies_Normals))
         {
             assimpFlags |= aiProcess_GenSmoothNormals;
         }
 
-        if ((vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent)) || (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent)))
+        if ((vertexProps & toEnumType(scene::Model::VertexProperies::VertexProperies_Tangent)) || (vertexProps & toEnumType(scene::Model::VertexProperies::VertexProperies_Bitangent)))
         {
             assimpFlags |= aiProcess_CalcTangentSpace;
         }
 
-        if ((vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord0)) || (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord1)) ||
-            (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord2)) || (vertexProps & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_TextCoord3)))
+        if ((vertexProps & toEnumType(scene::Model::VertexProperies::VertexProperies_TextCoord0)) || (vertexProps & toEnumType(scene::Model::VertexProperies::VertexProperies_TextCoord1)) ||
+            (vertexProps & toEnumType(scene::Model::VertexProperies::VertexProperies_TextCoord2)) || (vertexProps & toEnumType(scene::Model::VertexProperies::VertexProperies_TextCoord3)))
         {
             assimpFlags |= aiProcess_GenUVCoords | aiProcess_TransformUVCoords;
         }
@@ -125,7 +125,7 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
         importer.SetPropertyInteger(AI_CONFIG_IMPORT_TER_MAKE_UVS, 1);
         importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
         importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 80.f);
-        importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, modlePolicy->scaleFactor);
+        importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, modlePolicy.scaleFactor);
 
         //FBX
         importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
@@ -147,7 +147,7 @@ Resource* AssimpDecoder::decode(const stream::Stream* stream, const Policy* poli
         u32 modelStreamSize = 0;
         stream::Stream* modelStream = stream::StreamManager::createMemoryStream();
 
-        modelStreamSize += AssimpDecoder::decodeMaterial(scene, modelStream, flags, modlePolicy->overridedShadingModel);
+        modelStreamSize += AssimpDecoder::decodeMaterial(scene, modelStream, flags, modlePolicy.overridedShadingModel);
         modelStreamSize += AssimpDecoder::decodeLight(scene, modelStream, flags);
         modelStreamSize += AssimpDecoder::decodeCamera(scene, modelStream, flags);
         modelStreamSize += AssimpDecoder::decodeNode(scene, scene->mRootNode, modelStream, flags, vertexProps);
@@ -324,10 +324,10 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
     stream::Stream* meshStream = stream::StreamManager::createMemoryStream();
 
     std::vector<renderer::VertexInputAttributeDesc::InputAttribute> inputAttributes;
-    static auto buildVertexData = [&inputAttributes](const aiMesh* mesh, ModelFileLoader::VertexProperiesFlags presentFlags) -> u32
+    static auto buildVertexData = [&inputAttributes](const aiMesh* mesh, scene::Model::VertexProperiesFlags presentFlags) -> u32
         {
             u32 vertexSize = 0;
-            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position))
+            if (presentFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Position))
             {
                 ASSERT(mesh->HasPositions(), "must be resented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Position vec3");
@@ -343,7 +343,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
             }
 
 
-            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals))
+            if (presentFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Normals))
             {
                 ASSERT(mesh->HasNormals(), "must be resented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Normals vec3");
@@ -358,7 +358,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
                 vertexSize += sizeof(math::float3);
             }
 
-            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent))
+            if (presentFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Tangent))
             {
                 ASSERT(mesh->HasTangentsAndBitangents(), "must be resented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Tangent vec3");
@@ -373,7 +373,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
                 vertexSize += sizeof(math::float3);
             }
 
-            if (presentFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent))
+            if (presentFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Bitangent))
             {
                 ASSERT(mesh->HasTangentsAndBitangents(), "must be resented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Bitangent vec3");
@@ -388,7 +388,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
                 vertexSize += sizeof(math::float3);
             }
 
-            for (u32 i = enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_TextCoord0); i <= enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_TextCoord3); ++i)
+            for (u32 i = enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_TextCoord0); i <= enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_TextCoord3); ++i)
             {
                 u32 uv = 1 << i;
                 if (presentFlags & uv)
@@ -406,7 +406,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
                 }
             }
 
-            for (u32 i = enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_Color0); i <= enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_Color3); ++i)
+            for (u32 i = enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_Color0); i <= enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_Color3); ++i)
             {
                 u32 c = 1 << i;
                 if (presentFlags & c)
@@ -436,12 +436,12 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
     renderer::VertexInputAttributeDesc attribDescription;
     if (flags & ModelFileLoader::SeperatePositionStream)
     {
-        u32 stride = buildVertexData(mesh, toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position));
+        u32 stride = buildVertexData(mesh, toEnumType(scene::Model::VertexProperies::VertexProperies_Position));
         ASSERT(stride > 0, "invalid stride");
         u32 meshBufferSize = stride * mesh->mNumVertices;
         attribDescription._inputBindings[attribDescription._countInputBindings++] = renderer::VertexInputAttributeDesc::InputBinding(bindingIndex, renderer::InputRate::InputRate_Vertex, stride);
 
-        vertexPropFlags |= ~toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position);
+        vertexPropFlags |= ~toEnumType(scene::Model::VertexProperies::VertexProperies_Position);
         ++bindingIndex;
     }
     u32 stride = buildVertexData(mesh, vertexPropFlags);
@@ -463,7 +463,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
     //Fill data of a vertex
     if (flags & ModelFileLoader::SeperatePositionStream)
     {
-        u32 stride = buildVertexData(mesh, toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position));
+        u32 stride = buildVertexData(mesh, toEnumType(scene::Model::VertexProperies::VertexProperies_Position));
         ASSERT(stride > 0, "invalid stride");
         u32 meshBufferSize = stride * mesh->mNumVertices;
 
@@ -492,7 +492,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
 
     for (u32 v = 0; v < mesh->mNumVertices; v++)
     {
-        if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Position))
+        if (vertexPropFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Position))
         {
             ASSERT(mesh->HasPositions(), "must be presented");
             math::float3 position;
@@ -504,7 +504,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
             meshStreamSize += sizeof(math::float3);
         }
 
-        if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Normals))
+        if (vertexPropFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Normals))
         {
             ASSERT(mesh->HasNormals(), "must be presented");
             math::float3 normal;
@@ -516,7 +516,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
             meshStreamSize += sizeof(math::float3);
         }
 
-        if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Tangent))
+        if (vertexPropFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Tangent))
         {
             ASSERT(mesh->HasTangentsAndBitangents(), "must be presented");
             math::float3 tangent;
@@ -528,7 +528,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
             meshStreamSize += sizeof(math::float3);
         }
 
-        if (vertexPropFlags & toEnumType(ModelFileLoader::VertexProperies::VertexProperies_Bitangent))
+        if (vertexPropFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Bitangent))
         {
             ASSERT(mesh->HasTangentsAndBitangents(), "must be presented");
             math::float3 bitangent;
@@ -540,7 +540,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
             meshStreamSize += sizeof(math::float3);
         }
 
-        for (u32 i = enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_TextCoord0), j = 0; i <= enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_TextCoord3); ++i, ++j)
+        for (u32 i = enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_TextCoord0), j = 0; i <= enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_TextCoord3); ++i, ++j)
         {
             u32 uv = 1 << i;
             if (vertexPropFlags & uv)
@@ -561,7 +561,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
             }
         }
 
-        for (u32 i = enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_Color0), j = 0; i <= enumTypeToIndex(ModelFileLoader::VertexProperies::VertexProperies_Color3); ++i, ++j)
+        for (u32 i = enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_Color0), j = 0; i <= enumTypeToIndex(scene::Model::VertexProperies::VertexProperies_Color3); ++i, ++j)
         {
             u32 c = 1 << i;
             if (vertexPropFlags & c)

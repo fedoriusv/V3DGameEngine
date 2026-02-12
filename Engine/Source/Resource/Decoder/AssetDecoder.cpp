@@ -32,7 +32,7 @@ namespace resource
  {
  }
 
-Resource* AssetDecoder::decode(const stream::Stream* stream, const Policy* policy, u32 flags, const std::string& name) const
+Resource* AssetDecoder::decode(const stream::Stream* stream, const resource::Resource::LoadPolicy* policy, u32 flags, const std::string& name) const
 {
     if (!stream || stream->size() == 0)
     {

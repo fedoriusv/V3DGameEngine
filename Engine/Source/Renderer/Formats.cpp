@@ -290,5 +290,11 @@ namespace renderer
         return 1U;
     }
 
+    Format ImageFormat::convertToSRGB(Format format)
+    {
+        //TODO
+        return Format();
+    }
+
 } //namespace renderer
 } //namespace v3d

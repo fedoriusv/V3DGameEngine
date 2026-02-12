@@ -17,29 +17,14 @@ namespace v3d
 namespace resource
 {
 
-ModelFileLoader::ModelFileLoader(renderer::Device* device, ModelLoaderFlags flags) noexcept
-    : m_policy()
-    , m_flags(flags)
+ModelFileLoader::ModelFileLoader(renderer::Device* device) noexcept
 {
 #ifdef USE_ASSIMP
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)(device, { MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF, MODEL_FORMAT_GLB }));
 #endif //USE_ASSIMP
-
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-ModelFileLoader::ModelFileLoader(renderer::Device* device, const ModelFileLoader::ModelPolicy& policy, ModelLoaderFlags flags) noexcept
-    : m_policy(policy)
-    , m_flags(flags)
-{
-#ifdef USE_ASSIMP
-    ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssimpDecoder, memory::MemoryLabel::MemorySystem)(device, { MODEL_FORMAT_DAE, MODEL_FORMAT_FBX, MODEL_FORMAT_GLTF, MODEL_FORMAT_GLB }));
-#endif //USE_ASSIMP
-
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
-}
-
-scene::Model* ModelFileLoader::load(const std::string& name, const std::string& alias)
+scene::Model* ModelFileLoader::load(const std::string& name, const Resource::LoadPolicy& policy, ModelLoaderFlags flags)
 {
     for (std::string& root : m_roots)
     {
@@ -60,7 +45,7 @@ scene::Model* ModelFileLoader::load(const std::string& name, const std::string& 
                 return nullptr;
             }
 
-            Resource* resource = decoder->decode(file, &m_policy, m_flags, name);
+            Resource* resource = decoder->decode(file, &policy, flags, name);
 
             stream::FileLoader::close(file);
             file = nullptr;

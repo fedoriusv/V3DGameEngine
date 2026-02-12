@@ -18,6 +18,17 @@ namespace resource
     public:
 
         /**
+        * @brief LoadPolicy
+        */
+        struct LoadPolicy : Resource::LoadPolicy
+        {
+            bool unique = true;
+            bool generateMipmaps = false;
+            bool srgb = false;
+            bool flipY = false;
+        };
+
+        /**
         * @brief ShaderHeader struct.
         */
         struct BitmapHeader : resource::ResourceHeader

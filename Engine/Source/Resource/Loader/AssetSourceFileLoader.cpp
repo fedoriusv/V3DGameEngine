@@ -10,13 +10,12 @@ namespace v3d
 {
 namespace resource
 {
-AssetSourceFileLoader::AssetSourceFileLoader(u32 flags) noexcept
+AssetSourceFileLoader::AssetSourceFileLoader() noexcept
 {
     ResourceDecoderRegistration::registerDecoder(V3D_NEW(AssetJSONDecoder, memory::MemoryLabel::MemorySystem)({ "json" }));
-    ResourceLoader::registerPaths(ResourceManager::getInstance()->getPaths());
 }
 
-Resource* AssetSourceFileLoader::load(const std::string& name, const std::string& alias)
+Asset* AssetSourceFileLoader::load(const std::string& name, const resource::Resource::LoadPolicy& policy, u32 flags)
 {
     for (std::string& root : m_roots)
     {
@@ -49,7 +48,7 @@ Resource* AssetSourceFileLoader::load(const std::string& name, const std::string
             }
 
             LOG_INFO("AssetSourceFileLoader::load: [%s] is loaded", name.c_str());
-            return resource;
+            return nullptr;
         }
     }
 
