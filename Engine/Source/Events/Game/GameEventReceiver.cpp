@@ -40,6 +40,8 @@ void GameEventReceiver::pushEvent(GameEvent* event)
     }
     else
     {
+        std::scoped_lock lock(m_mutex);
+
         m_events.push(event);
     }
 }
@@ -57,6 +59,8 @@ void GameEventReceiver::sendEvent(GameEvent* event)
 
 void GameEventReceiver::sendDeferredEvents()
 {
+    std::scoped_lock lock(m_mutex);
+
     if (!m_events.empty())
     {
         std::queue<GameEvent*> temp(std::move(m_events));

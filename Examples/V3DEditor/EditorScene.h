@@ -22,6 +22,8 @@
 #include "UI/WidgetHandler.h"
 #include "UI/WidgetGroups.h"
 
+#include "EditorHotReload.h"
+
 using namespace v3d;
 
 struct EditorSelectionEvent : event::GameEvent
@@ -138,7 +140,7 @@ private:
 
     RenderPipelineScene             m_mainPipeline;
 
-    math::Rect                      m_currentViewportRect;
+    EditorHotReload                 m_hotReload;
 
 private:
 

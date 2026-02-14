@@ -37,6 +37,7 @@ namespace event
         std::vector<GameEventHandler*> m_handlers;
 
         std::function<void(GameEvent* event)> m_deleter;
+        std::mutex m_mutex;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

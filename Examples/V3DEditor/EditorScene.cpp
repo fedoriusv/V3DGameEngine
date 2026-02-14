@@ -112,6 +112,9 @@ EditorScene::EditorScene() noexcept
         }))
 
     , m_mainPipeline(m_modelHandler, m_UIHandler)
+
+    , m_hotReload(m_gameEventRecevier)
+
     , m_frameCounter(0)
     , m_selectedIndex(k_emptyIndex)
 
@@ -179,6 +182,14 @@ EditorScene::EditorScene() noexcept
                     m_selectedIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
                 }
             }
+            else if (event->_eventType == event::GameEvent::GameEventType::HotReload)
+            {
+                if (isEditorMode())
+                {
+                    const event::ShaderHotReload* hotReloadEvent = static_cast<const event::ShaderHotReload*>(event);
+                    m_mainPipeline.onChanged(m_device, m_sceneData, hotReloadEvent);
+                }
+            }
         }
     );
 
@@ -230,6 +241,8 @@ void EditorScene::createScene(renderer::Device* device, const math::Dimension2D&
         shaderLoader->addRoot("../../../../engine/data/");
         shaderLoader->addPath("shaders/");
         resource::ResourceManager::getInstance()->registerLoader<resource::ShaderSourceFileLoader::ResourceType>(std::move(shaderLoader));
+
+        m_hotReload.addFolder("../../../../engine/data/shaders");
     }
 
     registerTechnique(&m_mainPipeline);
@@ -283,6 +296,7 @@ void EditorScene::preRender(f32 dt)
 {
     TRACE_PROFILER_SCOPE("PreRender", color::rgba8::WHITE);
 
+    m_gameEventRecevier->sendDeferredEvents();
     m_cameraHandler->update(dt);
     m_sceneData.m_camera = m_cameraHandler;
 

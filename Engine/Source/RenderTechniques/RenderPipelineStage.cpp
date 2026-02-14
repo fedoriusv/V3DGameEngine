@@ -17,7 +17,7 @@ RenderPipelineStage::~RenderPipelineStage()
 {
 }
 
-void RenderPipelineStage::onChanged(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineStage::onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event)
 {
 }
 
@@ -86,6 +86,14 @@ void RenderTechnique::submit(renderer::Device* device, scene::SceneData& scene, 
     }
 
     m_dependencyList.clear();
+}
+
+void RenderTechnique::onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event)
+{
+    for (auto& [id, stage] : m_stages)
+    {
+        stage->onChanged(device, scene, event);
+    }
 }
 
 RenderPipelineStage* RenderTechnique::getStage(const std::string& id)

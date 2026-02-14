@@ -37,6 +37,8 @@ namespace scene
 
         void submit(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
+        void onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event);
+
         RenderPipelineStage* getStage(const std::string& id);
 
     protected:
@@ -84,7 +86,7 @@ namespace scene
         virtual void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
         virtual void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) = 0;
 
-        virtual void onChanged(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        virtual void onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event);
 
     protected:
 

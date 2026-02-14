@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Events/Event.h"
 #include "Common.h"
+#include "Events/Event.h"
 #include "Utils/Timer.h"
 
 namespace v3d
@@ -21,6 +21,7 @@ namespace event
             SelectObject,
             MultiSelectObjects,
             TransformObject,
+            HotReload,
             CustomEvent,
 
             GameEventsCount
@@ -58,6 +59,23 @@ namespace event
     {
         return _priority < event._priority;
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    struct ShaderHotReload : event::GameEvent
+    {
+        ShaderHotReload(const std::string& filename)
+            : event::GameEvent(GameEvent::GameEventType::HotReload)
+            , m_file(filename)
+        {
+        }
+
+        virtual ~ShaderHotReload() = default;
+
+        std::string m_file;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

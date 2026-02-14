@@ -36,6 +36,8 @@ namespace scene
         void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
         void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
+        void onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event) override;
+
     private:
 
         struct MaterialParameters
@@ -51,8 +53,11 @@ namespace scene
             SHADER_PARAMETER(t_TextureShadowmaps);
         };
 
-        void createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
-        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
+        void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
+        void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene);
+
+        void createPipelines(renderer::Device* device, scene::SceneData& scene);
+        void destroyPipelines(renderer::Device* device, scene::SceneData& scene);
 
         scene::ModelHandler* m_modelHandler;
         renderer::RenderTargetState* m_lightRenderTarget;

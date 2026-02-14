@@ -31,51 +31,8 @@ RenderPipelineLightAccumulationStage::~RenderPipelineLightAccumulationStage()
 
 void RenderPipelineLightAccumulationStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    createRenderTarget(device, scene, frame);
-
-    {
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("light.hlsl", "main_vs", 
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light.hlsl", "light_accumulation_ps", 
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-
-        renderer::RenderPassDesc desc{};
-        desc._countColorAttachment = 1;
-        desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
-
-        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
-            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "lighting");
-
-        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        pipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
-#if REVERSED_DEPTH
-        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
-#else
-        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
-#endif
-        pipeline->setDepthTest(false);
-        pipeline->setDepthWrite(false);
-        pipeline->setBlendEnable(0, true);
-        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-        pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-        pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
-
-        MaterialParameters parameters;
-        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Viewport);
-        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Model);
-        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Light);
-        BIND_SHADER_PARAMETER(pipeline, parameters, s_SamplerState);
-        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureBaseColor);
-        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureNormal);
-        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMaterial);
-        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureDepth);
-        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureShadowmaps);
-
-        m_pipelines.push_back(pipeline);
-        m_parameters.push_back(parameters);
-    }
+    createRenderTarget(device, scene);
+    createPipelines(device, scene);
 
     m_sphereVolume = scene::MeshHelper::createSphere(device, 1.f, 32, 32, "pointLight");
     m_coneVolume = scene::MeshHelper::createCone(device, 1.f, 1.f, 32, "spotLight");
@@ -83,29 +40,28 @@ void RenderPipelineLightAccumulationStage::create(renderer::Device* device, scen
 
 void RenderPipelineLightAccumulationStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene, frame);
+    destroyRenderTarget(device, scene);
+    destroyPipelines(device, scene);
 
-    for (auto& pipeline : m_pipelines)
-    {
-        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
-        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
-
-        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
-        pipeline = nullptr;
-    }
-    m_pipelines.clear();
+    V3D_DELETE(m_sphereVolume, memory::MemoryLabel::MemoryObject);
+    V3D_DELETE(m_coneVolume, memory::MemoryLabel::MemoryObject);
 }
 
 void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     if (!m_lightRenderTarget)
     {
-        createRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene);
     }
     else if (m_lightRenderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene, frame);
-        createRenderTarget(device, scene, frame);
+        destroyRenderTarget(device, scene);
+        createRenderTarget(device, scene);
+    }
+
+    if (m_pipelines.empty())
+    {
+        createPipelines(device, scene);
     }
 }
 
@@ -271,13 +227,82 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
     addRenderJob("VolumeLights Job", renderJob, device, scene, true);
 }
 
-void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineLightAccumulationStage::onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event)
+{
+    if (event->_eventType == event::GameEvent::GameEventType::HotReload)
+    {
+        const event::ShaderHotReload* hotReloadEvent = static_cast<const event::ShaderHotReload*>(event);
+        destroyPipelines(device, scene);
+    }
+}
+
+void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* device, scene::SceneData& scene)
+{
+    {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "light.hlsl", "main_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "light.hlsl", "light_accumulation_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+
+        renderer::RenderPassDesc desc{};
+        desc._countColorAttachment = 1;
+        desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
+
+        renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "lighting");
+
+        pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+        pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
+#if REVERSED_DEPTH
+        pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        pipeline->setDepthTest(false);
+        pipeline->setDepthWrite(false);
+        pipeline->setBlendEnable(0, true);
+        pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+        pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
+
+        MaterialParameters parameters;
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Model);
+        BIND_SHADER_PARAMETER(pipeline, parameters, cb_Light);
+        BIND_SHADER_PARAMETER(pipeline, parameters, s_SamplerState);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureBaseColor);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureNormal);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureMaterial);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureDepth);
+        BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureShadowmaps);
+
+        m_pipelines.push_back(pipeline);
+        m_parameters.push_back(parameters);
+    }
+}
+
+void RenderPipelineLightAccumulationStage::destroyPipelines(renderer::Device* device, scene::SceneData& scene)
+{
+    for (auto& pipeline : m_pipelines)
+    {
+        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
+        pipeline = nullptr;
+    }
+    m_pipelines.clear();
+}
+
+void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene)
 {
     ASSERT(m_lightRenderTarget == nullptr, "must be nullptr");
     m_lightRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_viewportSize, 1);
 }
 
-void RenderPipelineLightAccumulationStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+void RenderPipelineLightAccumulationStage::destroyRenderTarget(renderer::Device* device, scene::SceneData& scene)
 {
     ASSERT(m_lightRenderTarget, "must be valid");
     V3D_DELETE(m_lightRenderTarget, memory::MemoryLabel::MemoryGame);

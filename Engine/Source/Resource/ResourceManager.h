@@ -201,25 +201,46 @@ namespace resource
                 return outString;
             };
         const std::string resourceName = composeResourceName(innerName, entrypoint, innerDefines);
+        bool forceReload = flags & ShaderCompileFlag::ShaderCompile_ForceReload;
 
         auto found = m_resources.find(resourceName);
-        if (found != m_resources.end())
+        if (found != m_resources.end() && !forceReload)
         {
             return static_cast<TResource*>(found->second);
         }
         else
         {
             auto loader = getLoader<typename TResourceLoader::ResourceType>();
-            if (loader)
+            if (!loader)
             {
-                renderer::Shader::LoadPolicy policy;
-                policy.content = renderer::ShaderContent::Source;
-                policy.shaderModel = (flags & ShaderCompileFlag::ShaderCompile_UseLegacyCompilerForHLSL) ? renderer::ShaderModel::HLSL_5_1 : renderer::ShaderModel::HLSL;
-                policy.type = renderer::getShaderTypeByClass<TResource>();
-                policy.defines = defines;
-                policy.includes = includes;
-                policy.entryPoint = entrypoint;
+                return nullptr;
+            }
 
+            renderer::Shader::LoadPolicy policy;
+            policy.content = renderer::ShaderContent::Source;
+            policy.shaderModel = (flags & ShaderCompileFlag::ShaderCompile_UseLegacyCompilerForHLSL) ? renderer::ShaderModel::HLSL_5_1 : renderer::ShaderModel::HLSL;
+            policy.type = renderer::getShaderTypeByClass<TResource>();
+            policy.defines = defines;
+            policy.includes = includes;
+            policy.entryPoint = entrypoint;
+
+            if (forceReload)
+            {
+                typename TResourceLoader::ResourceType* newResource = loader->load(innerName, policy, flags);
+                if (newResource)
+                {
+                    if (found != m_resources.end() && forceReload) //Remove old shader from the list
+                    {
+                        remove(static_cast<TResource*>(found->second));
+                    }
+                    m_resources.insert(std::make_pair(resourceName, newResource));
+                    return static_cast<TResource*>(newResource);
+                }
+
+                return static_cast<TResource*>(found->second);
+            }
+            else
+            {
                 typename TResourceLoader::ResourceType* resource = loader->load(innerName, policy, flags);
                 if (resource)
                 {
