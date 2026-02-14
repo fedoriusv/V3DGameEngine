@@ -37,9 +37,9 @@ struct EditorSelectionEvent : event::GameEvent
     scene::SceneNode* _node;
 };
 
-struct EditorTrasformEvent : event::GameEvent
+struct EditorTransformEvent : event::GameEvent
 {
-    EditorTrasformEvent(scene::SceneNode* node, scene::TransformMode mode, const scene::Transform& transform) noexcept
+    EditorTransformEvent(scene::SceneNode* node, scene::TransformMode mode, const scene::Transform& transform) noexcept
         : event::GameEvent(GameEvent::GameEventType::TransformObject)
         , _node(node)
         , _mode(mode)
@@ -47,7 +47,7 @@ struct EditorTrasformEvent : event::GameEvent
     {
     }
 
-    virtual ~EditorTrasformEvent() = default;
+    virtual ~EditorTransformEvent() = default;
 
     scene::SceneNode* _node;
     scene::TransformMode _mode;
@@ -126,9 +126,12 @@ private:
     void loadResources();
 
     renderer::Device*               m_device;
+
     scene::ModelHandler*            m_modelHandler;
     ui::WidgetHandler*              m_UIHandler;
+
     scene::CameraEditorHandler*     m_cameraHandler;
+
     event::InputEventHandler*       m_inputHandler;
     event::GameEventHandler*        m_gameHandler;
     event::GameEventReceiver*       m_gameEventRecevier;
@@ -140,6 +143,8 @@ private:
 private:
 
     u64                             m_frameCounter;
+
+    math::Rect                      m_currentViewportRect;
     u32                             m_selectedIndex;
     std::vector<std::tuple<std::string, v3d::ObjectHandle>> m_LUTs;
 

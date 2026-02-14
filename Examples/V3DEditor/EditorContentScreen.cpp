@@ -68,7 +68,32 @@ void EditorContentScreen::build()
                         processNode(sceneNode, node);
                     }
 
-                    rootNode.addWidget(std::move(sceneNode));
+                    if (root->m_children.empty())
+                    {
+                        ui::WidgetHorizontalLayout layout;
+                        layout.addWidget(std::move(sceneNode));
+                        layout.addWidget(ui::WidgetHorizontalLayout()
+                            .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentRight)
+                            .setFontSize(ui::WidgetLayout::SmallFont)
+                            .addWidget(ui::WidgetCheckBox("Visible", root->m_visible)
+                                .setOnChangedValueEvent([this, root](ui::Widget* w, bool val) -> void
+                                    {
+                                        root->m_visible = val;
+                                    }))
+                            .addWidget(ui::WidgetCheckBox("Debug", false)
+                                .setOnChangedValueEvent([this, root](ui::Widget* w, bool val) -> void
+                                    {
+                                        root->m_debug = val;
+                                    })
+                            )
+                        );
+
+                        rootNode.addWidget(std::move(layout));
+                    }
+                    else
+                    {
+                        rootNode.addWidget(std::move(sceneNode));
+                    }
                 };
 
             for (scene::SceneNode* node : m_sceneData->getNodeList())

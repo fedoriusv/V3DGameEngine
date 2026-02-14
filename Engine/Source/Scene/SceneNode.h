@@ -76,6 +76,7 @@ namespace scene
         std::list<std::tuple<Component*, bool>> m_components;
         std::string                             m_name;
         bool                                    m_visible = true;
+        bool                                    m_debug = false;
 
     private:
 

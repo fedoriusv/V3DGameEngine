@@ -49,7 +49,7 @@ void EditorGizmo::modify(const math::Matrix4D& matrix)
     {
         scene::Transform transform;
         transform.setMatrix(matrix);
-        m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, scene::TransformMode::Local, transform));
+        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, scene::TransformMode::Local, transform));
     }
 }
 
@@ -109,7 +109,7 @@ bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event:
     }
     else if (event->_eventType == event::GameEvent::GameEventType::TransformObject)
     {
-        const EditorTrasformEvent* transformEvent = static_cast<const EditorTrasformEvent*>(event);
+        const EditorTransformEvent* transformEvent = static_cast<const EditorTransformEvent*>(event);
         if (m_selectedNode && m_currentOp > -1)
         {
             m_gizmo->setTransform(transformEvent->_transform.getMatrix());

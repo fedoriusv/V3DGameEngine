@@ -226,7 +226,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     pos.setX(val);
                                     m_selectedNode->setPosition(m_transformProperty.m_mode, pos);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -247,7 +247,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     pos.setY(val);
                                     m_selectedNode->setPosition(m_transformProperty.m_mode, pos);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -268,7 +268,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     pos.setZ(val);
                                     m_selectedNode->setPosition(m_transformProperty.m_mode, pos);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -292,7 +292,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     rot.setX(val);
                                     m_selectedNode->setRotation(m_transformProperty.m_mode, rot);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -313,7 +313,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     rot.setY(val);
                                     m_selectedNode->setRotation(m_transformProperty.m_mode, rot);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -334,7 +334,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     rot.setZ(val);
                                     m_selectedNode->setRotation(m_transformProperty.m_mode, rot);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -359,7 +359,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     scale.setX(val);
                                     m_selectedNode->setScale(m_transformProperty.m_mode, scale);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -381,7 +381,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     scale.setY(val);
                                     m_selectedNode->setScale(m_transformProperty.m_mode, scale);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -403,7 +403,7 @@ void EditorPropertyScreen::buildTransformProp()
                                     scale.setZ(val);
                                     m_selectedNode->setScale(m_transformProperty.m_mode, scale);
 
-                                    m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
                     )
@@ -517,7 +517,7 @@ void EditorPropertyScreen::buildLightProp()
                                         light->setAttenuation(attenuation._x, attenuation._y, attenuation._z, val);
                                         m_selectedNode->setScale(scene::TransformMode::Local, { val , val, val });
 
-                                        m_gameEventRecevier->sendEvent(new EditorTrasformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                     }
                                 }
                             })

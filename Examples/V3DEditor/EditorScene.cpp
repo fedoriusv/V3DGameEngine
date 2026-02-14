@@ -215,12 +215,14 @@ void EditorScene::createScene(renderer::Device* device, const math::Dimension2D&
         textureLoader->addRoot("../../../../engine/data/");
         textureLoader->addPath("textures/");
         textureLoader->addPath("skybox/");
+        textureLoader->addPath("suntemple/");
         resource::ResourceManager::getInstance()->registerLoader<resource::TextureFileLoader::ResourceType>(std::move(textureLoader));
 
         auto modelLoader = std::make_unique<resource::ModelFileLoader>(m_device);
         modelLoader->addRoot("../../../../examples/v3deditor/data/");
         modelLoader->addRoot("../../../../engine/data/");
         modelLoader->addPath("models/");
+        modelLoader->addPath("suntemple/");
         resource::ResourceManager::getInstance()->registerLoader<resource::ModelFileLoader::ResourceType>(std::move(modelLoader));
 
         auto shaderLoader = std::make_unique<resource::ShaderSourceFileLoader>(m_device, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
@@ -324,7 +326,7 @@ void EditorScene::preRender(f32 dt)
     m_sceneData.m_globalResources.bind("current_lut", std::get<1>(m_LUTs[m_sceneData.m_settings._tonemapParams._lut]));
 
     SceneHandler::updateScene(dt);
-    if (m_selectedIndex != k_emptyIndex)
+    if (m_selectedIndex != k_emptyIndex && m_sceneData.m_generalRenderList[m_selectedIndex]->object->m_visible)
     {
         m_sceneData.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].push_back(m_sceneData.m_generalRenderList[m_selectedIndex]);
     }
@@ -467,7 +469,7 @@ void EditorScene::loadResources()
 
 void EditorScene::test_loadScene(const std::string& name)
 {
-    resource::ResourceManager::getInstance()->addPath("../../../../examples/v3deditor/data/SunTemple/");
+    //resource::ResourceManager::getInstance()->addPath("../../../../examples/v3deditor/data/SunTemple/");
 
     //Config scene
     m_sceneData.m_settings._shadowsParams._longRange = 250.f;
