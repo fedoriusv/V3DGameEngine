@@ -75,7 +75,7 @@ void EditorContentScreen::build()
                         layout.addWidget(ui::WidgetHorizontalLayout()
                             .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentRight)
                             .setFontSize(ui::WidgetLayout::SmallFont)
-                            .addWidget(ui::WidgetCheckBox("Visible", root->m_visible)
+                            .addWidget(ui::WidgetCheckBox("Show", root->m_visible)
                                 .setOnChangedValueEvent([this, root](ui::Widget* w, bool val) -> void
                                     {
                                         root->m_visible = val;

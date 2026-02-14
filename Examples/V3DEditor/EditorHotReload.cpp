@@ -20,8 +20,6 @@ bool EditorHotReload::addFile(const std::string& filename)
 {
     if (stream::FileStream::isExists(filename))
     {
-        std::scoped_lock lock(m_mutex);
-
         WatchedFile file;
         file._path = std::filesystem::absolute(filename);
         file._modifiedTime = std::filesystem::last_write_time(file._path);
@@ -35,6 +33,8 @@ bool EditorHotReload::addFile(const std::string& filename)
 
 u32 EditorHotReload::addFolder(const std::string& dirname)
 {
+    std::scoped_lock lock(m_mutex);
+
     u32 result = 0;
     if (stream::FileStream::isDirectory(dirname))
     {
@@ -64,12 +64,13 @@ void EditorHotReload::trackFiles()
 
     for (auto& file : m_files)
     {
-        if (!std::filesystem::exists(file._path))
+        std::error_code error;
+        auto time = std::filesystem::last_write_time(file._path, error);
+        if (error)
         {
             continue;
         }
 
-        auto time = std::filesystem::last_write_time(file._path);
         if (time > file._modifiedTime + std::chrono::milliseconds(500))
         {
             file._modifiedTime = time;

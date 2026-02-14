@@ -541,9 +541,10 @@ void EditorPropertyScreen::buildLightProp()
                                     if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
                                     {
                                         light->setAttenuation(val._x, val._y, val._z, val._w);
-
                                         light->setRadius(val._w);
                                         m_selectedNode->setScale(scene::TransformMode::Local, { val._w , val._w, val._w });
+
+                                        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                     }
                                 }
                             })
