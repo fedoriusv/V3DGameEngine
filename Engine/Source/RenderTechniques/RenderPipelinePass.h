@@ -23,6 +23,8 @@ namespace scene
         DirectionLight,
         PunctualLights,
         Shadowmap,
+        FirstPunctualShadowmap,
+        LastPunctualShadowmap,
 
         Selected,
         Indicator,

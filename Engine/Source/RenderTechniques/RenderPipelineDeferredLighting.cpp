@@ -24,7 +24,6 @@ RenderPipelineDeferredLightingStage::RenderPipelineDeferredLightingStage(RenderT
     , m_pipeline(nullptr)
 
     , m_debugShadowCascades(false)
-    , m_debugPunctualLightShadows(false)
 {
 }
 
@@ -36,7 +35,6 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, Scene
 {
     createRenderTarget(device, scene, frame);
     m_debugShadowCascades = scene.m_settings._shadowsParams._debugShadowCascades;
-    m_debugPunctualLightShadows = scene.m_settings._shadowsParams._debugPunctualLightShadows;
 
     const renderer::Shader::DefineList defines =
     {
@@ -45,7 +43,7 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, Scene
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("offscreen.hlsl", "offscreen_vs",
         defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-    const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light.hlsl", "deffered_lighting_ps",
+    const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("deferred_lighting.hlsl", "deffered_lighting_ps",
         defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
 
     m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_deferredRenderTarget->getRenderPassDesc(),
@@ -86,8 +84,7 @@ void RenderPipelineDeferredLightingStage::destroy(renderer::Device* device, Scen
 void RenderPipelineDeferredLightingStage::prepare(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
 #if DEBUG
-    if (m_debugShadowCascades != scene.m_settings._shadowsParams._debugShadowCascades ||
-        m_debugPunctualLightShadows != scene.m_settings._shadowsParams._debugPunctualLightShadows)
+    if (m_debugShadowCascades != scene.m_settings._shadowsParams._debugShadowCascades)
     {
         destroy(device, scene, frame);
         create(device, scene, frame);

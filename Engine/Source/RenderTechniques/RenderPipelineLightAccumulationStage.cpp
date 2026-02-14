@@ -11,6 +11,7 @@
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/SceneNode.h"
 
+#include "RenderPipelineShadow.h"
 #include "FrameProfiler.h"
 
 namespace v3d
@@ -23,6 +24,8 @@ RenderPipelineLightAccumulationStage::RenderPipelineLightAccumulationStage(Rende
     , m_modelHandler(modelHandler)
     , m_pipeline(nullptr)
     , m_lightRenderTarget(nullptr)
+
+    , m_debugPunctualLightShadows(false)
 {
 }
 
@@ -50,6 +53,14 @@ void RenderPipelineLightAccumulationStage::destroy(renderer::Device* device, sce
 
 void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+#if DEBUG
+    if (m_debugPunctualLightShadows != scene.m_settings._shadowsParams._debugPunctualLightShadows)
+    {
+        destroy(device, scene, frame);
+        create(device, scene, frame);
+    }
+#endif
+
     if (!m_lightRenderTarget)
     {
         createRenderTarget(device, scene);
@@ -79,6 +90,14 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             DEBUG_MARKER_SCOPE(cmdList, "VolumeLights", color::rgbaf::GREEN);
             ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty(), "must not be empty");
 
+            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
+            ASSERT(viewportState_handle.isValid(), "must be valid");
+            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
+
+            ObjectHandle shadowData_handle = frame.m_frameResources.get("shadow_data");
+            ASSERT(shadowData_handle.isValid(), "must be valid");
+            RenderPipelineShadowStage::PipelineData* shadowData = shadowData_handle.as<RenderPipelineShadowStage::PipelineData>();
+
             ObjectHandle rt_handle = scene.m_globalResources.get("color_target");
             ASSERT(rt_handle.isValid(), "must be valid");
             renderer::Texture2D* renderTargetTexture = rt_handle.as<renderer::Texture2D>();
@@ -103,10 +122,6 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             ASSERT(samplerState_handle.isValid(), "must be valid");
             renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
 
-            ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
-            ASSERT(viewportState_handle.isValid(), "must be valid");
-            scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
-
             ObjectHandle shadowmaps_handle = scene.m_globalResources.get("shadowmaps_array");
             if (!shadowmaps_handle.isValid())
             {
@@ -127,6 +142,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
             cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
 
+            int i = 0;
             for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)])
             {
                 const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
@@ -178,24 +194,36 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 //lightBuffer.intensity = light.getIntensity();
                 //lightBuffer.temperature = light.getTemperature();
 
-                struct LightBuffer
+                struct PunctualLightBuffer
                 {
+                    math::Matrix4D lightSpaceMatrix[6];
+                    math::float2   clipNearFar;
+                    math::float2   viewSliceOffsetCount;
                     math::Vector3D position;
-                    math::Vector3D direction;
                     math::float4   color;
                     math::float4   attenuation;
                     f32            intensity;
                     f32            temperature;
-                    f32           _pad[2];
-                };
+                    f32            shadowBaseBias;
+                    f32            applyShadow;
+                } lightBuffer;
 
-                LightBuffer lightBuffer;
+
+                auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = shadowData->_punctualLightsData[0];
+
+
+
+                memcpy(lightBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
+                lightBuffer.clipNearFar = plane;
+                lightBuffer.viewSliceOffsetCount = { 0.0f, 0.0f };
                 lightBuffer.position = itemLight.object->getTransform().getPosition();
-                lightBuffer.direction = { 0.0, 0.0, 0.0 };
                 lightBuffer.color = light.getColor();
                 lightBuffer.attenuation = light.getAttenuation();
                 lightBuffer.intensity = light.getIntensity();
                 lightBuffer.temperature = light.getTemperature();
+                lightBuffer.shadowBaseBias = scene.m_settings._shadowsParams._punctualLightBias;
+                lightBuffer.applyShadow = i == 0 ? true : false;
+                ++i;
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                     {
@@ -206,7 +234,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                         renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureNormal),
                         renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters[entry->pipelineID].t_TextureMaterial),
                         renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters[entry->pipelineID].t_TextureDepth),
-                        //renderer::Descriptor(renderer::TextureView(shadowmapsTexture), m_parameters[entry->pipelineID].t_TextureShadowmaps),
+                        renderer::Descriptor(renderer::TextureView(shadowmapsTexture), m_parameters[entry->pipelineID].t_TextureShadowmaps),
                     });
 
                 DEBUG_MARKER_SCOPE(cmdList, std::format("Light {}", light.getName()), color::rgbaf::LTGREY);
@@ -239,11 +267,18 @@ void RenderPipelineLightAccumulationStage::onChanged(renderer::Device* device, s
 
 void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* device, scene::SceneData& scene)
 {
+    m_debugPunctualLightShadows = scene.m_settings._shadowsParams._debugPunctualLightShadows;
+
     {
+        const renderer::Shader::DefineList defines =
+        {
+            { "DEBUG_PUNCTUAL_SHADOWMAPS", std::to_string(m_debugPunctualLightShadows) },
+        };
+
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
             "light.hlsl", "main_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
-            "light.hlsl", "light_accumulation_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+            "light.hlsl", "light_accumulation_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 1;

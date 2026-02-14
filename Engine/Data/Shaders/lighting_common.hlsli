@@ -136,11 +136,10 @@ float3 Fresnel_Schlick(float cosTheta, float3 F0)
 
 // Cook-Torrance BRDF
 float4 cook_torrance_BRDF(
-    in uniform ConstantBuffer<Viewport> Viewport,
-    in uniform ConstantBuffer<LightBuffer> Light,
+    in Viewport Viewport,
+    in LightBuffer Light,
     in EnvironmentBuffer Environment,
     in float3 WorldPos,
-    in float3 Direction,
     in float Distance,
     in float3 Albedo,
     in float3 Normals,
@@ -152,7 +151,7 @@ float4 cook_torrance_BRDF(
     // Build TBN matrix
     float3 N = normalize(Normals);
     float3 V = normalize(Viewport.cameraPosition.xyz - WorldPos);
-    float3 L = -normalize(Direction);
+    float3 L = -normalize(Light.direction.xyz);
     float3 H = normalize(L + V);
 
     float NdotV = abs(dot(N, V)) + 1e-5;

@@ -107,6 +107,26 @@ float4 linear_srgb(float4 lin)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+uint cubemap_face(float3 dir)
+{
+    float3 a = abs(dir);
+
+    if (a.x > a.y && a.x > a.z)
+    {
+        return dir.x > 0 ? 0 : 1;
+    }
+    else if (a.y > a.z)
+    {
+        return dir.y > 0 ? 2 : 3;
+    }
+    else
+    {
+        return dir.z > 0 ? 4 : 5;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
 struct ModelBuffer
 {
     float4x4 modelMatrix;

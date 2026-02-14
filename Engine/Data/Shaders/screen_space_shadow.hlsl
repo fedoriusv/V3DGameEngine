@@ -35,17 +35,16 @@ struct ShadowmapBuffer
 [[vk::binding(3, 1)]] Texture2D t_TextureDepth                              : register(t0, space1);
 [[vk::binding(4, 1)]] Texture2D t_TextureNormals                            : register(t1, space1);
 [[vk::binding(5, 1)]] Texture2DArray t_DirectionCascadeShadows              : register(t2, space1);
-//[[vk::binding(6, 1)]] TextureCube t_PunctualShadows                         : register(t3, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float depth_projection(Texture2DArray shadowmap, in float4 shadowCoord, in float2 offset, in uint cascadeIndex)
+float depth_projection(Texture2DArray Shadowmap, in float4 ShadowCoord, in float2 offset, in uint CascadeID)
 {
     float shadow = 0.0;
-    if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0)
+    if (ShadowCoord.z > -1.0 && ShadowCoord.z < 1.0)
     {
-        float dist = shadowmap.SampleCmpLevelZero(s_ShadowSamplerState, float3(shadowCoord.xy + offset, (float) cascadeIndex), shadowCoord.z);
-        if (shadowCoord.w > 0.0 && dist >= shadowCoord.z)
+        float dist = Shadowmap.SampleCmpLevelZero(s_ShadowSamplerState, float3(ShadowCoord.xy + offset, (float) CascadeID), ShadowCoord.z);
+        if (ShadowCoord.w > 0.0 && dist >= ShadowCoord.z)
         {
             shadow = 1.0;
         }
@@ -54,7 +53,7 @@ float depth_projection(Texture2DArray shadowmap, in float4 shadowCoord, in float
     return shadow;
 }
 
-float depth_projection_PCF_3x3(Texture2DArray shadowmap, in float2 scaleFactor, in float4 shadowCoord, in uint cascadeIndex)
+float depth_projection_PCF_3x3(Texture2DArray Shadowmap, in float2 ScaleFactor, in float4 ShadowCoord, in uint CascadeID)
 {
     static const uint kernelSize = 9;
     static const float2 kernel[kernelSize] =
@@ -68,18 +67,18 @@ float depth_projection_PCF_3x3(Texture2DArray shadowmap, in float2 scaleFactor, 
     [unroll(kernelSize)]
     for (uint i = 0; i < kernelSize; ++i)
     {
-        float2 offset = kernel[i] * scaleFactor;
-        shadow += depth_projection(shadowmap, shadowCoord, offset, cascadeIndex);
+        float2 offset = kernel[i] * ScaleFactor;
+        shadow += depth_projection(Shadowmap, ShadowCoord, offset, CascadeID);
     }
     
     return shadow / (float)kernelSize;
 }
 
 
-float direction_light_shadows(in float3 worldPos, in float3 normal, out float cascadeID)
+float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float CascadeID)
 {
     uint cascadeIndex = 0;
-    float4 viewPosition = mul(cb_Viewport.viewMatrix, float4(worldPos, 1.0));
+    float4 viewPosition = mul(cb_Viewport.viewMatrix, float4(WorldPos, 1.0));
     for (uint i = 0; i < SHADOWMAP_CASCADE_COUNT; ++i)
     {
         if (viewPosition.z <= cb_ShadowmapBuffer.cascade[i].cascadeSplit)
@@ -97,18 +96,18 @@ float direction_light_shadows(in float3 worldPos, in float3 normal, out float ca
             0.0,  0.0, 0.0, 1.0
         );
     
-    float NdotL = saturate(dot(normal, cb_ShadowmapBuffer.directionLight.xyz));
-    float NdotV = saturate(dot(normal, cb_Viewport.cameraPosition.xyz));
+    float NdotL = saturate(dot(Normal, cb_ShadowmapBuffer.directionLight.xyz));
+    float NdotV = saturate(dot(Normal, cb_Viewport.cameraPosition.xyz));
     float slopeBias = max(0.001 * (1.0 - NdotL), 0.0001);
     float viewBias = max(0.001 * (1.0 - NdotV), 0.0001);
     float2 texelSize = 1.0 / cb_ShadowmapBuffer.shadowMapResolution.xy;
     float bias = cb_ShadowmapBuffer.cascade[cascadeIndex].baseBias + slopeBias * cb_ShadowmapBuffer.cascade[cascadeIndex].slopeBias + viewBias;
-    float3 offsetPos = worldPos + normal * bias;
+    float3 offsetPos = WorldPos + Normal * bias;
     
     float4 lightModelViewProj = mul(biasUVMatrix, mul(cb_ShadowmapBuffer.cascade[cascadeIndex].lightSpaceMatrix, float4(offsetPos, 1.0)));
     float3 shadowCoord = lightModelViewProj.xyz / lightModelViewProj.w;
     
-    cascadeID = (float)cascadeIndex;
+    CascadeID = (float) cascadeIndex;
     if (cb_ShadowmapBuffer.enablePCF)
     {
         float2 texelSize = 1.0 / cb_ShadowmapBuffer.shadowMapResolution.xy;
@@ -118,25 +117,6 @@ float direction_light_shadows(in float3 worldPos, in float3 normal, out float ca
 
     return depth_projection(t_DirectionCascadeShadows, float4(shadowCoord, lightModelViewProj.w), float2(0.0, 0.0), cascadeIndex);
 }
-
-//float point_light_shadows(in float3 worldPos)
-//{
-//    float shadow = 0.0;
-//    for (uint i = 0; i < cb_ShadowmapBuffer.countLights; ++i)
-//    {
-//        float3 lightDirection = worldPos - cb_ShadowmapBuffer.punctualLight[i].position.rgb;
-//        float dist = t_PunctualShadows.Sample(s_SamplerState, lightDirection).r;
-//        //float linearDepth = linearize_depth(dist, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y, cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
-        
-//        float lightDistance = length(lightDirection) / (cb_ShadowmapBuffer.punctualLight[i].clipNearFar.y - cb_ShadowmapBuffer.punctualLight[i].clipNearFar.x);
-//        if (dist < lightDistance)
-//        {
-//            shadow += 1.0;
-//        }
-//    }
-
-//    return shadow;
-//}
 
 [[vk::location(0)]] float4 screen_space_shadow_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {

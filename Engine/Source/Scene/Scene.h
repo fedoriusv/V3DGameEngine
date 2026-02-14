@@ -51,7 +51,7 @@ namespace scene
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     constexpr u32 k_maxShadowmapCascadeCount = 4;
-    constexpr u32 k_maxPunctualShadowmapCount = 8;
+    constexpr u32 k_maxPunctualShadowmapCount = 6;
 
     struct Settings
     {

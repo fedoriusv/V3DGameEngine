@@ -51,8 +51,6 @@ namespace scene
         MaterialParameters                      m_parameters;
 
         bool m_debugShadowCascades;
-        bool m_debugPunctualLightShadows;
-
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

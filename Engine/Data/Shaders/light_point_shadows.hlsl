@@ -13,7 +13,7 @@ struct ShadowBuffer
 {
     float4x4 lightSpaceMatrix[6];
     float4x4 modelMatrix;
-    float bias;
+    float    bias;
 };
 [[vk::binding(0, 0)]] ConstantBuffer<ShadowBuffer> cb_PunctualShadowBuffer : register(b0, space0);
 

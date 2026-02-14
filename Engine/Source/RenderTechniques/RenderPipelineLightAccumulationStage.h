@@ -66,6 +66,8 @@ namespace scene
 
         scene::Mesh* m_sphereVolume;
         scene::Mesh* m_coneVolume;
+
+        bool m_debugPunctualLightShadows;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
