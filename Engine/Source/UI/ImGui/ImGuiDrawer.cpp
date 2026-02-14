@@ -1203,8 +1203,10 @@ bool ImGuiWidgetDrawer::draw_TreeNode(Widget* widget, Widget* base, Widget::Stat
 
     ImGui::PushID(tn->_uid);
     bool active = ImGui::TreeNodeEx(tn->_text.c_str(), flags);
+    bool clicked = false;
     if (active)
     {
+        clicked = ImGui::IsItemClicked();
         tn->_stateMask &= ~Widget::State::StateMask::CollapsedState;
         tn->_layout.update(m_widgetHandler, base, &tn->_layout, dt);
         ImGui::TreePop();
@@ -1220,7 +1222,7 @@ bool ImGuiWidgetDrawer::draw_TreeNode(Widget* widget, Widget* base, Widget::Stat
         ImGui::SetTooltip(tn->_toolTip.c_str());
     }
 
-    if (ImGui::IsItemClicked())
+    if (clicked)
     {
         tn->_isSelected = true;
         if (tn->_onClickEvent)
