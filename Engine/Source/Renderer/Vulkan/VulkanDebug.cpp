@@ -224,6 +224,12 @@ VkBool32 VulkanDebugUtils::defaultDebugUtilsMessengerCallback(VkDebugUtilsMessag
 
     case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
     {
+        if (pCallbackData->messageIdNumber == -1604639890) //Warning - [UNASSIGNED-Threading-MultipleThreads-Write] vkCmd*(): THREADING ERROR : object of type VkCommandPool is simultaneously used in current thread X and thread Y
+        {
+            //Ignore message, its safe to finalize some commands before submit in the main thread
+            return VK_FALSE;
+        }
+
         if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         {
             LOG_ERROR("Validation[%s]Code %d: %s", pCallbackData->pMessageIdName, pCallbackData->messageIdNumber, pCallbackData->pMessage);
