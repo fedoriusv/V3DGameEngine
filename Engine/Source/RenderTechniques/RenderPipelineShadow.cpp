@@ -32,7 +32,7 @@ namespace scene
     };
 
 
-RenderPipelineShadowStage::PipelineData::PipelineData(memory::ThreadSafeAllocator* allocator)
+RenderPipelineShadowStage::PipelineData::PipelineData(thread::ThreadSafeAllocator* allocator)
     : _allocator(allocator)
 {
 #if DEBUG

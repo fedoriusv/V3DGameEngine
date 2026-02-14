@@ -250,6 +250,27 @@ bool Platform::setThreadAffinityMask(std::thread& thread, u64 mask)
     return false;
 }
 
+bool Platform::setThreadPriority(std::thread& thread, s32 priority)
+{
+    HANDLE hThread = static_cast<HANDLE>(thread.native_handle());
+    static s32 priorityTable[5]
+    {
+        THREAD_PRIORITY_LOWEST,
+        THREAD_PRIORITY_BELOW_NORMAL,
+        THREAD_PRIORITY_NORMAL,
+        THREAD_PRIORITY_ABOVE_NORMAL,
+        THREAD_PRIORITY_HIGHEST
+    };
+
+    ASSERT(priority >= THREAD_PRIORITY_LOWEST && priority <= THREAD_PRIORITY_HIGHEST, "range out");
+    if (::SetThreadPriority(hThread, priorityTable[priority]));
+    {
+        return true;
+    }
+
+    return false;
+}
+
 #else
 bool Platform::setThreadName(std::thread& thread, const std::string& name)
 {
@@ -257,6 +278,11 @@ bool Platform::setThreadName(std::thread& thread, const std::string& name)
 }
 
 bool Platform::setThreadAffinityMask(std::thread& thread, u64 mask)
+{
+    return false;
+}
+
+bool Platform::setThreadPriority(std::thread& thread, s32 priority)
 {
     return false;
 }

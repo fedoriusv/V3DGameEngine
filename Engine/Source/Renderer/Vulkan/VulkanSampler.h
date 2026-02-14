@@ -80,7 +80,7 @@ namespace vk
         VulkanSamplerManager& operator=(const VulkanSamplerManager&) = delete;
 
         VulkanDevice&       m_device;
-        utils::Spinlock     m_mutex;
+        thread::Spinlock    m_mutex;
         std::unordered_map<DescInfo<SamplerDesc>, VulkanSampler*, DescInfo<SamplerDesc>::Hash, DescInfo<SamplerDesc>::Compare> m_samplerList;
     };
 

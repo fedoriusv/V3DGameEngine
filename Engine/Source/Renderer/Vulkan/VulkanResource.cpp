@@ -45,7 +45,8 @@ void VulkanResourceDeleter::addResourceToDelete(VulkanResource* resource, const 
     {
         if (resource->isUsed())
         {
-            m_delayedList.emplace(resource, deleter);
+            [[maybe_unused]] auto inserted = m_delayedList.emplace(resource, deleter);
+            ASSERT(inserted.second, "already in the list");
         }
         else
         {

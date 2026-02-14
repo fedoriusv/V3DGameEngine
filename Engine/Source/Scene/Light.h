@@ -3,6 +3,8 @@
 #include "Common.h"
 #include "Component.h"
 #include "Resource/Resource.h"
+#include "Renderer/Color.h"
+
 #include "Transform.h"
 
 namespace v3d

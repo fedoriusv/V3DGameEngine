@@ -3,6 +3,9 @@
 #include "Common.h"
 #include "Utils/Copiable.h"
 #include "Utils/Observable.h"
+
+#include "Renderer/Color.h"
+
 #include "Scene/Transform.h"
 
 namespace v3d

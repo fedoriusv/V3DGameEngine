@@ -102,7 +102,7 @@ namespace vk
         VulkanSemaphoreManager& operator=(const VulkanSemaphoreManager&) = delete;
 
         VulkanDevice&                 m_device;
-        utils::Spinlock               m_mutex;
+        thread::Spinlock              m_mutex;
 
         std::deque<VulkanSemaphore*>  m_freeList;
         std::vector<VulkanSemaphore*> m_usedList;

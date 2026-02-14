@@ -4,11 +4,11 @@
 #include "Common.h"
 #include "Memory.h"
 #include "Task/TaskDispatcher.h"
-#include "Utils/Spinlock.h"
+#include "Thread/Spinlock.h"
 
 namespace v3d
 {
-namespace memory
+namespace thread
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -80,6 +80,6 @@ namespace memory
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace memory
+} //namespace thread
 } //namespace v3d
 

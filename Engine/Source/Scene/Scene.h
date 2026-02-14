@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "Memory/ThreadSafeAllocator.h"
+#include "Thread/ThreadSafeAllocator.h"
 #include "Task/TaskScheduler.h"
 
 #include "RenderTechniques/RenderObjectTracker.h"
@@ -99,7 +99,7 @@ namespace scene
     struct FrameData
     {
         scene::RenderObjectTracker   m_frameResources;
-        memory::ThreadSafeAllocator* m_allocator;
+        thread::ThreadSafeAllocator* m_allocator;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

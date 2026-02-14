@@ -28,7 +28,7 @@ TaskDispatcher::TaskDispatcher(u32 numWorkingThreads, DispatcherFlags flags) noe
     m_workerThreads.reserve(m_numWorkingThreads);
     for (u32 index = 0; index < m_numWorkingThreads; ++index)
     {
-        m_workerThreads.push_back(V3D_NEW(utils::Thread, memory::MemoryLabel::MemorySystem)());
+        m_workerThreads.push_back(V3D_NEW(thread::Thread, memory::MemoryLabel::MemorySystem)());
         m_workerThreads[index]->run([this, index](void*) -> void
             {
                 threadEntryPoint(index);
@@ -42,7 +42,7 @@ TaskDispatcher::~TaskDispatcher()
     m_waitingCondition.notify_all();
     for (u32 index = 0; index < m_numWorkingThreads; ++index)
     {
-        utils::Thread* thread = m_workerThreads[index];
+        thread::Thread* thread = m_workerThreads[index];
         thread->terminate();
         V3D_DELETE(thread, memory::MemoryLabel::MemorySystem);
     }
@@ -259,7 +259,7 @@ Task* TaskDispatcher::popTask()
 
     if (threadID == 0 && !(m_flags & DispatcherFlag::AllowToMainThreadStealTasks))
     {
-        ASSERT(utils::Thread::getCurrentThread() == utils::Thread::getMainThreadId(), "main thread");
+        ASSERT(thread::Thread::getCurrentThread() == thread::Thread::getMainThreadId(), "main thread");
         return nullptr;
     }
 

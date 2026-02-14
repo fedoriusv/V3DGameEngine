@@ -41,14 +41,14 @@ namespace scene
 
         struct PipelineData
         {
-            PipelineData(memory::ThreadSafeAllocator* allocator);
+            PipelineData(thread::ThreadSafeAllocator* allocator);
             
             math::Dimension2D  _viewportSize;
             std::array<f32, k_maxShadowmapCascadeCount> _directionLightCascadeSplits;
             std::array<math::Matrix4D, k_maxShadowmapCascadeCount> _directionLightSpaceMatrix;
             std::array<std::tuple<std::array<math::Matrix4D, 6>, math::Vector3D, math::float2, u32>, k_maxPunctualShadowmapCount> _punctualLightsData;
 
-            memory::ThreadSafeAllocator* _allocator;
+            thread::ThreadSafeAllocator* _allocator;
         };
 
     private:

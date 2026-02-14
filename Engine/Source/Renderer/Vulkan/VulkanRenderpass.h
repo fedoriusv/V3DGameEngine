@@ -136,8 +136,8 @@ namespace vk
         VulkanRenderpassManager(const VulkanRenderpassManager&) = delete;
         VulkanRenderpassManager& operator=(const VulkanRenderpassManager&) = delete;
 
-        VulkanDevice&   m_device;
-        utils::Spinlock m_mutex;
+        VulkanDevice&    m_device;
+        thread::Spinlock m_mutex;
         std::unordered_map<DescInfo<RenderPassDesc>, VulkanRenderPass*, DescInfo<RenderPassDesc>::Hash, DescInfo<RenderPassDesc>::Compare> m_renderPassList;
     };
 

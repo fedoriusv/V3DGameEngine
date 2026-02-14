@@ -1,7 +1,6 @@
 #include "RenderPipelineGBuffer.h"
 
 #include "Utils/Logger.h"
-#include "Task/RenderTask/RenderTask.h"
 
 #include "Resource/ResourceManager.h"
 #include "Resource/Loader/AssetSourceFileLoader.h"

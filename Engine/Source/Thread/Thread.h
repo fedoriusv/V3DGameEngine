@@ -4,7 +4,7 @@
 
 namespace v3d
 {
-namespace utils
+namespace thread
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -14,6 +14,15 @@ namespace utils
     class V3D_API Thread
     {
     public:
+
+        enum class Priority
+        {
+            Lowest      = -2,
+            Low         = -1,
+            Normal      = 0,
+            AboveNormal = 1,
+            High        = 2
+        };
 
         Thread() noexcept;
         ~Thread();
@@ -34,6 +43,7 @@ namespace utils
         const std::string&      getName() const;
 
         void                    setAffinityMask(u64 mask);
+        void                    setPriority(Priority priority);
 
     private:
 
@@ -79,5 +89,5 @@ namespace utils
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} //namespace utils
+} //namespace thread
 } //namespace v3d

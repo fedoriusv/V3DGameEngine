@@ -53,6 +53,11 @@ void SceneData::finalize()
 {
     static std::function<void(scene::SceneNode* node)> processNode = [&](scene::SceneNode* node)
         {
+            if (!node->m_visible)
+            {
+                return;
+            }
+
             if (scene::Mesh* geometry = node->getComponentByType<scene::Mesh>(); geometry)
             {
                 scene::Material* material = node->getComponentByType<scene::Material>();
@@ -161,7 +166,7 @@ void SceneHandler::create(renderer::Device* device)
 {
     for (auto& frame : m_sceneData.m_frameState)
     {
-        frame.m_allocator = new memory::ThreadSafeAllocator(4 * 1024 * 1024, m_sceneData.m_taskWorker.getNumberOfCoreThreads());
+        frame.m_allocator = new thread::ThreadSafeAllocator(4 * 1024 * 1024, m_sceneData.m_taskWorker.getNumberOfCoreThreads());
     }
 
     for (auto& technique : m_renderTechniques)

@@ -170,8 +170,8 @@ namespace vk
         VulkanGraphicPipelineManager(const VulkanGraphicPipelineManager&) = delete;
         VulkanGraphicPipelineManager& operator=(const VulkanGraphicPipelineManager&) = delete;
 
-        VulkanDevice&   m_device;
-        utils::Spinlock m_mutex;
+        VulkanDevice&    m_device;
+        thread::Spinlock m_mutex;
         std::unordered_map<DescInfo<VulkanPipelineDesc>, VulkanGraphicPipeline*, DescInfo<VulkanPipelineDesc>::Hash, DescInfo<VulkanPipelineDesc>::Compare> m_pipelineGraphicList;
     };
 

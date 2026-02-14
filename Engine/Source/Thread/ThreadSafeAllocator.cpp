@@ -2,7 +2,7 @@
 
 namespace v3d
 {
-namespace memory
+namespace thread
 {
 
 ThreadSafeAllocator::ThreadSafeAllocator(u64 size, u32 workers)
@@ -42,5 +42,5 @@ void ThreadSafeAllocator::reset(u32 workerID)
     pool._offest.store(0, std::memory_order_relaxed);
 }
 
-} //namespace memory
+} //namespace thread
 } //namespace v3d

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "TaskContainers.h"
+#include "Thread/ThreadSafeContainers.h"
 
 namespace v3d
 {
@@ -39,7 +39,7 @@ namespace task
     /**
     * @brief Task struct
     */
-    class Task : protected ThreadSafeNode<Task>
+    class Task : protected thread::ThreadSafeNode<Task>
     {
     public:
 

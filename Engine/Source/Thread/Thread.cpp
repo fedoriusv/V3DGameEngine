@@ -3,7 +3,7 @@
 
 namespace v3d
 {
-namespace utils
+namespace thread
 {
 
 std::thread::id Thread::s_mainThreadId = Thread::getCurrentThread();
@@ -61,5 +61,10 @@ void Thread::setAffinityMask(u64 mask)
     platform::Platform::setThreadAffinityMask(m_thread, mask);
 }
 
-} //namespace utils
+void Thread::setPriority(Priority priority)
+{
+    platform::Platform::setThreadPriority(m_thread, toEnumType(priority));
+}
+
+} //namespace thread
 } //namespace v3d

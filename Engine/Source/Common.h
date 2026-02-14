@@ -36,6 +36,7 @@
 
 #include <ctime>
 #include <chrono>
+#include <filesystem>
 
 #include <cstdarg>
 #include <cstring>
@@ -46,10 +47,9 @@
 
 #include "Math/Core.h"
 #include "Utils/CRC32.h"
-#include "Utils/Spinlock.h"
 #include "Memory/Memory.h"
 #include "Memory/StackBasedAllocator.h"
-#include "Renderer/Color.h"
+
 
 extern int V3D_AssertYesNoDlg(const char* file, int line, const char* statement, const char* message, ...);
 inline void V3D_Assert(const char* file, int line, const char* statement, const char* message, ...)

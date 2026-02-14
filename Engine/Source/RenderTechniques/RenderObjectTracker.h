@@ -2,8 +2,8 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "Thread/Spinlock.h"
 #include "Utils/StringID.h"
-#include "Utils/Spinlock.h"
 
 #include "Renderer/Texture.h"
 
@@ -39,7 +39,7 @@ namespace scene
 
     private:
 
-        mutable utils::Spinlock m_mutex;
+        mutable thread::Spinlock m_mutex;
         std::unordered_map<utils::StringID, ObjectHandle, Hash> m_resources;
     };
 

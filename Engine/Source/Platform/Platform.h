@@ -45,6 +45,7 @@ namespace platform
 
         static bool setThreadName(std::thread& thread, const std::string& name);
         static bool setThreadAffinityMask(std::thread& thread, u64 mask);
+        static bool setThreadPriority(std::thread& thread, s32 priority);
 
         [[nodiscard]] static std::wstring utf8ToWide(const c8* in);
         [[nodiscard]] static std::string wideToUtf8(const w16* in);

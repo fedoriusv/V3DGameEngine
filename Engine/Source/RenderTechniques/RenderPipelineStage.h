@@ -2,11 +2,11 @@
 
 #include "Common.h"
 #include "VertexFormats.h"
-
-#include "Scene/Scene.h"
+#include "Events/Game/GameEvent.h"
 #include "Task/Task.h"
 #include "Task/TaskScheduler.h"
-#include "Memory/ThreadSafeAllocator.h"
+#include "Thread/ThreadSafeAllocator.h"
+#include "Scene/Scene.h"
 
 namespace v3d
 {

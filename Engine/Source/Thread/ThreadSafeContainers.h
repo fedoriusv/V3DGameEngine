@@ -4,7 +4,7 @@
 
 namespace v3d
 {
-namespace task
+namespace thread
 {
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,6 +17,9 @@ namespace task
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ThreadSafeStack class
+    */
     template<class T>
     class ThreadSafeStack
     {
@@ -52,6 +55,11 @@ namespace task
             return old_head;
         }
 
+        bool empty() const
+        {
+            return m_head.load(std::memory_order_relaxed) == nullptr;
+        }
+
     private:
 
         std::atomic<T*> m_head = nullptr;
@@ -59,6 +67,9 @@ namespace task
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ThreadSafeQueue class
+    */
     template<class T>
     class ThreadSafeQueue
     {
@@ -111,6 +122,11 @@ namespace task
             }
         }
 
+        bool empty() const
+        {
+            return m_head.load(std::memory_order_relaxed) == nullptr;
+        }
+
     private:
 
         std::atomic<T*> m_head = nullptr;
@@ -119,6 +135,9 @@ namespace task
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief ThreadSafeStack class
+    */
     template<class T>
     class ThreadSafeList
     {
@@ -127,5 +146,5 @@ namespace task
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namesapce task
+} // namesapce thread
 } // namespace v3d

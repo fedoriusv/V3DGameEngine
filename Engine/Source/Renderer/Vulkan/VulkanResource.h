@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Renderer/Render.h"
+#include "Thread/Spinlock.h"
 
 #ifdef VULKAN_RENDER
 #   include "VulkanWrapper.h"
@@ -42,7 +43,7 @@ namespace vk
         virtual void fenceTracker(VulkanFence* fence, u64 value, u64 frame) {};
 #endif
         mutable std::unordered_map<VulkanFence*, std::tuple<u64, u64>>  m_fanceInfo;
-        mutable utils::Spinlock                                         m_mutex;
+        mutable thread::Spinlock                                        m_mutex;
 #if VULKAN_DEBUG
         mutable s64                                                     m_refCount;
 #endif //VULKAN_DEBUG

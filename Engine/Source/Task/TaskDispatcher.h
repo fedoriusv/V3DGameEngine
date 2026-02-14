@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "Utils/Thread.h"
+#include "Thread/Thread.h"
 #include "Task.h"
 
 namespace v3d
@@ -61,19 +61,19 @@ namespace task
 
         Task* getTaskFromQueue(u32 id);
 
-        u32                         m_numWorkingThreads;
+        u32                          m_numWorkingThreads;
 
-        std::vector<TaskQueue*>     m_taskQueue;
-        std::vector<utils::Thread*> m_workerThreads;
-        std::atomic<u32>            m_numCreatedTasks;
-        std::atomic<u32>            m_numSleepingThreads;
-        std::condition_variable_any m_waitingCondition;
+        std::vector<TaskQueue*>      m_taskQueue;
+        std::vector<thread::Thread*> m_workerThreads;
+        std::atomic<u32>             m_numCreatedTasks;
+        std::atomic<u32>             m_numSleepingThreads;
+        std::condition_variable_any  m_waitingCondition;
 
-        std::atomic<u64>            m_roundThreadCounter;
-        DispatcherFlags             m_flags;
-        bool                        m_running;
+        std::atomic<u64>             m_roundThreadCounter;
+        DispatcherFlags              m_flags;
+        bool                         m_running;
 
-        thread_local static u32     s_threadID;
+        thread_local static u32      s_threadID;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

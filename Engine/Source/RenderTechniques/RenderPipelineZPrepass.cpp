@@ -13,8 +13,6 @@
 #include "Scene/Geometry/Mesh.h"
 #include "Scene/SceneNode.h"
 
-#include "Task/RenderTask/RenderTask.h"
-
 #include "FrameProfiler.h"
 
 namespace v3d

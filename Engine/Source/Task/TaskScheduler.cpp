@@ -17,7 +17,7 @@ u32 TaskScheduler::getNumberOfCoreThreads() const
 
 void TaskScheduler::mainThreadLoop()
 {
-    ASSERT(utils::Thread::getCurrentThread() == utils::Thread::getMainThreadId(), "must be main thread");
+    ASSERT(thread::Thread::getCurrentThread() == thread::Thread::getMainThreadId(), "must be main thread");
     while (true)
     {
         Task* task = m_dispatcher.popTask();
