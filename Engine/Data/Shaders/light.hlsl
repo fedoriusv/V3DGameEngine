@@ -54,7 +54,7 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float punctual_light_shadow(in float3 WorldPos, in float3 Normal, in float cs_position_w)
+float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
 {
     float shadow = 0.0;
     
@@ -117,7 +117,7 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal, in float cs_po
         light.temperature = cb_Light.temperature;
 
         float3 lightDirection = worldPos - cb_Light.position.xyz;
-        float shadow = cb_Light.applyShadow > 0.0 ? punctual_light_shadow(worldPos, normals, depth) : 0.0;
+        float shadow = cb_Light.applyShadow > 0.0 ? punctual_light_shadow(worldPos, normals) : 0.0;
         float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
 #if DEBUG_PUNCTUAL_SHADOWMAPS
         color.rgb = lerp(color.rgb, float3(1.0, 1.0, 1.0), shadow);

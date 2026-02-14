@@ -74,13 +74,13 @@ void RenderPipelineShadowStage::create(renderer::Device* device, SceneData& scen
 
     {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("light_directional_shadows.hlsl", "shadows_vs",
-            defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light_directional_shadows.hlsl", "shadows_ps",
-            defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+            defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 0;
-        desc._viewsMask = 0b00001111;
+        desc._viewsMask = (1u << k_maxShadowmapCascadeCount) - 1u;
         desc._hasDepthStencilAttachment = true;
         desc._attachmentsDesc.back()._format = renderer::Format::Format_D32_SFloat;
 
@@ -456,7 +456,7 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, Sce
             renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, scene.m_settings._shadowsParams._cascadeCount, 1, "shadowmap");
 
         ASSERT(m_cascadeRenderTarget == nullptr, "must be nullptr");
-        m_cascadeRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_settings._shadowsParams._size, 0, 0b00001111);
+        m_cascadeRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_settings._shadowsParams._size, 0, (1u << k_maxShadowmapCascadeCount) - 1u);
         m_cascadeRenderTarget->setDepthStencilTexture(renderer::TextureView(m_cascadeTextureArray),
             {
                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f,
