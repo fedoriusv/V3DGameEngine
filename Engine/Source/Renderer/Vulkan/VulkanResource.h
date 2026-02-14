@@ -113,19 +113,20 @@ namespace vk
         ~VulkanResourceDeleter();
 
         void addResourceToDelete(VulkanResource* resource, const std::function<void(VulkanResource* resource)>& deleter, bool forceDelete = false);
-        void updateResourceDeleter(bool forceDelete = false);
+        void resourceGarbageCollect(bool forceDelete = false);
 
     private:
 
-        void resourceGarbageCollect();
-
-        std::recursive_mutex m_mutex;
+        thread::Spinlock m_mutex;
         std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_delayedList;
-        std::queue<std::pair<VulkanResource*, std::function<void(VulkanResource* resource)>>> m_deleterList;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+    * @brief VulkanResourceStateTracker class. Vulkan Render side.
+    * Multithreaded. No sync, only own thread
+    */
     class VulkanResourceStateTracker
     {
     public:

@@ -336,7 +336,7 @@ void VulkanDevice::submit(CmdList* cmd, SyncPoint* sync, bool wait)
     cmdBufferMgr->updateStatus();
     m_semaphoreManager->updateStatus();
 
-    m_resourceDeleter.updateResourceDeleter();
+    m_resourceDeleter.resourceGarbageCollect();
 }
 
 void VulkanDevice::waitGPUCompletion(CmdList* cmd)
@@ -975,7 +975,7 @@ void VulkanDevice::destroy()
         m_internalCmdBufferManager = nullptr;
     }
 
-    m_resourceDeleter.updateResourceDeleter();
+    m_resourceDeleter.resourceGarbageCollect(true);
 
     if (m_samplerManager)
     {
@@ -1373,21 +1373,16 @@ void VulkanDevice::destroyPipeline(RenderPipeline* pipeline)
 #endif //VULKAN_DEBUG
 
     ASSERT(pipeline, "nullptr");
+    ASSERT(!pipeline->linked(), "must be freed");
     if (pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic)
     {
         VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(pipeline);
-        m_resourceDeleter.addResourceToDelete(vkPipeline, [this, vkPipeline](VulkanResource* resource) -> void
-            {
-                m_graphicPipelineManager->removePipeline(vkPipeline);
-            });
+        m_graphicPipelineManager->removePipeline(vkPipeline, m_resourceDeleter);
     }
     else if (pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Compute)
     {
         VulkanComputePipeline* vkPipeline = static_cast<VulkanComputePipeline*>(pipeline);
-        m_resourceDeleter.addResourceToDelete(vkPipeline, [this, vkPipeline](VulkanResource* resource) -> void
-            {
-                m_computePipelineManager->removePipeline(vkPipeline);
-            });
+        m_computePipelineManager->removePipeline(vkPipeline, m_resourceDeleter);
     }
 }
 

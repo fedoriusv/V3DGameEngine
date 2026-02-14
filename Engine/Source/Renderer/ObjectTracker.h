@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Object.h"
+#include "Thread/Spinlock.h"
 
 namespace v3d
 {
@@ -109,7 +110,7 @@ namespace renderer
 
     private:
 
-        std::mutex                              m_mutex;
+        thread::Spinlock                        m_mutex;
         std::set<RenderObject<TRenderObject>*>  m_list;
 
         Object*                                 m_handle;

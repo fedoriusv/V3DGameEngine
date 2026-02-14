@@ -251,7 +251,7 @@ VulkanComputePipeline* VulkanComputePipelineManager::acquireGraphicPipeline(cons
     {
         ASSERT(false, "can't create pipeline");
         pipeline->destroy();
-        V3D_FREE(pipeline, memory::MemoryLabel::MemoryRenderCore);
+        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryRenderCore);
 
         return nullptr;
     }
@@ -260,35 +260,39 @@ VulkanComputePipeline* VulkanComputePipelineManager::acquireGraphicPipeline(cons
     return pipeline;
 }
 
-bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipeline)
+bool VulkanComputePipelineManager::removePipeline(VulkanComputePipeline* pipeline, VulkanResourceDeleter& deleter)
 {
-    ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
+    ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Compute, "wrong type");
     std::lock_guard lock(m_mutex);
 
     auto found = std::find_if(m_pipelineComputeList.begin(), m_pipelineComputeList.end(), [pipeline](auto& elem) -> bool
         {
             return elem.second == pipeline;
         });
+
     if (found == m_pipelineComputeList.cend())
     {
-        LOG_DEBUG("VulkanGraphicPipelineManager pipeline not found");
+        LOG_DEBUG("VulkanComputePipelineManager pipeline is not found");
         ASSERT(false, "pipeline");
         return false;
     }
 
-    ASSERT(found->second == pipeline, "Different pointers");
     if (pipeline->linked())
     {
-        LOG_WARNING("VulkanGraphicPipelineManager::removePipeline pipleline still linked, but reqested to delete");
+        LOG_WARNING("VulkanComputePipelineManager::removePipeline pipleline still linked, but reqested to delete");
         ASSERT(false, "pipeline");
-        //return false;
+        return false;
     }
+
     m_pipelineComputeList.erase(found);
+    deleter.addResourceToDelete(pipeline, [](VulkanResource* resource) -> void
+        {
+            VulkanComputePipeline* vkPipeline = static_cast<VulkanComputePipeline*>(resource);
+            vkPipeline->destroy();
+            V3D_DELETE(vkPipeline, memory::MemoryLabel::MemoryRenderCore);
+        });
 
-    pipeline->destroy();
-    V3D_DELETE(pipeline, memory::MemoryLabel::MemoryRenderCore);
-
-    return true;
+    return false;
 }
 
 void VulkanComputePipelineManager::clear()

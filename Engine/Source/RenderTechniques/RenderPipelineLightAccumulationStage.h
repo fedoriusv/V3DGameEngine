@@ -61,7 +61,7 @@ namespace scene
 
         scene::ModelHandler* m_modelHandler;
         renderer::RenderTargetState* m_lightRenderTarget;
-        std::vector<v3d::renderer::GraphicsPipelineState*> m_pipelines;
+        renderer::GraphicsPipelineState* m_pipeline;
         std::vector<MaterialParameters> m_parameters;
 
         scene::Mesh* m_sphereVolume;

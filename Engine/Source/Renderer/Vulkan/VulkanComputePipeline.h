@@ -117,7 +117,7 @@ namespace vk
 
         [[nodiscard]] VulkanComputePipeline* acquireGraphicPipeline(const ComputePipelineState& state);
 
-        bool removePipeline(VulkanComputePipeline* pipeline);
+        bool removePipeline(VulkanComputePipeline* pipeline, VulkanResourceDeleter& deleter);
         void clear();
 
     private:

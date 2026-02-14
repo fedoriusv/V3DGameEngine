@@ -2,6 +2,7 @@
 
 #include "Utils/Logger.h"
 #include "Renderer/ShaderProgram.h"
+#include "Thread/Thread.h"
 
 #ifdef VULKAN_RENDER
 #   include "VulkanDebug.h"
@@ -1060,7 +1061,7 @@ VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(cons
     {
         ASSERT(false, "can't create pipeline");
         pipeline->destroy();
-        V3D_FREE(pipeline, memory::MemoryLabel::MemoryRenderCore);
+        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryRenderCore);
 
         return nullptr;
     }
@@ -1070,7 +1071,7 @@ VulkanGraphicPipeline* VulkanGraphicPipelineManager::acquireGraphicPipeline(cons
     return pipeline;
 }
 
-bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipeline)
+bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipeline, VulkanResourceDeleter& deleter)
 {
     ASSERT(pipeline->getType() == RenderPipeline::PipelineType::PipelineType_Graphic, "wrong type");
     std::lock_guard lock(m_mutex);
@@ -1079,26 +1080,30 @@ bool VulkanGraphicPipelineManager::removePipeline(VulkanGraphicPipeline* pipelin
         {
             return elem.second == pipeline;
         });
+
     if (found == m_pipelineGraphicList.cend())
     {
-        LOG_DEBUG("VulkanGraphicPipelineManager pipeline not found");
+        LOG_DEBUG("VulkanGraphicPipelineManager pipeline is not found");
         ASSERT(false, "pipeline");
         return false;
     }
 
-    ASSERT(found->second == pipeline, "Different pointers");
     if (pipeline->linked())
     {
         LOG_WARNING("VulkanGraphicPipelineManager::removePipeline pipleline still linked, but reqested to delete");
         ASSERT(false, "pipeline");
-        //return false;
+        return false;
     }
+
     m_pipelineGraphicList.erase(found);
+    deleter.addResourceToDelete(pipeline, [](VulkanResource* resource) -> void
+        {
+            VulkanGraphicPipeline* vkPipeline = static_cast<VulkanGraphicPipeline*>(resource);
+            vkPipeline->destroy();
+            V3D_DELETE(vkPipeline, memory::MemoryLabel::MemoryRenderCore);
+        });
 
-    pipeline->destroy();
-    V3D_DELETE(pipeline, memory::MemoryLabel::MemoryRenderCore);
-
-    return true;
+    return false;
 }
 
 void VulkanGraphicPipelineManager::clear()

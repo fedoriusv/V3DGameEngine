@@ -21,6 +21,7 @@ namespace scene
 RenderPipelineLightAccumulationStage::RenderPipelineLightAccumulationStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
     : RenderPipelineStage(technique, "LightPass")
     , m_modelHandler(modelHandler)
+    , m_pipeline(nullptr)
     , m_lightRenderTarget(nullptr)
 {
 }
@@ -59,7 +60,7 @@ void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, sce
         createRenderTarget(device, scene);
     }
 
-    if (m_pipelines.empty())
+    if (!m_pipeline)
     {
         createPipelines(device, scene);
     }
@@ -131,8 +132,8 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
                 const scene::PointLight& light = *static_cast<const scene::PointLight*>(itemLight.light);
 
-                cmdList->setPipelineState(*m_pipelines[entry->pipelineID]);
-                cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 0,
+                cmdList->setPipelineState(*m_pipeline);
+                cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters[entry->pipelineID].cb_Viewport)
                     });
@@ -196,7 +197,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 lightBuffer.intensity = light.getIntensity();
                 lightBuffer.temperature = light.getTemperature();
 
-                cmdList->bindDescriptorSet(m_pipelines[entry->pipelineID]->getShaderProgram(), 1,
+                cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters[entry->pipelineID].cb_Model),
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters[entry->pipelineID].cb_Light),
@@ -278,22 +279,19 @@ void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* dev
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureDepth);
         BIND_SHADER_PARAMETER(pipeline, parameters, t_TextureShadowmaps);
 
-        m_pipelines.push_back(pipeline);
+        m_pipeline = pipeline;
         m_parameters.push_back(parameters);
     }
 }
 
 void RenderPipelineLightAccumulationStage::destroyPipelines(renderer::Device* device, scene::SceneData& scene)
 {
-    for (auto& pipeline : m_pipelines)
-    {
-        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
-        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+    ASSERT(m_pipeline, "must be valid");
+    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
+    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
-        pipeline = nullptr;
-    }
-    m_pipelines.clear();
+    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
+    m_pipeline = nullptr;
 }
 
 void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene)
