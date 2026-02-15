@@ -472,12 +472,12 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, Sce
     {
         //TODO use array
         ASSERT(m_punctualShadowTextureArray == nullptr, "must be nullptr");
-        m_punctualShadowTextureArray = V3D_NEW(renderer::TextureCube, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-            renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 1, "view_shadow");
+        m_punctualShadowTextureArray = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
+            renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 32, 1, "view_shadow");
         scene.m_globalResources.bind("shadowmaps_array", m_punctualShadowTextureArray);
 
         ASSERT(m_punctualShadowRenderTarget == nullptr, "must be nullptr");
-        m_punctualShadowRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_settings._shadowsParams._size, 0, 0b00111111);
+        m_punctualShadowRenderTarget = V3D_NEW(renderer::RenderTargetState, memory::MemoryLabel::MemoryGame)(device, scene.m_settings._shadowsParams._size, 0);
     }
 
     {

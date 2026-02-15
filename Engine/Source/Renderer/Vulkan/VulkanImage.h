@@ -41,6 +41,7 @@ namespace vk
         static std::string imageFormatStringVK(VkFormat format);
         static std::string imageTypeStringVK(VkImageType format);
 
+        static VkComponentMapping getComponentMapping(VkFormat format);
         static VkImageAspectFlags getImageAspectFlags(VkFormat format);
         static bool isColorFormat(VkFormat format);
         static bool isDepthStencilFormat(VkFormat format);
@@ -94,6 +95,7 @@ namespace vk
         VulkanImage(const VulkanImage&) = delete;
 
         bool createViewImage();
+        VkImageView createViewImage(VkImageSubresourceRange imageSubresourceRange, const std::string& name = "") const;
         bool internalUpload(VulkanCommandBuffer* cmdBuffer, const math::Dimension3D& offsets, const math::Dimension3D& size, u32 layers, u32 mips, u64 dataSize, const void* data);
 
         VkImageLayout         getGlobalLayout(const RenderTexture::Subresource& resource) const;
@@ -117,7 +119,7 @@ namespace vk
         VulkanMemory::VulkanAllocation          m_memory;
         VulkanSwapchain*                        m_relatedSwapchain;
 
-        std::unordered_map<DescInfo<VkImageSubresourceRange>, VkImageView, DescInfo<VkImageSubresourceRange>::Hash, DescInfo<VkImageSubresourceRange>::Compare> m_imageViews;
+        mutable std::unordered_map<DescInfo<VkImageSubresourceRange>, VkImageView, DescInfo<VkImageSubresourceRange>::Hash, DescInfo<VkImageSubresourceRange>::Compare> m_imageViews;
         std::vector<VkImageLayout>              m_globalLayout;
 
 #if VULKAN_DEBUG_MARKERS

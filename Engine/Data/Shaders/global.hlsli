@@ -107,22 +107,61 @@ float4 linear_srgb(float4 lin)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-uint cubemap_face(float3 dir)
+uint cubemap_face_id(in float3 Dir)
 {
-    float3 a = abs(dir);
-
+    float3 a = abs(Dir);
     if (a.x > a.y && a.x > a.z)
     {
-        return dir.x > 0 ? 0 : 1;
+        return Dir.x > 0 ? 0 : 1; // +X -X
     }
     else if (a.y > a.z)
     {
-        return dir.y > 0 ? 2 : 3;
+        return Dir.y > 0 ? 2 : 3; // +Y -Y
     }
     else
     {
-        return dir.z > 0 ? 4 : 5;
+        return Dir.z > 0 ? 4 : 5; // +Z -Z
     }
+}
+
+float2 cubemap_face_UV(float3 Dir, uint Face)
+{
+    float2 uv;
+    float ma;
+    switch (Face)
+    {
+        case 0: // +X
+            ma = abs(Dir.x);
+            uv = float2(-Dir.z, -Dir.y) / ma;
+            break;
+
+        case 1: // -X
+            ma = abs(Dir.x);
+            uv = float2(Dir.z, -Dir.y) / ma;
+            break;
+
+        case 2: // +Y
+            ma = abs(Dir.y);
+            uv = float2(Dir.x, Dir.z) / ma;
+            break;
+
+        case 3: // -Y
+            ma = abs(Dir.y);
+            uv = float2(Dir.x, -Dir.z) / ma;
+            break;
+
+        case 4: // +Z
+            ma = abs(Dir.z);
+            uv = float2(Dir.x, -Dir.y) / ma;
+            break;
+
+        default: // -Z
+            ma = abs(Dir.z);
+            uv = float2(-Dir.x, -Dir.y) / ma;
+            break;
+    }
+
+    return uv * 0.5 + 0.5;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

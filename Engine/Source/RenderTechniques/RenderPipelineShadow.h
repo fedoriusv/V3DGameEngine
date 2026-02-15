@@ -73,7 +73,7 @@ namespace scene
         };
 
         renderer::RenderTargetState*              m_punctualShadowRenderTarget;
-        renderer::TextureCube*                    m_punctualShadowTextureArray;
+        renderer::Texture2D*                      m_punctualShadowTextureArray;
         renderer::GraphicsPipelineState*          m_punctualShadowPipeline;
         MaterialPointShadowsParameters            m_punctualShadowParameters;
 

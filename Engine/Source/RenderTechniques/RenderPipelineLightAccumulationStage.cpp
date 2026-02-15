@@ -128,7 +128,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 shadowmaps_handle = scene.m_globalResources.get("default_cubemap");
                 ASSERT(shadowmaps_handle.isValid(), "must be valid");
             }
-            renderer::TextureCube* shadowmapsTexture = shadowmaps_handle.as<renderer::TextureCube>();
+            renderer::Texture2D* shadowmapsTexture = shadowmaps_handle.as<renderer::Texture2D>();
 
             m_lightRenderTarget->setColorTexture(0, renderTargetTexture,
                 {
@@ -170,30 +170,6 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 constantBuffer.tintColour = math::float4{ 1.0, 1.0, 1.0, 1.0 };
                 constantBuffer.objectID = 0;
 
-                //struct LightBuffer
-                //{
-                //    math::Matrix4D lightSpaceMatrix[6];
-                //    math::float2   clipNearFar;
-                //    math::float2   viewSliceOffsetCount;
-                //    math::Vector3D position;
-                //    math::float4   color;
-                //    math::float4   attenuation;
-                //    f32            intensity;
-                //    f32            temperature;
-                //    f32            shadowBaseBias;
-                //    f32           _pad = 0;
-                //} lightBuffer;
-
-                //lightBuffer.lightSpaceMatrix;
-                //lightBuffer.clipNearFar;
-                //lightBuffer.viewSliceOffsetCount;
-                //lightBuffer.shadowBaseBias;
-                //lightBuffer.position = itemLight.object->getTransform().getPosition();
-                //lightBuffer.color = light.getColor();
-                //lightBuffer.attenuation = light.getAttenuation();
-                //lightBuffer.intensity = light.getIntensity();
-                //lightBuffer.temperature = light.getTemperature();
-
                 struct PunctualLightBuffer
                 {
                     math::Matrix4D lightSpaceMatrix[6];
@@ -215,7 +191,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
 
                 memcpy(lightBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
                 lightBuffer.clipNearFar = plane;
-                lightBuffer.viewSliceOffsetCount = { 0.0f, 0.0f };
+                lightBuffer.viewSliceOffsetCount = { 0.0f, 6.0f };
                 lightBuffer.position = itemLight.object->getTransform().getPosition();
                 lightBuffer.color = light.getColor();
                 lightBuffer.attenuation = light.getAttenuation();

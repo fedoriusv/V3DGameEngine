@@ -690,6 +690,16 @@ VkSampleCountFlagBits VulkanImage::convertRenderTargetSamplesToVkSampleCount(Tex
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
+VkComponentMapping VulkanImage::getComponentMapping(VkFormat format)
+{
+    if (isDepthStencilFormat(format))
+    {
+        return { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+    }
+
+    return { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+}
+
 VkImageAspectFlags VulkanImage::getImageAspectFlags(VkFormat format)
 {
     switch (format)
@@ -1547,7 +1557,7 @@ VkImageView VulkanImage::getImageView(const RenderTexture::Subresource& resource
     auto found = m_imageViews.find(DescInfo<VkImageSubresourceRange>(imageSubresourceRange));
     if (found == m_imageViews.cend())
     {
-        ASSERT(false, "view isn't found");
+        return createViewImage(imageSubresourceRange);
     }
 
     return found->second;
@@ -1618,37 +1628,106 @@ void VulkanImage::destroy()
 
 bool VulkanImage::createViewImage()
 {
-    auto convertImageTypeToImageViewType = [](VkImageType type, bool cube = false, bool array = false) -> VkImageViewType 
+    if (hasUsageFlag(TextureUsage::TextureUsage_Sampled))
     {
-        switch (type)
+        if (VulkanImage::isColorFormat(m_format))
         {
-        case VK_IMAGE_TYPE_1D:
-            if (array)
+            ASSERT(m_aspectMask == VK_IMAGE_ASPECT_COLOR_BIT, "must be color");
+            if (!createViewImage(VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_COLOR_BIT), "ColorView_"))
             {
-                return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+                return false;
             }
-            return VK_IMAGE_VIEW_TYPE_1D;
-
-        case VK_IMAGE_TYPE_2D:
-            if (cube)
-            {
-                 return VK_IMAGE_VIEW_TYPE_CUBE;
-            }
-            else if (array)
-            {
-                return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-            }
-            return VK_IMAGE_VIEW_TYPE_2D;
-
-        case VK_IMAGE_TYPE_3D:
-            return VK_IMAGE_VIEW_TYPE_3D;
-
-        default:
-            ASSERT(false, "not handle");
         }
 
-        return VK_IMAGE_VIEW_TYPE_2D;
-    };
+        if (VulkanImage::isDepthStencilFormat(m_format))
+        {
+            //Depth only view
+            if (VulkanImage::getImageAspectFlags(m_format) & VK_IMAGE_ASPECT_DEPTH_BIT)
+            {
+                if (!createViewImage(VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_DEPTH_BIT), "DepthView_"))
+                {
+                    return false;
+                }
+            }
+
+            //Stencil only view
+            if (VulkanImage::getImageAspectFlags(m_format) & VK_IMAGE_ASPECT_STENCIL_BIT)
+            {
+                if (!createViewImage(VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_STENCIL_BIT), "StencilView_"))
+                {
+                    return false;
+                }
+            }
+
+            // DepthStencil view
+            if (VulkanImage::getImageAspectFlags(m_format) == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))
+            {
+                if (!createViewImage(VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), "DepthStencilView_"))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+    {
+        for (u32 layer = 0; layer < m_arrayLayers; ++layer)
+        {
+            if (!createViewImage(VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), 0), m_aspectMask), "LayerView_"))
+            {
+                return false;
+            }
+
+            if (hasUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
+            {
+                for (u32 mip = 0; mip < m_mipLevels; ++mip)
+                {
+                    if (!createViewImage(VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), static_cast<s32>(mip)), m_aspectMask), "MipView_"))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+VkImageView VulkanImage::createViewImage(VkImageSubresourceRange imageSubresourceRange, const std::string& name) const
+{
+    auto convertImageTypeToImageViewType = [](VkImageType type, bool cube = false, bool array = false) -> VkImageViewType
+        {
+            switch (type)
+            {
+            case VK_IMAGE_TYPE_1D:
+                if (array)
+                {
+                    return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+                }
+                return VK_IMAGE_VIEW_TYPE_1D;
+
+            case VK_IMAGE_TYPE_2D:
+                if (cube)
+                {
+                    return VK_IMAGE_VIEW_TYPE_CUBE;
+                }
+                else if (array)
+                {
+                    return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+                }
+                return VK_IMAGE_VIEW_TYPE_2D;
+
+            case VK_IMAGE_TYPE_3D:
+                return VK_IMAGE_VIEW_TYPE_3D;
+
+            default:
+                ASSERT(false, "not handle");
+            }
+
+            return VK_IMAGE_VIEW_TYPE_2D;
+        };
 
     void* vkExtensions = nullptr;
 #ifdef VK_EXT_astc_decode_mode
@@ -1663,231 +1742,52 @@ bool VulkanImage::createViewImage()
     }
 #endif //VK_EXT_astc_decode_mode
 
-    if (hasUsageFlag(TextureUsage::TextureUsage_Sampled))
+    VkImageViewCreateInfo imageViewCreateInfo = {};
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewCreateInfo.pNext = vkExtensions;
+    imageViewCreateInfo.flags = 0;
+    imageViewCreateInfo.image = m_image;
+    imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_arrayLayers == 6U, m_arrayLayers > 1);
+    imageViewCreateInfo.format = m_format;
+    imageViewCreateInfo.components = VulkanImage::getComponentMapping(m_format);
+    imageViewCreateInfo.subresourceRange = imageSubresourceRange;
+
+    VkImageView view = VK_NULL_HANDLE;
+    VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
+    if (result != VK_SUCCESS)
     {
-        if (VulkanImage::isColorFormat(m_format))
-        {
-            ASSERT(m_aspectMask == VK_IMAGE_ASPECT_COLOR_BIT, "must be color");
-            VkImageViewCreateInfo imageViewCreateInfo = {};
-            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            imageViewCreateInfo.pNext = vkExtensions;
-            imageViewCreateInfo.flags = 0;
-            imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_arrayLayers == 6U, m_arrayLayers > 1);
-            imageViewCreateInfo.format = m_format;
-            imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A }; //TODO get components from format
-            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_COLOR_BIT);
-
-            VkImageView view = VK_NULL_HANDLE;
-            VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
-            if (result != VK_SUCCESS)
-            {
-                LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                return false;
-            }
-
-            [[maybe_unused]] auto viewIter = m_imageViews.insert({ DescInfo<VkImageSubresourceRange>(imageViewCreateInfo.subresourceRange), view });
-            ASSERT(viewIter.second, "already exsist");
-
-#if VULKAN_DEBUG_MARKERS
-            if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
-            {
-                std::string imageViewName = "ColorView_" + m_debugName;
-
-                VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-                debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-                debugUtilsObjectNameInfo.pNext = nullptr;
-                debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-                debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(view);
-                debugUtilsObjectNameInfo.pObjectName = imageViewName.c_str();
-
-                VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
-            }
-#endif //VULKAN_DEBUG_MARKERS
-        }
-
-        if (VulkanImage::isDepthStencilFormat(m_format))
-        {
-            //Depth only view
-            if (VulkanImage::getImageAspectFlags(m_format) & VK_IMAGE_ASPECT_DEPTH_BIT)
-            {
-                VkImageViewCreateInfo imageViewCreateInfo = {};
-                imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-                imageViewCreateInfo.pNext = vkExtensions;
-                imageViewCreateInfo.flags = 0;
-                imageViewCreateInfo.image = m_image;
-                imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_arrayLayers == 6U, m_arrayLayers > 1);
-                imageViewCreateInfo.format = m_format;
-                imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
-                imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_DEPTH_BIT);
-
-                VkImageView view = VK_NULL_HANDLE;
-                VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
-                if (result != VK_SUCCESS)
-                {
-                    LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                    return false;
-                }
-
-                [[maybe_unused]] auto viewIter = m_imageViews.insert({ DescInfo<VkImageSubresourceRange>(imageViewCreateInfo.subresourceRange), view });
-                ASSERT(viewIter.second, "already exsist");
-
-#if VULKAN_DEBUG_MARKERS
-                if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
-                {
-                    std::string imageViewName = "DepthView_" + m_debugName;
-
-                    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-                    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-                    debugUtilsObjectNameInfo.pNext = nullptr;
-                    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-                    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(view);
-                    debugUtilsObjectNameInfo.pObjectName = imageViewName.c_str();
-
-                    VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
-                }
-#endif //VULKAN_DEBUG_MARKERS
-            }
-
-            //Stencil only view
-            if (VulkanImage::getImageAspectFlags(m_format) & VK_IMAGE_ASPECT_STENCIL_BIT)
-            {
-                VkImageViewCreateInfo imageViewCreateInfo = {};
-                imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-                imageViewCreateInfo.pNext = vkExtensions;
-                imageViewCreateInfo.flags = 0;
-                imageViewCreateInfo.image = m_image;
-                imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_arrayLayers == 6U, m_arrayLayers > 1);
-                imageViewCreateInfo.format = m_format;
-                imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
-                imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_STENCIL_BIT);
-
-                VkImageView view = VK_NULL_HANDLE;
-                VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
-                if (result != VK_SUCCESS)
-                {
-                    LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                    return false;
-                }
-
-                [[maybe_unused]] auto viewIter = m_imageViews.insert({ DescInfo<VkImageSubresourceRange>(imageViewCreateInfo.subresourceRange), view });
-                ASSERT(viewIter.second, "already exsist");
-
-#if VULKAN_DEBUG_MARKERS
-                if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
-                {
-                    std::string imageViewName = "StencilView_" + m_debugName;
-
-                    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-                    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-                    debugUtilsObjectNameInfo.pNext = nullptr;
-                    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-                    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(view);
-                    debugUtilsObjectNameInfo.pObjectName = imageViewName.c_str();
-
-                    VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
-                }
-#endif //VULKAN_DEBUG_MARKERS
-            }
-
-            // DepthStencil view
-            if (VulkanImage::getImageAspectFlags(m_format) == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))
-            {
-                VkImageViewCreateInfo imageViewCreateInfo = {};
-                imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-                imageViewCreateInfo.pNext = vkExtensions;
-                imageViewCreateInfo.flags = 0;
-                imageViewCreateInfo.image = m_image;
-                imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, m_arrayLayers == 6U, m_arrayLayers > 1);
-                imageViewCreateInfo.format = m_format;
-                imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
-                imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this), VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
-
-                VkImageView view = VK_NULL_HANDLE;
-                VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &view);
-                if (result != VK_SUCCESS)
-                {
-                    LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                    return false;
-                }
-
-                [[maybe_unused]] auto viewIter = m_imageViews.insert({ DescInfo<VkImageSubresourceRange>(imageViewCreateInfo.subresourceRange), view });
-                ASSERT(viewIter.second, "already exsist");
-
-#if VULKAN_DEBUG_MARKERS
-                if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
-                {
-                    std::string imageViewName = "DepthStencilView_" + m_debugName;
-
-                    VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
-                    debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-                    debugUtilsObjectNameInfo.pNext = nullptr;
-                    debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-                    debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(view);
-                    debugUtilsObjectNameInfo.pObjectName = imageViewName.c_str();
-
-                    VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
-                }
-#endif //VULKAN_DEBUG_MARKERS
-            }
-        }
+        LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+        return VK_NULL_HANDLE;
     }
 
-    if (hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+    auto viewIter = m_imageViews.insert({ DescInfo<VkImageSubresourceRange>(imageViewCreateInfo.subresourceRange), VK_NULL_HANDLE });
+    if (viewIter.second)
     {
-        for (u32 layer = 0; layer < m_arrayLayers; ++layer)
+        VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &viewIter.first->second);
+        if (result != VK_SUCCESS)
         {
-            VkImageViewCreateInfo imageViewCreateInfo = {};
-            imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            imageViewCreateInfo.pNext = vkExtensions;
-            imageViewCreateInfo.flags = 0;
-            imageViewCreateInfo.image = m_image;
-            imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_arrayLayers > 1);
-            imageViewCreateInfo.format = m_format;
-            imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-            imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), 0), m_aspectMask);
-
-            auto viewIter = m_imageViews.insert({ DescInfo<VkImageSubresourceRange>(imageViewCreateInfo.subresourceRange), VK_NULL_HANDLE });
-            if (viewIter.second)
-            {
-                VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &viewIter.first->second);
-                if (result != VK_SUCCESS)
-                {
-                    LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                    return false;
-                }
-            }
-
-            if (hasUsageFlag(TextureUsage::TextureUsage_GenerateMipmaps))
-            {
-                for (u32 mip = 0; mip < m_mipLevels; ++mip)
-                {
-                    VkImageViewCreateInfo imageViewCreateInfo = {};
-                    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-                    imageViewCreateInfo.pNext = vkExtensions;
-                    imageViewCreateInfo.flags = 0;
-                    imageViewCreateInfo.image = m_image;
-                    imageViewCreateInfo.viewType = convertImageTypeToImageViewType(m_type, false, m_arrayLayers > 1);
-                    imageViewCreateInfo.format = m_format;
-                    imageViewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-                    imageViewCreateInfo.subresourceRange = VulkanImage::makeImageSubresourceRange(VulkanImage::makeVulkanImageSubresource(this, static_cast<s32>(layer), static_cast<s32>(mip)), m_aspectMask);
-
-                    auto viewIter = m_imageViews.insert({ DescInfo<VkImageSubresourceRange>(imageViewCreateInfo.subresourceRange), VK_NULL_HANDLE });
-                    if (viewIter.second)
-                    {
-                        VkResult result = VulkanWrapper::CreateImageView(m_device.getDeviceInfo()._device, &imageViewCreateInfo, VULKAN_ALLOCATOR, &viewIter.first->second);
-                        if (result != VK_SUCCESS)
-                        {
-                            LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
-                            return false;
-                        }
-                    }
-                }
-            }
+            LOG_ERROR("VulkanImage::createViewImage vkCreateImageView is failed. Error: %s", ErrorString(result).c_str());
+            return VK_NULL_HANDLE;
         }
+
+#if VULKAN_DEBUG_MARKERS
+        if (m_device.getVulkanDeviceCaps()._debugUtilsObjectNameEnabled)
+        {
+            std::string imageViewName = name + m_debugName;
+
+            VkDebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo = {};
+            debugUtilsObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+            debugUtilsObjectNameInfo.pNext = nullptr;
+            debugUtilsObjectNameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+            debugUtilsObjectNameInfo.objectHandle = reinterpret_cast<u64>(view);
+            debugUtilsObjectNameInfo.pObjectName = imageViewName.c_str();
+
+            VulkanWrapper::SetDebugUtilsObjectName(m_device.getDeviceInfo()._device, &debugUtilsObjectNameInfo);
+        }
+#endif //VULKAN_DEBUG_MARKERS
     }
 
-    return true;
+    return view;
 }
 
 } //namespace vk

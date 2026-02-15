@@ -75,7 +75,7 @@ namespace scene
             u32                                         _cascadeCount = k_maxShadowmapCascadeCount;
             f32                                         _longRange = 50.0f;
             f32                                         _splitFactor = 0.90f;
-            f32                                         _punctualLightBias = 0.0f;
+            f32                                         _punctualLightBias = 0.01f;
             f32                                         _PCF = 1.0f; //0 - disable; 1 - 3x3;
             f32                                         _textelScale = 0.5f;
             bool                                        _debugShadowCascades = false;
