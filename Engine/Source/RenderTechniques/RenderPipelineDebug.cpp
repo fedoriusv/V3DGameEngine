@@ -143,7 +143,7 @@ void RenderPipelineDebugStage::destroy(renderer::Device* device, scene::SceneDat
 
 void RenderPipelineDebugStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)].empty())
+    if (scene.m_renderLists[toEnumType(scene::ScenePass::Debug)].empty())
     {
         return;
     }
@@ -170,7 +170,7 @@ void RenderPipelineDebugStage::prepare(renderer::Device* device, scene::SceneDat
 
 void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)].empty())
+    if (scene.m_renderLists[toEnumType(scene::ScenePass::Debug)].empty())
     {
         return;
     }
@@ -179,7 +179,7 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
         {
             TRACE_PROFILER_SCOPE("Debug", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "Debug", color::rgbaf::GREEN);
-            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)].empty(), "must be not empty");
+            ASSERT(!scene.m_renderLists[toEnumType(scene::ScenePass::Debug)].empty(), "must be not empty");
 
             ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
             ASSERT(viewportState_handle.isValid(), "must be valid");
@@ -217,7 +217,7 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
             cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
             cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
 
-            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Debug)])
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Debug)])
             {
                 const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                 const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);

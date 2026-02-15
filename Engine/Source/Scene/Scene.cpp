@@ -70,20 +70,20 @@ void SceneData::finalize()
                 {
                     if (material->getShadingModel() == scene::MaterialShadingModel::Custom)
                     {
-                        entry->passMask = 1 << toEnumType((scene::RenderPipelinePass)material->getProperty<u32>("materialID"));
+                        entry->passMask = 1 << toEnumType((scene::ScenePass)material->getProperty<u32>("materialID"));
                         entry->pipelineID = material->getProperty<u32>("pipelineID");
                     }
                     else if (material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness)
                     {
                         bool isOpaque = true;
-                        entry->passMask = isOpaque ? (1 << toEnumType(scene::RenderPipelinePass::Opaque)) : (1 << toEnumType(scene::RenderPipelinePass::Transparency));
+                        entry->passMask = isOpaque ? (1 << toEnumType(scene::ScenePass::Opaque)) : (1 << toEnumType(scene::ScenePass::Transparency));
                         entry->pipelineID = material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness ? 0 : 1;
                     }
                 }
 
                 if (geometry->isShadowsCasted())
                 {
-                    entry->passMask |= 1 << toEnumType(scene::RenderPipelinePass::Shadowmap);
+                    entry->passMask |= 1 << toEnumType(scene::ScenePass::Shadowmap);
                 }
 
                 m_generalRenderList.push_back(entry);
@@ -95,7 +95,7 @@ void SceneData::finalize()
                 entry->object = node;
                 entry->material = node->getComponentByType<scene::Material>();
                 entry->geometry = nullptr;
-                entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::Indicator);
+                entry->passMask = 1 << toEnumType(scene::ScenePass::Indicator);
                 entry->pipelineID = 0;
 
                 m_generalRenderList.push_back(entry);
@@ -106,7 +106,7 @@ void SceneData::finalize()
                 scene::LightNodeEntry* entry = new scene::LightNodeEntry;
                 entry->object = node;
                 entry->light = light;
-                entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::DirectionLight);
+                entry->passMask = 1 << toEnumType(scene::ScenePass::DirectionLight);
                 entry->pipelineID = 0;
 
                 m_generalRenderList.push_back(entry);
@@ -116,7 +116,7 @@ void SceneData::finalize()
                 scene::LightNodeEntry* entry = new scene::LightNodeEntry;
                 entry->object = node;
                 entry->light = light;
-                entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::PunctualLights);
+                entry->passMask = 1 << toEnumType(scene::ScenePass::PunctualLights);
 
                 m_generalRenderList.push_back(entry);
             }
@@ -128,7 +128,7 @@ void SceneData::finalize()
                 entry->object = node;
                 entry->material = material;
                 entry->skybox = skybox;
-                entry->passMask = 1 << toEnumType(scene::RenderPipelinePass::Skybox);
+                entry->passMask = 1 << toEnumType(scene::ScenePass::Skybox);
                 entry->pipelineID = material->getProperty<u32>("pipelineID");
 
                 m_generalRenderList.push_back(entry);
@@ -197,12 +197,12 @@ void SceneHandler::updateScene(f32 dt)
         m_nodeGraphChanged = false;
     }
 
-    for (u32 i = 0; i < toEnumType(RenderPipelinePass::Count); ++i)
+    for (u32 i = 0; i < toEnumType(ScenePass::Count); ++i)
     {
-        m_sceneData.m_renderLists[toEnumType(RenderPipelinePass(i))].clear();
+        m_sceneData.m_renderLists[toEnumType(ScenePass(i))].clear();
     }
 
-    auto callback = [](SceneNode* parent, SceneNode* node)
+    static auto applyTransfrom = [](SceneNode* parent, SceneNode* node)
         {
             if (parent)
             {
@@ -220,7 +220,7 @@ void SceneHandler::updateScene(f32 dt)
     {
         if (item->object->m_dirty)
         {
-            SceneNode::forEach(item->object, callback);
+            SceneNode::forEach(item->object, applyTransfrom);
             item->object->m_dirty = false;
         }
 
@@ -238,8 +238,50 @@ void SceneHandler::updateScene(f32 dt)
                     continue;
                 }
 
-                ASSERT(index < toEnumType(RenderPipelinePass::Count), "out of range");
+                if (passID & (1 << toEnumType(ScenePass::Shadowmap)))
+                {
+                    //Skip geometry if an object far away from long range distance
+                    f32 distance = item->object->getTransform().getPosition().distanceFrom(m_sceneData.m_camera->getPosition());
+                    if (distance > m_sceneData.m_settings._shadowsParams._longRange)
+                    {
+                        continue;
+                    }
+                }
+
+                if (passID & (1 << toEnumType(ScenePass::MaskedOpaque)))
+                {
+                    int a = 0;
+                }
+
+                ASSERT(index < toEnumType(ScenePass::Count), "out of range");
                 m_sceneData.m_renderLists[index].push_back(item);
+            }
+        }
+    }
+
+    auto& lightList = m_sceneData.m_renderLists[toEnumType(ScenePass::PunctualLights)];
+    std::sort(lightList.begin(), lightList.end(), [camera = m_sceneData.m_camera](const NodeEntry* a, const NodeEntry* b) -> bool
+        {
+            f32 dist0 = a->object->getTransform().getPosition().distanceFrom(camera->getPosition());
+            f32 dist1 = a->object->getTransform().getPosition().distanceFrom(camera->getPosition());
+            
+            //TODO sort by radius
+            return dist0 < dist1;
+        });
+
+    for (u32 i = 0; i < std::min<u32>(lightList.size(), k_maxPunctualShadowmapCount); ++i)
+    {
+        for (auto& item : m_sceneData.m_renderLists[toEnumType(ScenePass::Shadowmap)])
+        {
+            const NodeEntry* light = lightList[i];
+            f32 distance = item->object->getTransform().getPosition().distanceFrom(light->object->getTransform().getPosition());
+
+            PointLight* point = light->object->getComponentByType<PointLight>();
+            if (point->getRadius() > distance)
+            {
+                u32 lightList = toEnumType(scene::ScenePass::FirstPunctualShadowmap) + i;
+                item->passMask |= 1 << lightList;
+                m_sceneData.m_renderLists[lightList].push_back(item);
             }
         }
     }

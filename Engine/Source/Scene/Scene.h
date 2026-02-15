@@ -19,14 +19,46 @@ namespace v3d
 {
 namespace scene
 {
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     class RenderPipelineStage;
     class RenderTechnique;
 
     class SceneHandler;
     class SceneNode;
     struct NodeEntry;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    constexpr u32 k_maxShadowmapCascadeCount = 4;
+    constexpr u32 k_maxPunctualShadowmapCount = 8;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    enum class ScenePass : u32
+    {
+        Opaque,
+        SkinnedOpaque,
+        MaskedOpaque,
+
+        Skybox,
+
+        Transparency,
+        VFX,
+
+        DirectionLight,
+        PunctualLights,
+
+        Shadowmap,
+        FirstPunctualShadowmap,
+        LastPunctualShadowmap = FirstPunctualShadowmap + k_maxPunctualShadowmapCount,
+
+        Selected,
+        Indicator,
+        Debug,
+
+        Custom,
+
+        Count
+    };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,9 +81,6 @@ namespace scene
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    constexpr u32 k_maxShadowmapCascadeCount = 4;
-    constexpr u32 k_maxPunctualShadowmapCount = 6;
 
     struct Settings
     {
@@ -114,32 +143,31 @@ namespace scene
         SceneData() noexcept;
         virtual ~SceneData();
 
-        scene::FrameData& sceneFrameData() const;
-        scene::FrameData& renderFrameData() const;
+        FrameData& sceneFrameData() const;
+        FrameData& renderFrameData() const;
         u32 numberOfFrames() const;
 
         const std::vector<SceneNode*>& getNodeList() const;
 
     public:
 
-        mutable scene::RenderObjectTracker      m_globalResources;
-        Settings                                m_settings;
+        mutable RenderObjectTracker         m_globalResources;
+        Settings                            m_settings;
 
-        std::vector<NodeEntry*>                 m_generalRenderList;
-        std::vector<NodeEntry*>                 m_renderLists[toEnumType(RenderPipelinePass::Count)];
+        std::vector<NodeEntry*>             m_generalRenderList;
+        std::vector<NodeEntry*>             m_renderLists[toEnumType(ScenePass::Count)];
 
-
-        math::Dimension2D                       m_viewportSize;
-        scene::CameraController*                m_camera;
+        math::Dimension2D                   m_viewportSize;
+        scene::CameraController*            m_camera;
 
     protected:
 
-        mutable task::TaskScheduler             m_taskWorker;
+        mutable task::TaskScheduler         m_taskWorker;
 
-        std::vector<SceneNode*>                 m_nodes;
+        std::vector<SceneNode*>             m_nodes;
 
-        mutable std::array<scene::FrameData, 1> m_frameState;
-        u32                                     m_stateIndex;
+        mutable std::array<FrameData, 1>    m_frameState;
+        u32                                 m_stateIndex;
 
         void finalize();
 
@@ -175,8 +203,8 @@ namespace scene
         /*void removeNode(SceneNode* node);
         void updateNode(SceneNode* node)*/
 
-        void registerTechnique(scene::RenderTechnique* technique);
-        void unregisterTechnique(scene::RenderTechnique* technique);
+        void registerTechnique(RenderTechnique* technique);
+        void unregisterTechnique(RenderTechnique* technique);
 
         SceneData m_sceneData;
 

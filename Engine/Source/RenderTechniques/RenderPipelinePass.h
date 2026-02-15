@@ -8,35 +8,6 @@ namespace scene
 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    enum class RenderPipelinePass : u32
-    {
-        Opaque,
-        SkinnedOpaque,
-        MaskedOpaque,
-
-        Transparency,
-        SkinnedTransparency,
-
-        Skybox,
-        VFX,
-
-        DirectionLight,
-        PunctualLights,
-        Shadowmap,
-        FirstPunctualShadowmap,
-        LastPunctualShadowmap,
-
-        Selected,
-        Indicator,
-        Debug,
-
-        Custom,
-
-        Count
-    };
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #define SHADER_PARAMETER(parameter) \
     u32 parameter = -1
 

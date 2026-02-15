@@ -159,7 +159,7 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
             TRACE_PROFILER_SCOPE("Selection", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "Selection", color::rgbaf::GREEN);
 
-            if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)].empty())
+            if (scene.m_renderLists[toEnumType(scene::ScenePass::Selected)].empty())
             {
                 cmdList->clear(m_renderTarget->getColorTexture<renderer::Texture2D>(0), { 0.f, 0.f,  0.f,  0.f });
                 return;
@@ -174,19 +174,19 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
             ASSERT(viewportState_handle.isValid(), "must be valid");
             scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
 
-            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Selected)])
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Selected)])
             {
                 const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                 const scene::Material& material = *static_cast<scene::Material*>(itemMesh.material);
 
                 static auto selectPipelineFormat = [](const scene::DrawNodeEntry& item) -> std::tuple<u32, u64>
                     {
-                        if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Debug)))
+                        if (item.passMask & (1 << toEnumType(scene::ScenePass::Debug)))
                         {
                             return { 1U, sizeof(VertexFormatSimpleLit) };
                         }
 
-                        if (item.passMask & (1 << toEnumType(scene::RenderPipelinePass::Indicator)))
+                        if (item.passMask & (1 << toEnumType(scene::ScenePass::Indicator)))
                         {
                             return { 2U, 0/*VertexFormatEmpty*/ };
                         }

@@ -157,7 +157,7 @@ void RenderPipelineMBOITStage::prepare(renderer::Device* device, scene::SceneDat
 
 void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Transparency)].empty())
+    if (scene.m_renderLists[toEnumType(scene::ScenePass::Transparency)].empty())
     {
         return;
     }
@@ -187,7 +187,7 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, 0)
                     });
 
-                for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Transparency)])
+                for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Transparency)])
                 {
                     const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                     const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
@@ -259,7 +259,7 @@ void RenderPipelineMBOITStage::execute(renderer::Device* device, scene::SceneDat
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, 0)
                     });
 
-                for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Transparency)])
+                for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Transparency)])
                 {
                     const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                     const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);

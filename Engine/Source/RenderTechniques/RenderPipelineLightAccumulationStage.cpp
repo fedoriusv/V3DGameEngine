@@ -79,7 +79,7 @@ void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, sce
 
 void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty())
+    if (scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].empty())
     {
         return;
     }
@@ -88,7 +88,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
         {
             TRACE_PROFILER_SCOPE("VolumeLights", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "VolumeLights", color::rgbaf::GREEN);
-            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty(), "must not be empty");
+            ASSERT(!scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].empty(), "must not be empty");
 
             ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
             ASSERT(viewportState_handle.isValid(), "must be valid");
@@ -125,7 +125,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             ObjectHandle shadowmaps_handle = scene.m_globalResources.get("shadowmaps_array");
             if (!shadowmaps_handle.isValid())
             {
-                shadowmaps_handle = scene.m_globalResources.get("default_cubemap");
+                shadowmaps_handle = scene.m_globalResources.get("default_array");
                 ASSERT(shadowmaps_handle.isValid(), "must be valid");
             }
             renderer::Texture2D* shadowmapsTexture = shadowmaps_handle.as<renderer::Texture2D>();

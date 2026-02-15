@@ -142,7 +142,7 @@ void RenderPipelineSkyboxStage::prepare(renderer::Device* device, scene::SceneDa
 
 void RenderPipelineSkyboxStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)].empty())
+    if (scene.m_renderLists[toEnumType(scene::ScenePass::Skybox)].empty())
     {
         return;
     }
@@ -151,9 +151,9 @@ void RenderPipelineSkyboxStage::execute(renderer::Device* device, scene::SceneDa
         {
             TRACE_PROFILER_SCOPE("Skybox", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "Skybox", color::rgbaf::GREEN);
-            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)].empty(), "must be not empty");
+            ASSERT(!scene.m_renderLists[toEnumType(scene::ScenePass::Skybox)].empty(), "must be not empty");
 
-            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Skybox)])
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Skybox)])
             {
                 const scene::SkyboxNodeEntry& itemMesh = *static_cast<scene::SkyboxNodeEntry*>(entry);
                 const scene::Skybox& skybox = *static_cast<scene::Skybox*>(itemMesh.skybox);

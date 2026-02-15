@@ -179,26 +179,34 @@ namespace scene
 
     struct NodeEntry
     {
-        SceneNode* object = nullptr;
-        u32 passMask = 1 << toEnumType(scene::RenderPipelinePass::Custom);
-        u32 pipelineID = 0;
+        NodeEntry() noexcept;
+
+        SceneNode*  object;
+        u32         passMask;
+        u32         pipelineID;
     };
 
     struct DrawNodeEntry : NodeEntry
     {
-        Component* geometry = nullptr;
-        Component* material = nullptr;
+        DrawNodeEntry() noexcept;
+
+        Component* geometry;
+        Component* material;
     };
 
     struct LightNodeEntry : NodeEntry
     {
-        Component* light = nullptr;
+        LightNodeEntry() noexcept;
+
+        Component* light;
     };
 
     struct SkyboxNodeEntry : NodeEntry
     {
-        Component* skybox = nullptr;
-        Component* material = nullptr;
+        SkyboxNodeEntry() noexcept;
+
+        Component* skybox;
+        Component* material;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

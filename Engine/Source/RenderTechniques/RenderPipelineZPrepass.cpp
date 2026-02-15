@@ -101,7 +101,7 @@ void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::Scene
             TRACE_PROFILER_SCOPE("ZPrepass", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "ZPrepass", color::rgbaf::GREEN);
 
-            if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)].empty())
+            if (scene.m_renderLists[toEnumType(scene::ScenePass::Opaque)].empty())
             {
                 cmdList->clear(m_depthRenderTarget->getDepthStencilTexture<renderer::Texture2D>(), k_clearValue, 0U);
             }
@@ -121,9 +121,9 @@ void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::Scene
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_depthParameters.cb_Viewport)
                     });
 
-                for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
+                for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Opaque)])
                 {
-                    if (!(entry->passMask & (1 << toEnumType(scene::RenderPipelinePass::Opaque))))
+                    if (!(entry->passMask & (1 << toEnumType(scene::ScenePass::Opaque))))
                     {
                         continue;
                     }

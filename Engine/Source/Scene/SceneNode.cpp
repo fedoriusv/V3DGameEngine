@@ -1,4 +1,5 @@
 #include "SceneNode.h"
+#include "Scene.h"
 
 namespace v3d
 {
@@ -38,6 +39,30 @@ void SceneNode::addChild(SceneNode* node)
     m_children.push_back(node);
     ASSERT(node->m_parent == nullptr, "node has parend already");
     node->m_parent = this;
+}
+
+NodeEntry::NodeEntry() noexcept
+    : object(nullptr)
+    , passMask(1 << toEnumType(scene::ScenePass::Custom))
+    , pipelineID(0)
+{
+}
+
+DrawNodeEntry::DrawNodeEntry() noexcept
+    : geometry(nullptr)
+    , material(nullptr)
+{
+}
+
+LightNodeEntry::LightNodeEntry() noexcept
+    : light(nullptr)
+{
+}
+
+SkyboxNodeEntry::SkyboxNodeEntry() noexcept
+    : skybox(nullptr)
+    , material(nullptr)
+{
 }
 
 } //namespace scene

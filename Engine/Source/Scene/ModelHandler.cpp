@@ -15,64 +15,6 @@ namespace v3d
 namespace scene
 {
 
-void ModelHandler::preUpdate(f32 dt, scene::SceneData& scene)
-{
-    for (u32 i = 0; i < toEnumType(RenderPipelinePass::Count); ++i)
-    {
-        scene.m_renderLists[toEnumType(RenderPipelinePass(i))].clear();
-    }
-
-    auto callback = [](SceneNode* parent, SceneNode* node)
-        {
-            if (parent)
-            {
-                const math::Matrix4D transform = parent->m_transform[toEnumType(TransformMode::Global)].getMatrix() * node->m_transform[toEnumType(TransformMode::Local)].getMatrix();
-                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(transform);
-            }
-            else
-            {
-                node->m_transform[toEnumType(TransformMode::Global)].setMatrix(node->m_transform[toEnumType(TransformMode::Local)].getMatrix());
-            }
-        };
-
-    //group by type
-    for (auto& item : scene.m_generalRenderList)
-    {
-        if (item->object->m_dirty)
-        {
-            SceneNode::forEach(item->object, callback);
-            item->object->m_dirty = false;
-        }
-
-        //fructum test
-        //TODO
-
-        if (item->object->m_visible)
-        {
-            u32 count = std::bit_width(item->passMask);
-            for (u32 index = 0; index < count; ++index)
-            {
-                u32 passID = 1 << index;
-                if ((item->passMask & passID) == 0)
-                {
-                    continue;
-                }
-
-                ASSERT(index < toEnumType(RenderPipelinePass::Count), "out of range");
-                scene.m_renderLists[index].push_back(item);
-            }
-        }
-    }
-}
-
-void ModelHandler::postUpdate(f32 dt, scene::SceneData& scene)
-{
-    for (auto& item : scene.m_generalRenderList)
-    {
-        item->object->m_prevTransform = item->object->m_transform[toEnumType(TransformMode::Global)];
-    }
-}
-
  //void ModelHandler::drawInstance(renderer::CmdListRender* cmdList, Model* model)
  //{
  //    struct ModelBuffer

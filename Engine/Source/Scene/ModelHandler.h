@@ -27,12 +27,6 @@ namespace scene
         ModelHandler() = default;
         ~ModelHandler() = default;
 
-        static ModelHandler* createModelHandler();
-
-        void preUpdate(f32 dt, scene::SceneData& scene);
-        void postUpdate(f32 dt, scene::SceneData& scene);
-        //void drawInstance(renderer::CmdListRender* cmdList, Model* model);
-
     private:
 
         renderer::Device* m_device;

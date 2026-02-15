@@ -151,8 +151,8 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, Scen
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
                 });
 
-            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].empty(), "must be presented");
-            const scene::NodeEntry* entry = scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0];
+            ASSERT(!scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)].empty(), "must be presented");
+            const scene::NodeEntry* entry = scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)][0];
             const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
             const scene::DirectionalLight& dirLight = *static_cast<const scene::DirectionalLight*>(itemLight.light);
 

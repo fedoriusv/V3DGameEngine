@@ -244,9 +244,9 @@ void RenderPipelineGBufferStage::prepare(renderer::Device* device, scene::SceneD
 
 void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
+    for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Opaque)])
     {
-        if (!(entry->passMask & (1 << toEnumType(scene::RenderPipelinePass::Opaque))))
+        if (!(entry->passMask & (1 << toEnumType(scene::ScenePass::Opaque))))
         {
             continue;
         }
@@ -258,7 +258,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
         {
             TRACE_PROFILER_SCOPE("GBuffer", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "GBuffer", color::rgbaf::GREEN);
-            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)].empty(), "must not be empty");
+            ASSERT(!scene.m_renderLists[toEnumType(scene::ScenePass::Opaque)].empty(), "must not be empty");
 
             ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
             ASSERT(viewportState_handle.isValid(), "must be valid");
@@ -272,7 +272,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
             cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
             cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
 
-            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Opaque)])
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Opaque)])
             {
                 const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                 const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
@@ -338,7 +338,7 @@ void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneD
                 cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
             }
 
-            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::MaskedOpaque)])
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::MaskedOpaque)])
             {
                 const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                 const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);

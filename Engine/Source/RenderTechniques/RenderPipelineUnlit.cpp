@@ -102,7 +102,7 @@ void RenderPipelineUnlitStage::prepare(renderer::Device* device, scene::SceneDat
 
 void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)].empty())
+    if (scene.m_renderLists[toEnumType(scene::ScenePass::Indicator)].empty())
     {
         return;
     }
@@ -111,7 +111,7 @@ void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneDat
         {
             TRACE_PROFILER_SCOPE("Unlit", color::rgba8::GREEN);
             DEBUG_MARKER_SCOPE(cmdList, "Unlit", color::rgbaf::GREEN);
-            ASSERT(!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)].empty(), "must not be empty");
+            ASSERT(!scene.m_renderLists[toEnumType(scene::ScenePass::Indicator)].empty(), "must not be empty");
 
             ObjectHandle renderTarget_handler = scene.m_globalResources.get("color_target");
             ASSERT(renderTarget_handler.isValid(), "must be valid");
@@ -164,7 +164,7 @@ void RenderPipelineUnlitStage::execute(renderer::Device* device, scene::SceneDat
             cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
             cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
 
-            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Indicator)])
+            for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Indicator)])
             {
                 const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                 const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);

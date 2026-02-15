@@ -208,7 +208,7 @@ void RenderPipelineShadowStage::prepare(renderer::Device* device, SceneData& sce
 
 void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Shadowmap)].empty())
+    if (scene.m_renderLists[toEnumType(scene::ScenePass::Shadowmap)].empty())
     {
         return;
     }
@@ -218,9 +218,11 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
     frame.m_frameResources.bind("shadow_data", pipelineData);
 
     if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].empty())
+    if (!scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)].empty())
     {
         //Support only 1 direction light at this moment
         scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0]);
+        scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)][0]);
         const scene::DirectionalLight& dirLight = *static_cast<const scene::DirectionalLight*>(itemLight.light);
 
         ASSERT(scene.m_settings._shadowsParams._cascadeCount <= k_maxShadowmapCascadeCount, "size is out range");
@@ -258,8 +260,8 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
             ObjectHandle pipelineData_handle = frame.m_frameResources.get("shadow_data");
             const RenderPipelineShadowStage::PipelineData* pipelineData = pipelineData_handle.as<scene::RenderPipelineShadowStage::PipelineData>();
 
-            ASSERT(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].size() == 1, "supported only one light at the moment");
-            if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].empty())
+            ASSERT(scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)].size() == 1, "supported only one light at the moment");
+            if (!scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)].empty())
             {
                 TRACE_PROFILER_SCOPE("CascadeShadowmaps", color::rgba8::GREEN);
                 DEBUG_MARKER_SCOPE(cmdList, "CascadeShadowmaps", color::rgbaf::GREEN);
@@ -272,7 +274,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                 cmdList->setScissor({ 0.f, 0.f, (f32)pipelineData->_shadowSize._width, (f32)pipelineData->_shadowSize._height });
                 cmdList->setPipelineState(*m_cascadeShadowPipeline);
 
-                for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Shadowmap)])
+                for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Shadowmap)])
                 {
                     const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
                     //TODO skip if long range more than distance to camera
@@ -306,7 +308,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                 cmdList->endRenderTarget();
             }
 
-            if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].empty())
+            if (!scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].empty())
             {
                 TRACE_PROFILER_SCOPE("PunctualShadowmaps", color::rgba8::GREEN);
                 DEBUG_MARKER_SCOPE(cmdList, "PunctualShadowmaps", color::rgbaf::GREEN);
@@ -338,7 +340,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                     cmdList->setScissor({ 0.f, 0.f, (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height });
                     cmdList->setPipelineState(*m_punctualShadowPipeline);
 
-                    for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::Shadowmap)])
+                    for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Shadowmap)])
                     {
                         const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
 
