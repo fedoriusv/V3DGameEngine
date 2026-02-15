@@ -127,6 +127,9 @@ private:
 
     void loadResources();
 
+    scene::DirectionalLight* addSunLight(const math::Vector3D& direction, const color::ColorRGBAF& color, const std::string& name);
+    scene::PointLight* addPointLightComponent(const math::Vector3D& position, f32 radius, const color::ColorRGBAF& color, const std::string& name, scene::SceneNode* parent = nullptr);
+
     renderer::Device*               m_device;
 
     scene::ModelHandler*            m_modelHandler;
@@ -150,8 +153,8 @@ private:
     u32                             m_selectedIndex;
     std::vector<std::tuple<std::string, v3d::ObjectHandle>> m_LUTs;
 
-    void editor_loadDebug();
 
+    void editor_loadDebug();
     void test_loadLights();
     void test_loadScene(const std::string& name);
     void test_loadTestScene();

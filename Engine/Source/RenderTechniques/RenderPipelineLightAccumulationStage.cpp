@@ -142,9 +142,9 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
             cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
 
-            int i = 0;
-            for (auto& entry : scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)])
+            for (u32 i = 0; i < scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].size(); ++i)
             {
+                auto& entry = scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)][i];
                 const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
                 const scene::PointLight& light = *static_cast<const scene::PointLight*>(itemLight.light);
 
@@ -184,22 +184,26 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                     f32            applyShadow;
                 } lightBuffer;
 
-
-                auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = shadowData->_punctualLightsData[0];
-
-
-
-                memcpy(lightBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
-                lightBuffer.clipNearFar = plane;
-                lightBuffer.viewSliceOffsetCount = { 0.0f, 6.0f };
                 lightBuffer.position = itemLight.object->getTransform().getPosition();
                 lightBuffer.color = light.getColor();
                 lightBuffer.attenuation = light.getAttenuation();
                 lightBuffer.intensity = light.getIntensity();
                 lightBuffer.temperature = light.getTemperature();
-                lightBuffer.shadowBaseBias = scene.m_settings._shadowsParams._punctualLightBias;
-                lightBuffer.applyShadow = i == 0 ? true : false;
-                ++i;
+
+                lightBuffer.clipNearFar = { 0.0f, 0.0f };
+                lightBuffer.viewSliceOffsetCount = { 0.0f, 0.0f };
+                lightBuffer.shadowBaseBias = 0.0f;
+                lightBuffer.applyShadow = false;
+
+                if (i < k_maxPunctualShadowmapCount && shadowData->_punctualLightsFlags[i])
+                {
+                    auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = shadowData->_punctualLightsData[i];
+                    memcpy(lightBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
+                    lightBuffer.clipNearFar = plane;
+                    lightBuffer.viewSliceOffsetCount = { i * 6.0f, 6.0f };
+                    lightBuffer.shadowBaseBias = scene.m_settings._shadowsParams._punctualLightBias;
+                    lightBuffer.applyShadow = true;
+                }
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                     {

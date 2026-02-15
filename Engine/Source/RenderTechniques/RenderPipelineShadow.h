@@ -41,6 +41,7 @@ namespace scene
             math::Dimension2D                                       _shadowSize;
             std::array<f32, k_maxShadowmapCascadeCount>             _directionLightCascadeSplits;
             std::array<math::Matrix4D, k_maxShadowmapCascadeCount>  _directionLightSpaceMatrix;
+            std::array<u32, k_maxPunctualShadowmapCount>            _punctualLightsFlags;
             std::array<std::tuple<std::array<math::Matrix4D, 6>, math::Vector3D, math::float2, u32>, k_maxPunctualShadowmapCount> _punctualLightsData;
 
             thread::ThreadSafeAllocator* _allocator;

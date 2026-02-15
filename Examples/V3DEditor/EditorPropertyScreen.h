@@ -56,7 +56,7 @@ private:
         ui::WidgetInputDragFloat*  m_propertyIntensity;
         ui::WidgetInputDragFloat*  m_propertyTemperature;
         ui::WidgetInputDragFloat*  m_propertyRadius;
-        ui::WidgetInputDragFloat4* m_propertyAttenuation;
+        ui::WidgetInputDragFloat3* m_propertyAttenuation;
         ui::WidgetColorPalette*    m_propertyColor;
         u32 m_loadedFlag = 0;
     } m_lightProperty;

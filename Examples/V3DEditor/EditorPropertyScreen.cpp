@@ -142,7 +142,7 @@ void EditorPropertyScreen::update(f32 dt)
                 m_lightProperty.m_propertyColor->setColor(color);
 
                 math::float4 att = light->getAttenuation();
-                m_lightProperty.m_propertyAttenuation->setValue(att._x, att._y, att._z, att._w);
+                m_lightProperty.m_propertyAttenuation->setValue(att._x, att._y, att._z);
 
                 if (!m_selectedNode->m_children.empty())
                 {
@@ -447,9 +447,46 @@ void EditorPropertyScreen::buildLightProp()
         flags |= ui::WidgetTreeNode::TreeNodeFlag::Open;
     }
 
+    if (scene::DirectionalLight* sun = m_selectedNode->getComponentByType<scene::DirectionalLight>(); sun)
+    {
+        window
+            .addWidget(ui::WidgetLayout()
+                .setFontSize(ui::WidgetLayout::MediumFont)
+                .addWidget(ui::WidgetTreeNode("Sun", flags)
+                    .addWidget(ui::WidgetHorizontalLayout()
+                        .addWidget(ui::WidgetText("Azimuth"))
+                        .addWidget(ui::WidgetInputDragFloat(m_selectedNode->getTransform().getRotation().getY())
+                            .setStep(1.0f)
+                            .setRange(0.0f, 360.0f)
+                            .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                                {
+                                    f32 azimuth = val;
+                                    f32 altitude = m_selectedNode->getTransform().getRotation().getX();
+
+                                    m_selectedNode->setRotation(scene::TransformMode::Local, { altitude, azimuth, 1.0 });
+                                })
+                        )
+                    )
+                    .addWidget(ui::WidgetHorizontalLayout()
+                        .addWidget(ui::WidgetText("Altitude (elevation)"))
+                        .addWidget(ui::WidgetInputDragFloat(m_selectedNode->getTransform().getRotation().getX())
+                            .setStep(1.0f)
+                            .setRange(1.0f, 90.f)
+                            .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                                {
+                                    f32 azimuth = m_selectedNode->getTransform().getRotation().getY();
+                                    f32 altitude = val;
+
+                                    m_selectedNode->setRotation(scene::TransformMode::Local, { altitude, azimuth, 1.0 });
+                                })
+                        )
+                    )
+                )
+            );
+    }
+
     scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
     bool isPunctual = m_selectedNode->getComponentByType<scene::PointLight>() || m_selectedNode->getComponentByType<scene::SpotLight>();
-
     window
         .addWidget(ui::WidgetLayout()
             .setFontSize(ui::WidgetLayout::MediumFont)
@@ -526,23 +563,22 @@ void EditorPropertyScreen::buildLightProp()
                 .addWidget(ui::WidgetHorizontalLayout()
                     .setVisible(isPunctual)
                     .addWidget(ui::WidgetText("Attenuation"))
-                    .addWidget(ui::WidgetInputDragFloat4(1.f, 0.09f, 0.063f, 0.f)
+                    .addWidget(ui::WidgetInputDragFloat3(1.f, 0.09f, 0.063f)
                     .setStep(0.01)
                     .setRange(0.01f, 100.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-                                m_lightProperty.m_propertyAttenuation = static_cast<ui::WidgetInputDragFloat4*>(w);
+                                m_lightProperty.m_propertyAttenuation = static_cast<ui::WidgetInputDragFloat3*>(w);
                                 m_lightProperty.m_loadedFlag |= 1 << 3;
                             })
-                        .setOnChangedValueEvent([this](ui::Widget* w, const math::float4& val) -> void
+                        .setOnChangedValueEvent([this](ui::Widget* w, const math::float3& val) -> void
                             {
                                 if (m_selectedNode)
                                 {
                                     if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
                                     {
-                                        light->setAttenuation(val._x, val._y, val._z, val._w);
-                                        light->setRadius(val._w);
-                                        m_selectedNode->setScale(scene::TransformMode::Local, { val._w , val._w, val._w });
+                                        math::float4 attenuation = light->getAttenuation();
+                                        light->setAttenuation(val._x, val._y, val._z, attenuation._w);
 
                                         m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                     }

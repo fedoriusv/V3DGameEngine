@@ -77,7 +77,7 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     float3 shadowCoord = lightModelViewProj.xyz / lightModelViewProj.w;
 
     float2 uv = cubemap_face_UV(lightDirection, face);
-    float dist = t_TextureShadowmaps.Sample(s_SamplerState, float3(uv, face)).r;
+    float dist = t_TextureShadowmaps.Sample(s_SamplerState, float3(uv, cb_Light.viewSliceOffest.x + face)).r;
 
     float depthMap = linearize_depth(dist, cb_Light.clipNearFar.x, cb_Light.clipNearFar.y);
     float depthFrag = linearize_depth(shadowCoord.z, cb_Light.clipNearFar.x, cb_Light.clipNearFar.y);

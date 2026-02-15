@@ -215,13 +215,12 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
 
     PipelineData* pipelineData = frame.m_allocator->construct<PipelineData>(frame.m_allocator);
     pipelineData->_shadowSize = scene.m_settings._shadowsParams._size;
+    pipelineData->_punctualLightsFlags.fill(0);
     frame.m_frameResources.bind("shadow_data", pipelineData);
 
-    if (!scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)].empty())
     if (!scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)].empty())
     {
         //Support only 1 direction light at this moment
-        scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0]);
         scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)][0]);
         const scene::DirectionalLight& dirLight = *static_cast<const scene::DirectionalLight*>(itemLight.light);
 
@@ -229,15 +228,10 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
         calculateShadowCascades(scene, itemLight.object->getDirection(), scene.m_settings._shadowsParams._cascadeCount, pipelineData->_directionLightSpaceMatrix.data(), pipelineData->_directionLightCascadeSplits.data());
     }
 
-    for (u32 i = 0; i < scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].size(); ++i)
+    for (u32 i = 0; i < std::min<u32>(scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].size(), k_maxPunctualShadowmapCount); ++i)
     {
-        if (i > 0)
-        {
-            continue;
-        }
-            
         //Now draw one light
-        scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)][i]);
+        scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)][i]);
         const scene::Light& light = *static_cast<const scene::Light*>(itemLight.light);
 
         std::array<math::Matrix4D, 6> pointLightSpaceMatrix;
@@ -248,7 +242,8 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
         f32 farPlane = std::max(lightRadius, nearPlane + 0.1f);
         u32 viewsMask = 0b00111111; //TODO get from the light
         calculateShadowViews(lightPosition, nearPlane, farPlane, viewsMask, pointLightSpaceMatrix);
-        pipelineData->_punctualLightsData[0] = { pointLightSpaceMatrix, lightPosition, math::float2{ nearPlane, farPlane }, viewsMask };
+        pipelineData->_punctualLightsData[i] = { pointLightSpaceMatrix, lightPosition, math::float2{ nearPlane, farPlane }, viewsMask };
+        pipelineData->_punctualLightsFlags[i] |= 1; //TODO check on shadow cast
     }
 
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const SceneData& scene, const scene::FrameData& frame) -> void
@@ -266,7 +261,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                 TRACE_PROFILER_SCOPE("CascadeShadowmaps", color::rgba8::GREEN);
                 DEBUG_MARKER_SCOPE(cmdList, "CascadeShadowmaps", color::rgbaf::GREEN);
 
-                scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0]);
+                scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)][0]);
                 const scene::DirectionalLight& dirLight = *static_cast<const scene::DirectionalLight*>(itemLight.light);
 
                 cmdList->beginRenderTarget(*m_cascadeRenderTarget);
@@ -313,17 +308,21 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                 TRACE_PROFILER_SCOPE("PunctualShadowmaps", color::rgba8::GREEN);
                 DEBUG_MARKER_SCOPE(cmdList, "PunctualShadowmaps", color::rgbaf::GREEN);
 
-                for (u32 i = 0; i < std::min<u32>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::PunctualLights)].size(), k_maxPunctualShadowmapCount); ++i)
+                for (u32 i = 0; i < std::min<u32>(scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].size(), k_maxPunctualShadowmapCount); ++i)
                 {
-                    if (i > 0) //TODO only one
+                    scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)][i]);
+                    const scene::Light& light = *static_cast<const scene::Light*>(itemLight.light);
+                    auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = pipelineData->_punctualLightsData[i];
+                    if (!pipelineData->_punctualLightsFlags[i])
                     {
-                        continue;
+                        return;
                     }
 
-                    auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = pipelineData->_punctualLightsData[0];
+                    TRACE_PROFILER_SCOPE(cmdList, std::format("PunctualLight [{}]", itemLight.object->m_name), color::rgbaf::GREEN);
+                    DEBUG_MARKER_SCOPE(cmdList, std::format("PunctualLight [{}]", itemLight.object->m_name), color::rgbaf::GREEN);
 
                     m_punctualShadowRenderTarget->setViewsMask(viewsMask);
-                    m_punctualShadowRenderTarget->setDepthStencilTexture(renderer::TextureView(m_punctualShadowTextureArray),
+                    m_punctualShadowRenderTarget->setDepthStencilTexture(renderer::TextureView(m_punctualShadowTextureArray, i * 6, 6, 0, 1),
                             {
                                 renderer::RenderTargetLoadOp::LoadOp_Clear, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f,
                             },
@@ -332,8 +331,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                             },
                             {
                                 renderer::TransitionOp::TransitionOp_DepthStencilAttachment, renderer::TransitionOp::TransitionOp_DepthStencilReadOnly
-                            }
-                    );
+                            });
 
                     cmdList->beginRenderTarget(*m_punctualShadowRenderTarget);
                     cmdList->setViewport({ 0.f, 0.f, (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height });
@@ -386,7 +384,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState) }, m_SSCascadeShadowParameters.cb_Viewport)
                     });
 
-                scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::RenderPipelinePass::DirectionLight)][0]);
+                scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)][0]);
 
                 struct DirectionLightShadowmapCascade
                 {
@@ -475,7 +473,7 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, Sce
         //TODO use array
         ASSERT(m_punctualShadowTextureArray == nullptr, "must be nullptr");
         m_punctualShadowTextureArray = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
-            renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 32, 1, "view_shadow");
+            renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 6 * k_maxPunctualShadowmapCount, 1, "view_shadow");
         scene.m_globalResources.bind("shadowmaps_array", m_punctualShadowTextureArray);
 
         ASSERT(m_punctualShadowRenderTarget == nullptr, "must be nullptr");
