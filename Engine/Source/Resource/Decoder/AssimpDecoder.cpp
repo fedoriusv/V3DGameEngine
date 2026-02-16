@@ -329,7 +329,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
             u32 vertexSize = 0;
             if (presentFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Position))
             {
-                ASSERT(mesh->HasPositions(), "must be resented");
+                ASSERT(mesh->HasPositions(), "must be pesented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Position vec3");
 
                 renderer::VertexInputAttributeDesc::InputAttribute attrib;
@@ -345,7 +345,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
 
             if (presentFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Normals))
             {
-                ASSERT(mesh->HasNormals(), "must be resented");
+                ASSERT(mesh->HasNormals(), "must be pesented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Normals vec3");
 
                 renderer::VertexInputAttributeDesc::InputAttribute attrib;
@@ -360,7 +360,7 @@ u32 AssimpDecoder::decodeMesh(const aiScene* scene, const aiMesh* mesh, stream::
 
             if (presentFlags & toEnumType(scene::Model::VertexProperies::VertexProperies_Tangent))
             {
-                ASSERT(mesh->HasTangentsAndBitangents(), "must be resented");
+                ASSERT(mesh->HasTangentsAndBitangents(), "must be pesented");
                 LOG_DEBUG("MeshAssimpDecoder::decodeMesh: Add Attribute VertexProperies_Tangent vec3");
 
                 renderer::VertexInputAttributeDesc::InputAttribute attrib;
