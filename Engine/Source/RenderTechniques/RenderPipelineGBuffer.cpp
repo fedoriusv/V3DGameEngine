@@ -236,9 +236,9 @@ void RenderPipelineGBufferStage::destroy(renderer::Device* device, scene::SceneD
             pipeline = nullptr;
         }
         m_pipelines.clear();
-    }
 
-    m_created = false;
+        m_created = false;
+    }
 }
 
 void RenderPipelineGBufferStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

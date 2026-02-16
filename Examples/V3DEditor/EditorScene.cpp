@@ -89,6 +89,7 @@ EditorScene::RenderPipelineScene::RenderPipelineScene(scene::ModelHandler* model
     //new scene::RenderPipelineMBOITStage(this);
     new scene::RenderPipelineUnlitStage(this, modelHandler);
     new scene::RenderPipelineOutlineStage(this);
+    new scene::RenderPipelineFXAAStage(this);
     new scene::RenderPipelineTAAStage(this);
     new scene::RenderPipelineDebugStage(this, modelHandler);
     new scene::RenderPipelineTonemapStage(this);

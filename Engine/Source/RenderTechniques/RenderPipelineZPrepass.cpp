@@ -88,9 +88,9 @@ void RenderPipelineZPrepassStage::destroy(renderer::Device* device, scene::Scene
 
         V3D_DELETE(m_depthPipeline, memory::MemoryLabel::MemoryGame);
         m_depthPipeline = nullptr;
-    }
 
-    m_created = false;
+        m_created = false;
+    }
 }
 
 void RenderPipelineZPrepassStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)

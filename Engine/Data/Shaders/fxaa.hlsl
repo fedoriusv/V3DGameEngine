@@ -1,4 +1,5 @@
 #include "global.hlsli"
+#include "viewport.hlsli"
 #include "offscreen_common.hlsli"
 
 #ifndef FXAA_PC
@@ -21,16 +22,16 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-[[vk::binding(1, 1)]] SamplerState s_SamplerState : register(s0, space1);
-[[vk::binding(2, 1)]] Texture2D t_TextureColor   : register(t0, space1);
+[[vk::binding(0, 0)]] ConstantBuffer<Viewport> cb_Viewport  : register(b0, space0);
+
+[[vk::binding(1, 1)]] SamplerState s_SamplerState           : register(s0, space1);
+[[vk::binding(2, 1)]] Texture2D t_TextureColor              : register(t0, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
 [[vk::location(0)]] float4 fxaa_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
-    uint dx, dy;
-    t_TextureColor.GetDimensions(dx, dy);
-    float2 rcpro = rcp(float2(dx, dy));
+    float2 rcpro = rcp(cb_Viewport.viewportSize);
 
     FxaaTex t;
     t.smpl = s_SamplerState;
