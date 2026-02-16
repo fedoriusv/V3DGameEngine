@@ -486,7 +486,10 @@ void EditorPropertyScreen::buildLightProp()
     }
 
     scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
-    bool isPunctual = m_selectedNode->getComponentByType<scene::PointLight>() || m_selectedNode->getComponentByType<scene::SpotLight>();
+    bool isSun = m_selectedNode->getComponentByType<scene::DirectionalLight>();
+    bool isSpot = m_selectedNode->getComponentByType<scene::SpotLight>();
+    bool isPoint = m_selectedNode->getComponentByType<scene::PointLight>();
+
     window
         .addWidget(ui::WidgetLayout()
             .setFontSize(ui::WidgetLayout::MediumFont)
@@ -533,7 +536,7 @@ void EditorPropertyScreen::buildLightProp()
                     )
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
-                    .setVisible(isPunctual)
+                    .setVisible(isPoint)
                     .addWidget(ui::WidgetText("Radius"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setStep(0.01)
@@ -561,7 +564,32 @@ void EditorPropertyScreen::buildLightProp()
                     )
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
-                    .setVisible(isPunctual)
+                    .setVisible(isSpot)
+                    .addWidget(ui::WidgetText("Radius outer"))
+                    .addWidget(ui::WidgetInputDragFloat(0.f)
+                        .setSize({ 80, 20 })
+                        .setStep(0.01)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                            })
+                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                            {
+                            })
+                    )
+                    .addWidget(ui::WidgetText("innter"))
+                    .addWidget(ui::WidgetInputDragFloat(0.f)
+                        .setSize({ 80, 20 })
+                        .setStep(0.01)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                            })
+                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                            {
+                            })
+                    )
+                )
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .setVisible(isPoint || isSpot)
                     .addWidget(ui::WidgetText("Attenuation"))
                     .addWidget(ui::WidgetInputDragFloat3(1.f, 0.09f, 0.063f)
                     .setStep(0.01)
