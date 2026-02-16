@@ -41,7 +41,7 @@ struct ShadowmapBuffer
 float depth_projection(Texture2DArray Shadowmap, in float4 ShadowCoord, in float2 offset, in uint CascadeID)
 {
     float shadow = 0.0;
-    if (ShadowCoord.z > -1.0 && ShadowCoord.z < 1.0)
+    if (is_inside_uv(ShadowCoord.xyz))
     {
         float dist = Shadowmap.SampleCmpLevelZero(s_ShadowSamplerState, float3(ShadowCoord.xy + offset, (float) CascadeID), ShadowCoord.z);
         if (ShadowCoord.w > 0.0 && dist >= ShadowCoord.z)
@@ -102,7 +102,6 @@ float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float Ca
     float NdotV = saturate(dot(Normal, cb_Viewport.cameraPosition.xyz));
     float slopeBias = max(0.001 * (1.0 - NdotL), 0.0001);
     float viewBias = max(0.001 * (1.0 - NdotV), 0.0001);
-    float2 texelSize = 1.0 / cb_ShadowmapBuffer.shadowMapResolution.xy;
     float bias = cb_ShadowmapBuffer.cascade[cascadeIndex].baseBias + slopeBias * cb_ShadowmapBuffer.cascade[cascadeIndex].slopeBias + viewBias;
     float3 offsetPos = WorldPos + Normal * bias;
     

@@ -57,6 +57,17 @@ typedef VS_SIMPLE_OUTPUT PS_SIMPLE_INPUT;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+bool is_inside_uv(in float3 Coord)
+{
+    return all(Coord >= 0.0.xxx) && all(Coord <= 1.0.xxx);
+}
+
+bool is_outside_uv(in float3 Coord)
+{
+    return any(Coord < 0.0.xxx) || any(Coord > 1.0.xxx);
+}
+///////////////////////////////////////////////////////////////////////////////////////
+
 float linearize_depth(in float depth, in float nearPlane, in float farPlane)
 {
 #if REVERSED_DEPTH
@@ -75,21 +86,15 @@ float3 srgb_linear(in float3 srgb)
     return lerp(linearLow, linearHigh, step(0.04045, srgb));
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
-
 float4 srgb_linear(float4 srgb)
 {
     return float4(srgb_linear(srgb.rgb), srgb.a);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
-
 float3 srgb_linear_approx(float3 srgb)
 {
     return pow(srgb, 2.2); // or use 2.0 for faster, rougher approximation
 }
-
-///////////////////////////////////////////////////////////////////////////////////////
 
 float3 linear_srgb(float3 lin)
 {
@@ -97,8 +102,6 @@ float3 linear_srgb(float3 lin)
     float3 srgbHigh = 1.055 * pow(lin, 1.0 / 2.4) - 0.055;
     return lerp(srgbLow, srgbHigh, step(0.0031308, lin));
 }
-
-///////////////////////////////////////////////////////////////////////////////////////
 
 float4 linear_srgb(float4 lin)
 {
