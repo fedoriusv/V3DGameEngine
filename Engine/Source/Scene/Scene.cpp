@@ -276,12 +276,14 @@ void SceneHandler::updateScene(f32 dt)
             const NodeEntry* light = lightList[i];
             f32 distance = item->object->getTransform().getPosition().distanceFrom(light->object->getTransform().getPosition());
 
-            PointLight* point = light->object->getComponentByType<PointLight>();
-            if (point->getRadius() > distance)
+            if (PointLight* point = light->object->getComponentByType<PointLight>(); point)
             {
-                u32 lightList = toEnumType(scene::ScenePass::FirstPunctualShadowmap) + i;
-                item->passMask |= 1 << lightList;
-                m_sceneData.m_renderLists[lightList].push_back(item);
+                if (point->getRadius() > distance)
+                {
+                    u32 lightList = toEnumType(scene::ScenePass::FirstPunctualShadowmap) + i;
+                    item->passMask |= 1 << lightList;
+                    m_sceneData.m_renderLists[lightList].push_back(item);
+                }
             }
         }
     }
