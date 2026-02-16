@@ -37,6 +37,11 @@ RenderPipelineGBufferStage::~RenderPipelineGBufferStage()
 
 void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (m_created)
+    {
+        return;
+    }
+
     createRenderTarget(device, scene, frame);
 
     //PBR_MetallicRoughness
@@ -212,30 +217,35 @@ void RenderPipelineGBufferStage::create(renderer::Device* device, scene::SceneDa
         m_pipelines.emplace_back(pipeline);
         m_parameters.emplace_back(parameters);
     }
+
+    m_created = true;
 }
 
 void RenderPipelineGBufferStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene, frame);
-
-    for (auto& pipeline : m_pipelines)
+    if (m_created)
     {
-        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
-        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+        destroyRenderTarget(device, scene, frame);
 
-        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
-        pipeline = nullptr;
+        for (auto& pipeline : m_pipelines)
+        {
+            const renderer::ShaderProgram* program = pipeline->getShaderProgram();
+            V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+            V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
+            pipeline = nullptr;
+        }
+        m_pipelines.clear();
     }
-    m_pipelines.clear();
+
+    m_created = false;
 }
 
 void RenderPipelineGBufferStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (!m_GBufferRenderTarget)
-    {
-        createRenderTarget(device, scene, frame);
-    }
-    else if (m_GBufferRenderTarget->getRenderArea() != scene.m_viewportSize)
+    ASSERT(m_created, "must be created");
+
+    if (m_GBufferRenderTarget->getRenderArea() != scene.m_viewportSize)
     {
         destroyRenderTarget(device, scene, frame);
         createRenderTarget(device, scene, frame);
@@ -244,6 +254,8 @@ void RenderPipelineGBufferStage::prepare(renderer::Device* device, scene::SceneD
 
 void RenderPipelineGBufferStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
+
     for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Opaque)])
     {
         if (!(entry->passMask & (1 << toEnumType(scene::ScenePass::Opaque))))

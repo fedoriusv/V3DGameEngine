@@ -31,6 +31,11 @@ RenderPipelineTAAStage::~RenderPipelineTAAStage()
 
 void RenderPipelineTAAStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (m_created)
+    {
+        return;
+    }
+
     createRenderTarget(device, scene, frame);
 
     const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("offscreen.hlsl", "offscreen_vs",
@@ -42,7 +47,7 @@ void RenderPipelineTAAStage::create(renderer::Device* device, scene::SceneData& 
     desc._countColorAttachment = 1;
     desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
 
-    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), desc, 
+    m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), desc,
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "taa");
 
     m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
@@ -59,31 +64,50 @@ void RenderPipelineTAAStage::create(renderer::Device* device, scene::SceneData& 
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureBaseColor);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureHistory);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureVelocity);
+
+    m_created = true;
 }
 
 void RenderPipelineTAAStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene, frame);
+    if (m_created)
+    {
+        destroyRenderTarget(device, scene, frame);
 
-    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
-    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+        const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
-    m_pipeline = nullptr;
+        V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
+        m_pipeline = nullptr;
+
+        m_created = false;
+    }
 }
 
 void RenderPipelineTAAStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (!m_renderTarget)
+    if (scene.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::TAA)
     {
-        createRenderTarget(device, scene, frame);
+        create(device, scene, frame);
+        if (m_renderTarget->getRenderArea() != scene.m_viewportSize)
+        {
+            destroyRenderTarget(device, scene, frame);
+            createRenderTarget(device, scene, frame);
+        }
+
+        m_enabled = true;
     }
-    else if (m_renderTarget->getRenderArea() != scene.m_viewportSize)
+    else
     {
-        destroyRenderTarget(device, scene, frame);
-        createRenderTarget(device, scene, frame);
+        destroy(device, scene, frame);
+
+        m_enabled = false;
     }
 
+}
+
+void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
+{
     ObjectHandle inputTarget_handle = frame.m_frameResources.get("render_target");
     if (!inputTarget_handle.isValid())
     {
@@ -92,10 +116,7 @@ void RenderPipelineTAAStage::prepare(renderer::Device* device, scene::SceneData&
 
     frame.m_frameResources.bind("input_target_taa", inputTarget_handle);
     frame.m_frameResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
-}
 
-void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
-{
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
             {

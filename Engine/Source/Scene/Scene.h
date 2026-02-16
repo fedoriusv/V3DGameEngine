@@ -82,6 +82,15 @@ namespace scene
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    enum class AntiAliasing
+    {
+        Disabled = 0,
+        FXAA,
+        TAA
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     struct Settings
     {
         struct ViewportParams
@@ -93,7 +102,9 @@ namespace scene
             f32              _rotateSpeed = 25.0f;
             renderer::Format _colorFormat = renderer::Format_R16G16B16A16_SFloat;
             renderer::Format _depthFormat = renderer::Format_D24_UNorm_S8_UInt;
+            AntiAliasing     _antiAliasingMode = AntiAliasing::TAA;
             u32              _renderTargetID = 0;
+
         } _vewportParams;
 
         struct ShadowsParams

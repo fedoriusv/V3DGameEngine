@@ -9,6 +9,8 @@ namespace scene
 RenderPipelineStage::RenderPipelineStage(RenderTechnique* technique, const std::string& id) noexcept
     : m_id(id)
     , m_renderTechnique(*technique)
+    , m_enabled(true)
+    , m_created(false)
 {
     technique->addStage(m_id, this);
 }
@@ -19,6 +21,11 @@ RenderPipelineStage::~RenderPipelineStage()
 
 void RenderPipelineStage::onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event)
 {
+}
+
+bool RenderPipelineStage::isEnabled() const
+{
+    return m_enabled;
 }
 
 //void RenderPipelineStage::delayedDelete(v3d::Object* object, memory::MemoryLabel label)
@@ -69,7 +76,10 @@ void RenderTechnique::execute(renderer::Device* device, scene::SceneData& scene,
 {
     for (auto& [id, stage] : m_stages)
     {
-        stage->execute(device, scene, frame);
+        if (stage->isEnabled())
+        {
+            stage->execute(device, scene, frame);
+        }
     }
 }
 

@@ -41,12 +41,17 @@ RenderPipelineZPrepassStage::~RenderPipelineZPrepassStage()
 
 void RenderPipelineZPrepassStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (m_created)
+    {
+        return;
+    }
+
     createRenderTarget(device, scene, frame);
 
-    const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("gbuffer.hlsl", "gbuffer_standard_vs",
-        {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-    const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("gbuffer.hlsl", "gbuffer_depth_ps",
-        {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+    const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+        "gbuffer.hlsl", "gbuffer_standard_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+    const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+        "gbuffer.hlsl", "gbuffer_depth_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 
     m_depthPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, scene::VertexFormatStandardDesc, m_depthRenderTarget->getRenderPassDesc(),
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "zprepass_pipeline");
@@ -68,25 +73,30 @@ void RenderPipelineZPrepassStage::create(renderer::Device* device, scene::SceneD
 
     BIND_SHADER_PARAMETER(m_depthPipeline, m_depthParameters, cb_Viewport);
     BIND_SHADER_PARAMETER(m_depthPipeline, m_depthParameters, cb_Model);
+
+    m_created = true;
 }
 
 void RenderPipelineZPrepassStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene, frame);
+    if (m_created)
+    {
+        destroyRenderTarget(device, scene, frame);
 
-    const renderer::ShaderProgram* program = m_depthPipeline->getShaderProgram();
-    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+        const renderer::ShaderProgram* program = m_depthPipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-    V3D_DELETE(m_depthPipeline, memory::MemoryLabel::MemoryGame);
-    m_depthPipeline = nullptr;
+        V3D_DELETE(m_depthPipeline, memory::MemoryLabel::MemoryGame);
+        m_depthPipeline = nullptr;
+    }
+
+    m_created = false;
 }
 
 void RenderPipelineZPrepassStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (!m_depthRenderTarget)
-    {
-        createRenderTarget(device, scene, frame);
-    }
+    ASSERT(m_created, "must be created");
+
     if (m_depthRenderTarget->getRenderArea() != scene.m_viewportSize)
     {
         destroyRenderTarget(device, scene, frame);
@@ -96,6 +106,8 @@ void RenderPipelineZPrepassStage::prepare(renderer::Device* device, scene::Scene
 
 void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
+
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
             TRACE_PROFILER_SCOPE("ZPrepass", color::rgba8::GREEN);

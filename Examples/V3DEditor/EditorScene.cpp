@@ -317,7 +317,7 @@ void EditorScene::preRender(f32 dt)
     viewportState->invProjectionMatrix = m_cameraHandler->getCamera().getProjectionMatrix().getInversed();
     viewportState->viewMatrix = m_cameraHandler->getCamera().getViewMatrix();
     viewportState->invViewMatrix = m_cameraHandler->getCamera().getViewMatrix().getInversed();
-    viewportState->cameraJitter = scene::CameraController::calculateJitter(m_frameCounter, m_sceneData.m_viewportSize);
+    viewportState->cameraJitter = (m_sceneData.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::TAA) ? scene::CameraController::calculateJitter(m_frameCounter, m_sceneData.m_viewportSize) : math::float2{ 0.0f, 0.0f };
     viewportState->cameraPosition = { m_cameraHandler->getPosition().getX(), m_cameraHandler->getPosition().getY(), m_cameraHandler->getPosition().getZ(), 0.f };
     viewportState->viewportSize = { (f32)m_sceneData.m_viewportSize._width, (f32)m_sceneData.m_viewportSize._height };
     viewportState->clipNearFar = { m_cameraHandler->getNear(), m_cameraHandler->getFar() };

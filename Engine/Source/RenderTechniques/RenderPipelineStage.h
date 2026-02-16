@@ -88,20 +88,17 @@ namespace scene
 
         virtual void onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event);
 
-    protected:
+        bool isEnabled() const;
 
-        struct TaskData
-        {
-            u32          _numbersOfDraws;
-            math::float2 _drawRange;
-        };
+    protected:
 
         template<typename Func>
         void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch = false);
-        //void delayedDelete(v3d::Object* object, memory::MemoryLabel label);
 
         std::string          m_id;
         RenderTechnique&     m_renderTechnique;
+        bool                 m_enabled;
+        bool                 m_created;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

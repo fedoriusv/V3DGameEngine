@@ -132,6 +132,16 @@ void EditorViewScreen::build()
                     })
             )
         )
+        .addWidget(ui::WidgetComboBox()
+            .addElement("Disable AA")
+            .addElement("FXAA")
+            .addElement("TAA")
+            .setActiveIndex(toEnumType(m_sceneData->m_settings._vewportParams._antiAliasingMode))
+            .setOnChangedIndexEvent([this](ui::Widget* w, s32 id)
+                {
+                    m_sceneData->m_settings._vewportParams._antiAliasingMode = scene::AntiAliasing(id);
+                })
+        )
         //Camera
 
         // Tonemap
