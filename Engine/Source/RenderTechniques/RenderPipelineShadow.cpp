@@ -398,11 +398,10 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                 struct ShadowmapBuffer
                 {
                     DirectionLightShadowmapCascade  cascade[k_maxShadowmapCascadeCount];
-                    math::Vector4D                  shadowMapResolution;
                     math::Vector3D                  directionLight;
-                    f32                             enablePCF;
+                    math::float2                    shadowMapResolution;
+                    f32                             PCFMode;
                     f32                             texelScale;
-                    f32                            _pad[2];
                 } cascadeShadowBuffer;
 
                 for (u32 id = 0; id < pipelineData->_directionLightSpaceMatrix.size(); ++id)
@@ -412,10 +411,9 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                     cascadeShadowBuffer.cascade[id].baseBias = scene.m_settings._shadowsParams._cascadeBaseBias[id];
                     cascadeShadowBuffer.cascade[id].slopeBias = scene.m_settings._shadowsParams._cascadeSlopeBias[id];
                 }
-                cascadeShadowBuffer.shadowMapResolution.set(scene.m_settings._shadowsParams._size._width, scene.m_settings._shadowsParams._size._height,
-                    1.0f / scene.m_settings._shadowsParams._size._width, 1.0f / scene.m_settings._shadowsParams._size._height);
+                cascadeShadowBuffer.shadowMapResolution = { (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height };
                 cascadeShadowBuffer.directionLight = itemLight.object->getDirection();
-                cascadeShadowBuffer.enablePCF = scene.m_settings._shadowsParams._PCF;
+                cascadeShadowBuffer.PCFMode = scene.m_settings._shadowsParams._PCF;
                 cascadeShadowBuffer.texelScale = scene.m_settings._shadowsParams._textelScale;
 
                 ObjectHandle depth_stencil_h = scene.m_globalResources.get("depth_stencil");

@@ -19,9 +19,9 @@ struct ShadowmapBuffer
 {
     
     DirectionLightShadowmapCascade cascade[SHADOWMAP_CASCADE_COUNT];
-    float4 shadowMapResolution;
     float4 directionLight;
-    float  enablePCF;
+    float2 shadowMapResolution;
+    float  PCFMode;
     float  texelScale;
 };
 
@@ -96,6 +96,8 @@ float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float Ca
             0.0,  0.0, 0.0, 1.0
         );
     
+    float2 texelSize = rcp(cb_ShadowmapBuffer.shadowMapResolution.xy);
+    
     float NdotL = saturate(dot(Normal, cb_ShadowmapBuffer.directionLight.xyz));
     float NdotV = saturate(dot(Normal, cb_Viewport.cameraPosition.xyz));
     float slopeBias = max(0.001 * (1.0 - NdotL), 0.0001);
@@ -106,11 +108,10 @@ float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float Ca
     
     float4 lightModelViewProj = mul(biasUVMatrix, mul(cb_ShadowmapBuffer.cascade[cascadeIndex].lightSpaceMatrix, float4(offsetPos, 1.0)));
     float3 shadowCoord = lightModelViewProj.xyz / lightModelViewProj.w;
-    
+
     CascadeID = (float) cascadeIndex;
-    if (cb_ShadowmapBuffer.enablePCF)
+    if (cb_ShadowmapBuffer.PCFMode == 1)
     {
-        float2 texelSize = 1.0 / cb_ShadowmapBuffer.shadowMapResolution.xy;
         float2 scaleFactor = texelSize * cb_ShadowmapBuffer.texelScale;
         return depth_projection_PCF_3x3(t_DirectionCascadeShadows, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
     }
