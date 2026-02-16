@@ -318,7 +318,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                         return;
                     }
 
-                    TRACE_PROFILER_SCOPE(cmdList, std::format("PunctualLight [{}]", itemLight.object->m_name), color::rgbaf::GREEN);
+                    TRACE_PROFILER_SCOPE(std::format("PunctualLight [{}]", itemLight.object->m_name), color::rgbaf::GREEN);
                     DEBUG_MARKER_SCOPE(cmdList, std::format("PunctualLight [{}]", itemLight.object->m_name), color::rgbaf::GREEN);
 
                     m_punctualShadowRenderTarget->setViewsMask(viewsMask);
@@ -338,7 +338,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                     cmdList->setScissor({ 0.f, 0.f, (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height });
                     cmdList->setPipelineState(*m_punctualShadowPipeline);
 
-                    for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Shadowmap)])
+                    for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::FirstPunctualShadowmap) + i])
                     {
                         const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
 

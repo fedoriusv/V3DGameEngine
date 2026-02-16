@@ -95,8 +95,11 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             scene::ViewportState* viewportState = viewportState_handle.as<scene::ViewportState>();
 
             ObjectHandle shadowData_handle = frame.m_frameResources.get("shadow_data");
-            ASSERT(shadowData_handle.isValid(), "must be valid");
-            RenderPipelineShadowStage::PipelineData* shadowData = shadowData_handle.as<RenderPipelineShadowStage::PipelineData>();
+            RenderPipelineShadowStage::PipelineData* shadowData = nullptr;
+            if (shadowData_handle.isValid())
+            {
+               shadowData = shadowData_handle.as<RenderPipelineShadowStage::PipelineData>();
+            }
 
             ObjectHandle rt_handle = scene.m_globalResources.get("color_target");
             ASSERT(rt_handle.isValid(), "must be valid");
@@ -195,7 +198,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 lightBuffer.shadowBaseBias = 0.0f;
                 lightBuffer.applyShadow = false;
 
-                if (i < k_maxPunctualShadowmapCount && shadowData->_punctualLightsFlags[i])
+                if (i < k_maxPunctualShadowmapCount && shadowData && shadowData->_punctualLightsFlags[i])
                 {
                     auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = shadowData->_punctualLightsData[i];
                     memcpy(lightBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
