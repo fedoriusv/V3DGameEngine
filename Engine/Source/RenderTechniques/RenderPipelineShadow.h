@@ -34,6 +34,8 @@ namespace scene
         void prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
         void execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame) override;
 
+        void onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event) override;
+
         struct PipelineData
         {
             PipelineData(thread::ThreadSafeAllocator* allocator);

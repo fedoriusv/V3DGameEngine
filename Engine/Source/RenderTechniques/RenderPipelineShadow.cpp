@@ -67,12 +67,12 @@ void RenderPipelineShadowStage::create(renderer::Device* device, SceneData& scen
     ASSERT(device->getDeviceCaps()._supportMultiview, "the feature must be supported");
     createRenderTarget(device, scene, frame);
 
-    renderer::Shader::DefineList defines =
     {
-        { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
-    };
+        renderer::Shader::DefineList defines =
+        {
+            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
+        };
 
-    {
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("light_directional_shadows.hlsl", "shadows_vs",
             defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light_directional_shadows.hlsl", "shadows_ps",
@@ -135,6 +135,13 @@ void RenderPipelineShadowStage::create(renderer::Device* device, SceneData& scen
     }
 
     {
+        renderer::Shader::DefineList defines =
+        {
+            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
+            { "SHADOWMAP_CASCADE_BLEND", "1" },
+            { "SHADOWMAP_FAST_COMPUTATION", "0" },
+        };
+
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("offscreen.hlsl", "offscreen_vs",
             {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("screen_space_shadow.hlsl", "screen_space_shadow_ps",
@@ -444,6 +451,15 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
         };
 
     addRenderJob("Shadowmap Job", renderJob, device, scene);
+}
+
+void RenderPipelineShadowStage::onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event)
+{
+    if (event->_eventType == event::GameEvent::GameEventType::HotReload)
+    {
+        const event::ShaderHotReload* hotReloadEvent = static_cast<const event::ShaderHotReload*>(event);
+        //destroyPipelines(device, scene);
+    }
 }
 
 void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
