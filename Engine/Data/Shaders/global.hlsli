@@ -68,12 +68,21 @@ bool is_outside_uv(in float3 Coord)
 }
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float linearize_depth(in float depth, in float nearPlane, in float farPlane)
+float linearize_depth(in float Depth, in float NearPlane, in float FarPlane)
 {
 #if REVERSED_DEPTH
-    return (nearPlane * farPlane) / (nearPlane + depth * (farPlane - nearPlane));
+    return (NearPlane * FarPlane) / (NearPlane + Depth * (FarPlane - NearPlane));
 #else
-    return (nearPlane * farPlane) / (farPlane - depth * (farPlane - nearPlane));
+    return (NearPlane * FarPlane) / (FarPlane - Depth * (FarPlane - NearPlane));
+#endif
+}
+
+bool depth_test_nonlinear(in float Depth, in float TestValue)
+{
+#if REVERSED_DEPTH
+    return Depth > TestValue; // [1..0]
+#else
+    return Depth < TestValue; // [0..1]
 #endif
 }
 
@@ -175,6 +184,7 @@ struct ModelBuffer
     float4x4 prevModelMatrix;
     float4x4 normalMatrix;
     float4   tintColour;
+    //float    bumpHeight;
     uint64_t objectID;
 };
 

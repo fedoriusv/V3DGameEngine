@@ -11,10 +11,6 @@
 #define SHADOWMAP_CASCADE_BLEND 1
 #endif
 
-#ifndef SHADOWMAP_FAST_COMPUTATION
-#define SHADOWMAP_FAST_COMPUTATION 0
-#endif
-
 struct DirectionLightShadowmapCascade
 {
     matrix lightSpaceMatrix;
@@ -39,106 +35,12 @@ struct ShadowmapBuffer
 
 [[vk::binding(0, 1)]] ConstantBuffer<ShadowmapBuffer> cb_ShadowmapBuffer    : register(b0, space1);
 [[vk::binding(1, 1)]] SamplerState s_SamplerState                           : register(s0, space1);
-[[vk::binding(2, 1)]] SamplerComparisonState s_ShadowSamplerState           : register(s1, space1);
-[[vk::binding(3, 1)]] Texture2D t_TextureDepth                              : register(t0, space1);
-[[vk::binding(4, 1)]] Texture2D t_TextureNormals                            : register(t1, space1);
-[[vk::binding(5, 1)]] Texture2DArray t_DirectionCascadeShadows              : register(t2, space1);
+[[vk::binding(2, 1)]] Texture2D t_TextureDepth                              : register(t0, space1);
+[[vk::binding(3, 1)]] Texture2D t_TextureNormals                            : register(t1, space1);
+[[vk::binding(4, 1)]] Texture2DArray t_DirectionCascadeShadows              : register(t2, space1);
+[[vk::binding(5, 1)]] SamplerComparisonState s_ShadowSamplerState           : register(s1, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
-
-float depth_projection_fast(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float4 ShadowCoord, in int2 Offset, in uint CascadeID)
-{
-    float shadow = 0.0;
-    if (is_inside_uv(ShadowCoord.xyz))
-    {
-        float dist = Shadowmap.SampleCmpLevelZero(CompareSampler, float3(ShadowCoord.xy, (float) CascadeID), ShadowCoord.z, Offset);
-        if (ShadowCoord.w > 0.0 && dist >= ShadowCoord.z)
-        {
-            shadow = 1.0;
-        }
-    }
-
-    return shadow;
-}
-
-float depth_projection(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float4 ShadowCoord, in int2 Offset, in uint CascadeID)
-{
-    float2 stc = ShadowCoord.xy * Resolution + 0.5.xx;
-    float2 tcs = floor(stc);
-    ShadowCoord.xy = tcs / Resolution;
-    
-    float shadow = 0.0;
-    if (is_inside_uv(ShadowCoord.xyz))
-    {
-        float4 dist = Shadowmap.GatherCmpRed(CompareSampler, float3(ShadowCoord.xy, (float) CascadeID), ShadowCoord.z, Offset);
-        float2 fracShadow = stc - tcs;
-        shadow = lerp(lerp(dist.w, dist.z, fracShadow.x), lerp(dist.x, dist.y, fracShadow.x), fracShadow.y);
-    }
-
-    return shadow;
-}
-
-float depth_projection_PCF_3x3(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint CascadeID)
-{
-    static const uint kernelSize = 9;
-    static const float2 kernel[kernelSize] =
-    {
-        float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0),
-        float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0),
-        float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0)
-    };
-
-    float shadow = 0.0;
-    float2 texelSize = rcp(Resolution);
-    
-    [unroll(kernelSize)]
-    for (uint i = 0; i < kernelSize; ++i)
-    {
-
-        float2 offset = kernel[i] * ScaleFactor;
-#if SHADOWMAP_FAST_COMPUTATION
-        shadow += depth_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), CascadeID);
-#else
-        shadow += depth_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), CascadeID);
-#endif
-    }
-    
-    return shadow / (float)kernelSize;
-}
-
-float depth_projection_PCF_9x9(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint CascadeID)
-{
-    static const uint kernelSize = 81;
-    static const float2 kernel[kernelSize] =
-    {
-        float2(-4.0, -4.0), float2(-3.0, -4.0), float2(-2.0, -4.0), float2(-1.0, -4.0), float2(0.0, -4.0), float2(1.0, -4.0), float2(2.0, -4.0), float2(3.0, -4.0), float2(4.0, -4.0),
-        float2(-4.0, -3.0), float2(-3.0, -3.0), float2(-2.0, -3.0), float2(-1.0, -3.0), float2(0.0, -3.0), float2(1.0, -3.0), float2(2.0, -3.0), float2(3.0, -3.0), float2(4.0, -3.0),
-        float2(-4.0, -2.0), float2(-3.0, -2.0), float2(-2.0, -2.0), float2(-1.0, -2.0), float2(0.0, -2.0), float2(1.0, -2.0), float2(2.0, -2.0), float2(3.0, -2.0), float2(4.0, -2.0),
-        float2(-4.0, -1.0), float2(-3.0, -1.0), float2(-2.0, -1.0), float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0), float2(2.0, -1.0), float2(3.0, -1.0), float2(4.0, -1.0),
-        float2(-4.0,  0.0), float2(-3.0,  0.0), float2(-2.0,  0.0), float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0), float2(2.0,  0.0), float2(3.0,  0.0), float2(4.0,  0.0),
-        float2(-4.0,  1.0), float2(-3.0,  1.0), float2(-2.0,  1.0), float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0), float2(2.0,  1.0), float2(3.0,  1.0), float2(4.0,  1.0),
-        float2(-4.0,  2.0), float2(-3.0,  2.0), float2(-2.0,  2.0), float2(-1.0,  2.0), float2(0.0,  2.0), float2(1.0,  2.0), float2(2.0,  2.0), float2(3.0,  2.0), float2(4.0,  2.0),
-        float2(-4.0,  3.0), float2(-3.0,  3.0), float2(-2.0,  3.0), float2(-1.0,  3.0), float2(0.0,  3.0), float2(1.0,  3.0), float2(2.0,  3.0), float2(3.0,  3.0), float2(4.0,  3.0),
-        float2(-4.0,  4.0), float2(-3.0,  4.0), float2(-2.0,  4.0), float2(-1.0,  4.0), float2(0.0,  4.0), float2(1.0,  4.0), float2(2.0,  4.0), float2(3.0,  4.0), float2(4.0,  4.0)
-    };
-
-    float shadow = 0.0;
-    float2 texelSize = rcp(Resolution);
-    
-    [unroll(kernelSize)]
-    for (uint i = 0; i < kernelSize; ++i)
-    {
-
-        float2 offset = kernel[i] * ScaleFactor;
-#if SHADOWMAP_FAST_COMPUTATION
-        shadow += depth_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), CascadeID);
-#else
-        shadow += depth_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), CascadeID);
-#endif
-    }
-    
-    return shadow / (float) kernelSize;
-}
 
 float shadowmap_cascade_blend(in float ShadowCascadeA, float ShadowCascadeB, in float DepthView, in uint CascadeID)
 {
@@ -192,32 +94,28 @@ float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float Ca
     {
 #if SHADOWMAP_CASCADE_BLEND
         uint nextCascadeIndex = (CascadeID < SHADOWMAP_CASCADE_COUNT - 1) ? cascadeIndex + 1 : cascadeIndex;
-        float shadowCascade0 = depth_projection_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
-        float shadowCascade1 = depth_projection_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
+        float shadowCascade0 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        float shadowCascade1 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
         
         return shadowmap_cascade_blend(shadowCascade0, shadowCascade1, viewPosition.z, cascadeIndex);
 #else
-        return depth_projection_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        return shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
 #endif
     }
     else if (cb_ShadowmapBuffer.PCFMode == 2)
     {
 #if SHADOWMAP_CASCADE_BLEND
         uint nextCascadeIndex = (CascadeID < SHADOWMAP_CASCADE_COUNT - 1) ? cascadeIndex + 1 : cascadeIndex;
-        float shadowCascade0 = depth_projection_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
-        float shadowCascade1 = depth_projection_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
+        float shadowCascade0 = shadow_sample_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        float shadowCascade1 = shadow_sample_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
         
         return shadowmap_cascade_blend(shadowCascade0, shadowCascade1, viewPosition.z, cascadeIndex);
 #else
-        return depth_projection_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        return shadow_sample_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
 #endif
     }
 
-#if SHADOWMAP_FAST_COMPUTATION
-    return depth_projection_fast(t_DirectionCascadeShadows, cb_ShadowmapBuffer.shadowMapResolution, float4(shadowCoord, lightModelViewProj.w), int2(0, 0), cascadeIndex);
-#else
-    return depth_projection(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, float4(shadowCoord, lightModelViewProj.w), int2(0, 0), cascadeIndex);
-#endif
+    return shadow_sample_PCF_1x1(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
 }
 
 [[vk::location(0)]] float4 screen_space_shadow_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
@@ -231,7 +129,7 @@ float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float Ca
         float cascadeID = 0.0;
         float directShadow = direction_light_shadows(worldPos, normal, cascadeID);
         
-        return float4(directShadow, cascadeID, 0.0, 0.0);
+        return float4(saturate(directShadow), cascadeID, 0.0, 0.0);
     }
     
     return float4(0.0, 0.0, 0.0, 0.0);

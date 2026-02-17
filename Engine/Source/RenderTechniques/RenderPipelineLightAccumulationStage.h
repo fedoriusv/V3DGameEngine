@@ -51,6 +51,7 @@ namespace scene
             SHADER_PARAMETER(t_TextureMaterial);
             SHADER_PARAMETER(t_TextureDepth);
             SHADER_PARAMETER(t_TextureShadowmaps);
+            SHADER_PARAMETER(s_ShadowSamplerState);
         };
 
         void createRenderTarget(renderer::Device* device, scene::SceneData& scene);
@@ -59,10 +60,12 @@ namespace scene
         void createPipelines(renderer::Device* device, scene::SceneData& scene);
         void destroyPipelines(renderer::Device* device, scene::SceneData& scene);
 
-        scene::ModelHandler* m_modelHandler;
+        scene::ModelHandler* const m_modelHandler;
+
+        renderer::SamplerState* m_shadowSamplerState;
         renderer::RenderTargetState* m_lightRenderTarget;
         renderer::GraphicsPipelineState* m_pipeline;
-        std::vector<MaterialParameters> m_parameters;
+        MaterialParameters m_parameters;
 
         scene::Mesh* m_sphereVolume;
         scene::Mesh* m_coneVolume;

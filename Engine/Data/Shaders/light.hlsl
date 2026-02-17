@@ -26,13 +26,15 @@ struct PunctualLightBuffer
 [[vk::binding(0, 0)]] ConstantBuffer<Viewport> cb_Viewport          : register(b0, space0);
 
 [[vk::binding(1, 1)]] ConstantBuffer<ModelBuffer> cb_Model          : register(b1, space1);
-[[vk::binding(2, 1)]] ConstantBuffer<PunctualLightBuffer> cb_Light  : register(b2, space1);
-[[vk::binding(3, 1)]] SamplerState s_SamplerState                   : register(s0, space1);
-[[vk::binding(4, 1)]] Texture2D t_TextureBaseColor                  : register(t0, space1);
-[[vk::binding(5, 1)]] Texture2D t_TextureNormal                     : register(t1, space1);
-[[vk::binding(6, 1)]] Texture2D t_TextureMaterial                   : register(t2, space1);
-[[vk::binding(7, 1)]] Texture2D t_TextureDepth                      : register(t3, space1);
-[[vk::binding(8, 1)]] Texture2DArray t_TextureShadowmaps            : register(t5, space1);
+[[vk::binding(2, 1)]] SamplerState s_SamplerState                   : register(s0, space1);
+[[vk::binding(3, 1)]] Texture2D t_TextureBaseColor                  : register(t0, space1);
+[[vk::binding(4, 1)]] Texture2D t_TextureNormal                     : register(t1, space1);
+[[vk::binding(5, 1)]] Texture2D t_TextureMaterial                   : register(t2, space1);
+[[vk::binding(6, 1)]] Texture2D t_TextureDepth                      : register(t3, space1);
+
+[[vk::binding(7, 2)]] ConstantBuffer<PunctualLightBuffer> cb_Light  : register(b2, space2);
+[[vk::binding(8, 2)]] Texture2DArray t_TextureShadowmaps            : register(t5, space2);
+[[vk::binding(9, 2)]] SamplerComparisonState s_ShadowSamplerState   : register(s1, space2);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -73,19 +75,15 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     float3 offsetPos = WorldPos + Normal * bias;
     
     uint face = cubemap_face_id(lightDirection);
+    float2 uv = cubemap_face_UV(lightDirection, face);
+    
     float4 lightModelViewProj = mul(cb_Light.lightSpaceMatrix[face], float4(offsetPos, 1.0));
     float3 shadowCoord = lightModelViewProj.xyz / lightModelViewProj.w;
 
-    float2 uv = cubemap_face_UV(lightDirection, face);
-    float dist = t_TextureShadowmaps.Sample(s_SamplerState, float3(uv, cb_Light.viewSliceOffest.x + face)).r;
-
-    float depthMap = linearize_depth(dist, cb_Light.clipNearFar.x, cb_Light.clipNearFar.y);
-    float depthFrag = linearize_depth(shadowCoord.z, cb_Light.clipNearFar.x, cb_Light.clipNearFar.y);
-    if (depthMap < depthFrag)
-    {
-        shadow = 1.0;
-    }
-
+    uint3 shadowmapDim;
+    t_TextureShadowmaps.GetDimensions(shadowmapDim.x, shadowmapDim.y, shadowmapDim.z);
+    
+    shadow = shadow_linear_sample_PCF_1x1(t_TextureShadowmaps, s_ShadowSamplerState, shadowmapDim.xy, cb_Light.clipNearFar, float4(uv, shadowCoord.z, lightModelViewProj.w), cb_Light.viewSliceOffest.x + face);
     return shadow;
 }
 

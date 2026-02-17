@@ -51,8 +51,11 @@ namespace scene
 
     private:
 
-        void createRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame);
-        void destroyRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame);
+        void createRenderTarget(renderer::Device* device, SceneData& scene);
+        void destroyRenderTarget(renderer::Device* device, SceneData& scene);
+
+        void createPipelines(renderer::Device* device, scene::SceneData& scene);
+        void destroyPipelines(renderer::Device* device, scene::SceneData& scene);
 
         static void calculateShadowCascades(const SceneData& data, const math::Vector3D& lightDirection, u32 cascadeCount, math::Matrix4D* lightSpaceMatrixOut, f32* cascadeSplitsOut);
         static void calculateShadowViews(const math::Vector3D& position, f32 nearPlane, f32 farPlane, u32 viewsMask, std::array<math::Matrix4D, 6>& lightSpaceMatrix);

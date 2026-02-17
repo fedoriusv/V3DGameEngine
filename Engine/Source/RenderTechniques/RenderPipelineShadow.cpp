@@ -64,157 +64,56 @@ RenderPipelineShadowStage::~RenderPipelineShadowStage()
 
 void RenderPipelineShadowStage::create(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
+    if (m_created)
+    {
+        return;
+    }
+
     ASSERT(device->getDeviceCaps()._supportMultiview, "the feature must be supported");
-    createRenderTarget(device, scene, frame);
+    createRenderTarget(device, scene);
+    createPipelines(device, scene);
 
-    {
-        renderer::Shader::DefineList defines =
-        {
-            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
-        };
-
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("light_directional_shadows.hlsl", "shadows_vs",
-            defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light_directional_shadows.hlsl", "shadows_ps",
-            defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
-
-        renderer::RenderPassDesc desc{};
-        desc._countColorAttachment = 0;
-        desc._viewsMask = (1u << k_maxShadowmapCascadeCount) - 1u;
-        desc._hasDepthStencilAttachment = true;
-        desc._attachmentsDesc.back()._format = renderer::Format::Format_D32_SFloat;
-
-        m_cascadeShadowPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, desc,
-            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "shadowmap_pipeline");
-        m_cascadeShadowPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_cascadeShadowPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_cascadeShadowPipeline->setCullMode(renderer::CullMode::CullMode_Back);
-#if REVERSED_DEPTH
-        m_cascadeShadowPipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
-#else
-        m_cascadeShadowPipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
-#endif
-        m_cascadeShadowPipeline->setDepthClamp(true);
-        m_cascadeShadowPipeline->setDepthWrite(true);
-        m_cascadeShadowPipeline->setDepthTest(true);
-        m_cascadeShadowPipeline->setColorMask(0, renderer::ColorMask::ColorMask_None);
-        //m_cascadeShadowPipeline->setDepthBias(0.0f, 0.0f, -2.5f); Apply inside the shader
-
-        BIND_SHADER_PARAMETER(m_cascadeShadowPipeline, m_cascadeShadowParameters, cb_DirectionShadowBuffer);
-    }
-
-    {
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("light_point_shadows.hlsl", "point_shadows_vs",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light_point_shadows.hlsl", "shadows_ps",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-
-        renderer::RenderPassDesc desc{};
-        desc._countColorAttachment = 0;
-        desc._viewsMask = 0b00111111;
-        desc._hasDepthStencilAttachment = true;
-        desc._attachmentsDesc.back()._format = renderer::Format::Format_D32_SFloat;
-
-        m_punctualShadowPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, desc,
-            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "point_shadow_pipeline");
-        m_punctualShadowPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_punctualShadowPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_punctualShadowPipeline->setCullMode(renderer::CullMode::CullMode_Back);
-#if REVERSED_DEPTH
-        m_punctualShadowPipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
-#else
-        m_punctualShadowPipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
-#endif
-        m_punctualShadowPipeline->setDepthClamp(true);
-        m_punctualShadowPipeline->setDepthWrite(true);
-        m_punctualShadowPipeline->setDepthTest(true);
-        m_punctualShadowPipeline->setColorMask(0, renderer::ColorMask::ColorMask_None);
-        m_punctualShadowPipeline->setDepthBias(0.0f, 0.0f, -5.0f);
-
-        BIND_SHADER_PARAMETER(m_punctualShadowPipeline, m_punctualShadowParameters, cb_PunctualShadowBuffer);
-    }
-
-    {
-        renderer::Shader::DefineList defines =
-        {
-            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
-            { "SHADOWMAP_CASCADE_BLEND", "1" },
-            { "SHADOWMAP_FAST_COMPUTATION", "0" },
-        };
-
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("offscreen.hlsl", "offscreen_vs",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("screen_space_shadow.hlsl", "screen_space_shadow_ps",
-            defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-
-        m_SSShadowsPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_SSShadowsRenderTarget->getRenderPassDesc(),
-            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "screen_space_shadows_pipeline");
-        m_SSShadowsPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_SSShadowsPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_SSShadowsPipeline->setCullMode(renderer::CullMode::CullMode_Back);
-        m_SSShadowsPipeline->setDepthCompareOp(renderer::CompareOperation::Always);
-        m_SSShadowsPipeline->setDepthWrite(false);
-        m_SSShadowsPipeline->setDepthTest(false);
-        m_SSShadowsPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-        m_SSShadowsPipeline->setStencilTest(false);
-        m_SSShadowsPipeline->setStencilCompareOp(renderer::CompareOperation::NotEqual, 0x0);
-        m_SSShadowsPipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
-
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_Viewport);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_ShadowmapBuffer);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, s_SamplerState);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, s_ShadowSamplerState);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureDepth);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureNormals);
-        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_DirectionCascadeShadows);
-
-        m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-        m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-        m_shadowSamplerState->setEnableCompareOp(true);
-        m_shadowSamplerState->setCompareOp(renderer::CompareOperation::LessOrEqual);
-        m_shadowSamplerState->setBorderColor({ 0.0f, 0.0f, 0.0f, 0.0f });
-    }
+    m_created = true;
 }
 
 void RenderPipelineShadowStage::destroy(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene, frame);
-
+    if (m_created)
     {
-        const renderer::ShaderProgram* program = m_cascadeShadowPipeline->getShaderProgram();
-        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+        destroyRenderTarget(device, scene);
+        destroyPipelines(device, scene);
 
-        V3D_DELETE(m_cascadeShadowPipeline, memory::MemoryLabel::MemoryGame);
-        m_cascadeShadowPipeline = nullptr;
+        V3D_DELETE(m_shadowSamplerState, memory::MemoryLabel::MemoryGame);
+        m_shadowSamplerState = nullptr;
+
+        m_created = false;
     }
-
-    {
-        const renderer::ShaderProgram* program = m_SSShadowsPipeline->getShaderProgram();
-        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
-
-        V3D_DELETE(m_SSShadowsPipeline, memory::MemoryLabel::MemoryGame);
-        m_SSShadowsPipeline = nullptr;
-    }
-
-    V3D_DELETE(m_shadowSamplerState, memory::MemoryLabel::MemoryGame);
-    m_shadowSamplerState = nullptr;
 }
 
 void RenderPipelineShadowStage::prepare(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
+
     if (!m_cascadeRenderTarget || !m_punctualShadowRenderTarget || !m_SSShadowsRenderTarget )
     {
-        createRenderTarget(device, scene, frame);
+        createRenderTarget(device, scene);
     }
     else if (m_cascadeRenderTarget->getRenderArea() != scene.m_settings._shadowsParams._size || m_SSShadowsRenderTarget->getRenderArea() != scene.m_viewportSize)
     {
-        destroyRenderTarget(device, scene, frame);
-        createRenderTarget(device, scene, frame);
+        destroyRenderTarget(device, scene);
+        createRenderTarget(device, scene);
+    }
+
+    if (!m_cascadeShadowPipeline || !m_punctualShadowPipeline || !m_SSShadowsPipeline)
+    {
+        createPipelines(device, scene);
     }
 }
 
 void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
+
     if (scene.m_renderLists[toEnumType(scene::ScenePass::Shadowmap)].empty())
     {
         return;
@@ -458,11 +357,11 @@ void RenderPipelineShadowStage::onChanged(renderer::Device* device, scene::Scene
     if (event->_eventType == event::GameEvent::GameEventType::HotReload)
     {
         const event::ShaderHotReload* hotReloadEvent = static_cast<const event::ShaderHotReload*>(event);
-        //destroyPipelines(device, scene);
+        destroyPipelines(device, scene);
     }
 }
 
-void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
+void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, SceneData& scene)
 {
     {
         ASSERT(m_cascadeTextureArray == nullptr, "must be nullptr");
@@ -512,7 +411,7 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, Sce
     }
 }
 
-void RenderPipelineShadowStage::destroyRenderTarget(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
+void RenderPipelineShadowStage::destroyRenderTarget(renderer::Device* device, SceneData& scene)
 {
     {
         ASSERT(m_cascadeRenderTarget != nullptr, "must be valid");
@@ -541,6 +440,137 @@ void RenderPipelineShadowStage::destroyRenderTarget(renderer::Device* device, Sc
 
         V3D_DELETE(m_SSShadowsRenderTarget, memory::MemoryLabel::MemoryGame);
         m_SSShadowsRenderTarget = nullptr;
+    }
+}
+
+void RenderPipelineShadowStage::createPipelines(renderer::Device* device, scene::SceneData& scene)
+{
+    {
+        renderer::Shader::DefineList defines =
+        {
+            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
+        };
+
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "light_directional_shadows.hlsl", "shadows_vs", defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "light_directional_shadows.hlsl", "shadows_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+
+        renderer::RenderPassDesc desc{};
+        desc._countColorAttachment = 0;
+        desc._viewsMask = (1u << k_maxShadowmapCascadeCount) - 1u;
+        desc._hasDepthStencilAttachment = true;
+        desc._attachmentsDesc.back()._format = renderer::Format::Format_D32_SFloat;
+
+        m_cascadeShadowPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, desc,
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "shadowmap_pipeline");
+        m_cascadeShadowPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_cascadeShadowPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_cascadeShadowPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+#if REVERSED_DEPTH
+        m_cascadeShadowPipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        m_cascadeShadowPipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        m_cascadeShadowPipeline->setDepthClamp(true);
+        m_cascadeShadowPipeline->setDepthWrite(true);
+        m_cascadeShadowPipeline->setDepthTest(true);
+        m_cascadeShadowPipeline->setColorMask(0, renderer::ColorMask::ColorMask_None);
+        //m_cascadeShadowPipeline->setDepthBias(0.0f, 0.0f, -2.5f); Apply inside the shader
+
+        BIND_SHADER_PARAMETER(m_cascadeShadowPipeline, m_cascadeShadowParameters, cb_DirectionShadowBuffer);
+    }
+
+    {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("light_point_shadows.hlsl", "point_shadows_vs",
+            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light_point_shadows.hlsl", "shadows_ps",
+            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        renderer::RenderPassDesc desc{};
+        desc._countColorAttachment = 0;
+        desc._viewsMask = 0b00111111;
+        desc._hasDepthStencilAttachment = true;
+        desc._attachmentsDesc.back()._format = renderer::Format::Format_D32_SFloat;
+
+        m_punctualShadowPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, desc,
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "point_shadow_pipeline");
+        m_punctualShadowPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_punctualShadowPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_punctualShadowPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+#if REVERSED_DEPTH
+        m_punctualShadowPipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+#else
+        m_punctualShadowPipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+        m_punctualShadowPipeline->setDepthClamp(true);
+        m_punctualShadowPipeline->setDepthWrite(true);
+        m_punctualShadowPipeline->setDepthTest(true);
+        m_punctualShadowPipeline->setColorMask(0, renderer::ColorMask::ColorMask_None);
+        m_punctualShadowPipeline->setDepthBias(0.0f, 0.0f, -5.0f);
+
+        BIND_SHADER_PARAMETER(m_punctualShadowPipeline, m_punctualShadowParameters, cb_PunctualShadowBuffer);
+    }
+
+    {
+        renderer::Shader::DefineList defines =
+        {
+            { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
+            { "SHADOWMAP_CASCADE_BLEND", "1" },
+            { "SHADOWMAP_FAST_COMPUTATION", "0" },
+        };
+
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("offscreen.hlsl", "offscreen_vs",
+            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("screen_space_shadow.hlsl", "screen_space_shadow_ps",
+            defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+
+        m_SSShadowsPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_SSShadowsRenderTarget->getRenderPassDesc(),
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "screen_space_shadows_pipeline");
+        m_SSShadowsPipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_SSShadowsPipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_SSShadowsPipeline->setCullMode(renderer::CullMode::CullMode_Back);
+        m_SSShadowsPipeline->setDepthCompareOp(renderer::CompareOperation::Always);
+        m_SSShadowsPipeline->setDepthWrite(false);
+        m_SSShadowsPipeline->setDepthTest(false);
+        m_SSShadowsPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        m_SSShadowsPipeline->setStencilTest(false);
+        m_SSShadowsPipeline->setStencilCompareOp(renderer::CompareOperation::NotEqual, 0x0);
+        m_SSShadowsPipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_ShadowmapBuffer);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, s_SamplerState);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, s_ShadowSamplerState);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureDepth);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureNormals);
+        BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_DirectionCascadeShadows);
+
+        m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+        m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
+        m_shadowSamplerState->setEnableCompareOp(true);
+        m_shadowSamplerState->setCompareOp(renderer::CompareOperation::LessOrEqual);
+        m_shadowSamplerState->setBorderColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+    }
+}
+
+void RenderPipelineShadowStage::destroyPipelines(renderer::Device* device, scene::SceneData& scene)
+{
+
+    {
+        const renderer::ShaderProgram* program = m_cascadeShadowPipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+        V3D_DELETE(m_cascadeShadowPipeline, memory::MemoryLabel::MemoryGame);
+        m_cascadeShadowPipeline = nullptr;
+    }
+
+    {
+        const renderer::ShaderProgram* program = m_SSShadowsPipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+        V3D_DELETE(m_SSShadowsPipeline, memory::MemoryLabel::MemoryGame);
+        m_SSShadowsPipeline = nullptr;
     }
 }
 
