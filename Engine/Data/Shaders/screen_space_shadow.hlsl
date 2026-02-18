@@ -1,7 +1,7 @@
 #include "global.hlsli"
 #include "viewport.hlsli"
 #include "offscreen_common.hlsli"
-#include "lighting_common.hlsli"
+#include "shadow_common.hlsli"
 
 #ifndef SHADOWMAP_CASCADE_COUNT
 #define SHADOWMAP_CASCADE_COUNT 4
@@ -89,29 +89,28 @@ float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float Ca
     float3 shadowCoord = lightModelViewProj.xyz / lightModelViewProj.w;
 
     CascadeID = (float) cascadeIndex;
-    float2 scaleFactor = texelSize * cb_ShadowmapBuffer.texelScale;
     if (cb_ShadowmapBuffer.PCFMode == 1)
     {
 #if SHADOWMAP_CASCADE_BLEND
         uint nextCascadeIndex = (CascadeID < SHADOWMAP_CASCADE_COUNT - 1) ? cascadeIndex + 1 : cascadeIndex;
-        float shadowCascade0 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
-        float shadowCascade1 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
+        float shadowCascade0 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, cb_ShadowmapBuffer.texelScale, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        float shadowCascade1 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, cb_ShadowmapBuffer.texelScale, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
         
         return shadowmap_cascade_blend(shadowCascade0, shadowCascade1, viewPosition.z, cascadeIndex);
 #else
-        return shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        return shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, cb_ShadowmapBuffer.texelScale, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
 #endif
     }
     else if (cb_ShadowmapBuffer.PCFMode == 2)
     {
 #if SHADOWMAP_CASCADE_BLEND
         uint nextCascadeIndex = (CascadeID < SHADOWMAP_CASCADE_COUNT - 1) ? cascadeIndex + 1 : cascadeIndex;
-        float shadowCascade0 = shadow_sample_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
-        float shadowCascade1 = shadow_sample_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
+        float shadowCascade0 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, cb_ShadowmapBuffer.texelScale, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        float shadowCascade1 = shadow_sample_PCF_3x3(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, cb_ShadowmapBuffer.texelScale, float4(shadowCoord, lightModelViewProj.w), nextCascadeIndex);
         
         return shadowmap_cascade_blend(shadowCascade0, shadowCascade1, viewPosition.z, cascadeIndex);
 #else
-        return shadow_sample_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, scaleFactor, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
+        return shadow_sample_PCF_9x9(t_DirectionCascadeShadows, s_ShadowSamplerState, cb_ShadowmapBuffer.shadowMapResolution, cb_ShadowmapBuffer.texelScale, float4(shadowCoord, lightModelViewProj.w), cascadeIndex);
 #endif
     }
 
