@@ -129,7 +129,7 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, Scen
             ASSERT(gbuffer_material_handle.isValid(), "must be valid");
             renderer::Texture2D* gbufferMaterialTexture = gbuffer_material_handle.as<renderer::Texture2D>();
 
-            ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_clamp");
+            ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_clamp_border");
             ASSERT(samplerState_handle.isValid(), "must be valid");
             renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
 

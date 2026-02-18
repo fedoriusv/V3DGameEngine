@@ -146,13 +146,13 @@ void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData&
                 ASSERT(velocity_target_h.isValid(), "must be valid");
                 renderer::Texture2D* velocityRenderTarget = objectFromHandle<renderer::Texture2D>(velocity_target_h);
 
-                ObjectHandle sampler_state_linear_h = scene.m_globalResources.get("linear_sampler_clamp");
-                ASSERT(sampler_state_linear_h.isValid(), "must be valid");
-                renderer::SamplerState* samplerStateLinear = objectFromHandle<renderer::SamplerState>(sampler_state_linear_h);
-
-                ObjectHandle linear_sampler_clamp_h = scene.m_globalResources.get("linear_sampler_clamp");
+                ObjectHandle linear_sampler_clamp_h = scene.m_globalResources.get("linear_sampler_clamp_border");
                 ASSERT(linear_sampler_clamp_h.isValid(), "must be valid");
-                renderer::SamplerState* samplerStatePoint = objectFromHandle<renderer::SamplerState>(linear_sampler_clamp_h);
+                renderer::SamplerState* samplerStateLinear = objectFromHandle<renderer::SamplerState>(linear_sampler_clamp_h);
+
+                ObjectHandle point_sampler_clamp_h = scene.m_globalResources.get("point_sampler_clamp_border");
+                ASSERT(point_sampler_clamp_h.isValid(), "must be valid");
+                renderer::SamplerState* samplerStatePoint = objectFromHandle<renderer::SamplerState>(point_sampler_clamp_h);
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
                     {

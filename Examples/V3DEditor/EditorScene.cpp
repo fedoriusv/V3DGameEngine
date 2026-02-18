@@ -461,20 +461,28 @@ void EditorScene::loadResources()
     renderer::SamplerState* linear_sampler_mirror = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
     linear_sampler_mirror->setWrap(renderer::SamplerWrap::TextureWrap_MirroredRepeat);
 
-    renderer::SamplerState* linear_sampler_clamp = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
-    linear_sampler_clamp->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
+    renderer::SamplerState* linear_sampler_clamp_border = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+    linear_sampler_clamp_border->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
+
+    renderer::SamplerState* linear_sampler_clamp_edge = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Trilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_4x);
+    linear_sampler_clamp_edge->setWrap(renderer::SamplerWrap::TextureWrap_ClampToEdge);
 
     renderer::SamplerState* nearest_sampler_repeat = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
     nearest_sampler_repeat->setWrap(renderer::SamplerWrap::TextureWrap_Repeat);
 
-    renderer::SamplerState* nearest_sampler_clamp = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-    nearest_sampler_clamp->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
+    renderer::SamplerState* nearest_sampler_clamp_border = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    nearest_sampler_clamp_border->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
+
+    renderer::SamplerState* nearest_sampler_clamp_edge = new renderer::SamplerState(m_device, renderer::SamplerFilter::SamplerFilter_Nearest, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    nearest_sampler_clamp_edge->setWrap(renderer::SamplerWrap::TextureWrap_ClampToEdge);
 
     m_sceneData.m_globalResources.bind("linear_sampler_repeat", linear_sampler_repeat);
     m_sceneData.m_globalResources.bind("linear_sampler_mirror", linear_sampler_mirror);
-    m_sceneData.m_globalResources.bind("linear_sampler_clamp", linear_sampler_clamp);
-    m_sceneData.m_globalResources.bind("nearest_sampler_repeat", nearest_sampler_repeat);
-    m_sceneData.m_globalResources.bind("nearest_sampler_clamp", nearest_sampler_clamp);
+    m_sceneData.m_globalResources.bind("linear_sampler_clamp_border", linear_sampler_clamp_border);
+    m_sceneData.m_globalResources.bind("linear_sampler_clamp_edge", linear_sampler_clamp_edge);
+    m_sceneData.m_globalResources.bind("point_sampler_repeat", nearest_sampler_repeat);
+    m_sceneData.m_globalResources.bind("point_sampler_clamp_border", nearest_sampler_clamp_border);
+    m_sceneData.m_globalResources.bind("point_sampler_clamp_edge", nearest_sampler_clamp_edge);
 
     m_LUTs.emplace_back("No LUT", default_lut);
     m_LUTs.emplace_back("Default LUT", default_lut);
