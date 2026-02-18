@@ -522,7 +522,7 @@ void RenderPipelineShadowStage::createPipelines(renderer::Device* device, scene:
         renderer::Shader::DefineList defines =
         {
             { "SHADOWMAP_CASCADE_COUNT", std::to_string(scene.m_settings._shadowsParams._cascadeCount) },
-            { "SHADOWMAP_CASCADE_BLEND", "1" },
+            { "SHADOWMAP_CASCADE_BLEND", "0" },
             { "SHADOWMAP_FAST_COMPUTATION", "0" },
         };
 

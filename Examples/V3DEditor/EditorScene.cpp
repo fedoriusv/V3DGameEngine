@@ -711,7 +711,7 @@ void EditorScene::test_loadTestScene()
 {
     //Config scene
     m_sceneData.m_settings._shadowsParams._longRange = 50.f;
-    m_sceneData.m_settings._shadowsParams._cascadeBaseBias = { 0.005f, 0.015f, 0.045f, 0.2f };
+    m_sceneData.m_settings._shadowsParams._cascadeBaseBias = { 0.005f, 0.015f, 0.045f, 0.08f };
     m_sceneData.m_settings._shadowsParams._cascadeSlopeBias = { 4.0f, 8.0f, 15.0f, 30.0f };
     m_sceneData.m_settings._shadowsParams._PCF = 2.0f;
     m_sceneData.m_settings._tonemapParams._ev100 = 0.5f;
