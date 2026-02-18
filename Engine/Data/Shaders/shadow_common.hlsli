@@ -21,12 +21,12 @@ float shadow_projection_fast(Texture2DArray Shadowmap, SamplerComparisonState Co
 
 float shadow_projection(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float4 ShadowCoord, in int2 Offset, in uint Slice)
 {
-    float2 stc = ShadowCoord.xy * Resolution + 0.5.xx;
-    float2 tcs = floor(stc);
-    ShadowCoord.xy = tcs / Resolution;
-
     if (is_inside_uv(ShadowCoord.xyz))
     {
+        float2 stc = ShadowCoord.xy * Resolution + 0.5.xx;
+        float2 tcs = floor(stc);
+        ShadowCoord.xy = tcs / Resolution;
+        
         float4 dist = Shadowmap.GatherCmpRed(CompareSampler, float3(ShadowCoord.xy, (float) Slice), ShadowCoord.z, Offset);
         float2 fracShadow = stc - tcs;
         return lerp(lerp(dist.w, dist.z, fracShadow.x), lerp(dist.x, dist.y, fracShadow.x), fracShadow.y);
@@ -50,26 +50,92 @@ float shadow_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerComparisonState Com
     return 0.0;
 }
 
-float GatherSample(Texture2DArray Shadowmap, SamplerState Sampler, in float3 Coord)
+float shadow_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
 {
-    float4 value = float4(
-        Shadowmap.Sample(Sampler, Coord, int2(0, 0)).r,
-        Shadowmap.Sample(Sampler, Coord, int2(1, 0)).r,
-        Shadowmap.Sample(Sampler, Coord, int2(0, 1)).r,
-        Shadowmap.Sample(Sampler, Coord, int2(1, 1)).r);
+    float shadow = 0.0;
+    float2 texelSize = rcp(Resolution);
     
-    return dot(value, 0.25.xxxx);
+    [unroll(g_Gaussian3x3_KernelSize)]
+    for (uint i = 0; i < g_Gaussian3x3_KernelSize; ++i)
+    {
+
+        float2 offset = g_Gaussian3x3_Kernel[i] * texelSize * ScaleFactor;
+#if SHADOWMAP_FAST_COMPUTATION
+        float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+#else
+        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+#endif
+        if (depth_test_nonlinear(dist, ShadowCoord.z))
+        {
+            shadow += dist;
+        }
+    }
+    
+    return saturate(shadow / (float) g_Gaussian3x3_KernelSize);
 }
+
+float shadow_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
+{
+    float shadow = 0.0;
+    float2 texelSize = rcp(Resolution);
+    
+    [unroll(g_Gaussian5x5_KernelSize)]
+    for (uint i = 0; i < g_Gaussian5x5_KernelSize; ++i)
+    {
+        float2 offset = g_Gaussian5x5_Kernel[i] * texelSize * ScaleFactor;
+#if SHADOWMAP_FAST_COMPUTATION
+        float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+#else
+        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+#endif
+        if (depth_test_nonlinear(dist, ShadowCoord.z))
+        {
+            shadow += dist;
+        }
+    }
+
+    return saturate(shadow / (float) g_Gaussian5x5_KernelSize);
+}
+
+float shadow_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
+{
+    float shadow = 0.0;
+    float2 texelSize = rcp(Resolution);
+    
+    [unroll(g_Gaussian9x9_KernelSize)]
+    for (uint i = 0; i < g_Gaussian9x9_KernelSize; ++i)
+    {
+        float2 offset = g_Gaussian9x9_Kernel[i] * texelSize * ScaleFactor;
+#if SHADOWMAP_FAST_COMPUTATION
+        float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+#else
+        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+#endif
+        if (depth_test_nonlinear(dist, ShadowCoord.z))
+        {
+            shadow += dist; 
+        }
+    }
+
+    return saturate(shadow / (float) g_Gaussian9x9_KernelSize);
+}
+
 
 float shadow_linear_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float Bias)
 {
     if (is_inside_uv(ShadowCoord.xyz))
     {
-        float kernelRadius = 2.0;
+        float2 stc = ShadowCoord.xy * Resolution + 0.5.xx;
+        float2 tcs = floor(stc);
+        ShadowCoord.xy = tcs / Resolution;
+        
+        float kernelRadius = 1.0;
         float2 texelSize = rcp(Resolution);
         ShadowCoord.xy = clamp(ShadowCoord.xy, texelSize * kernelRadius, 1 - texelSize * kernelRadius);
-        
-        float dist = Shadowmap.Sample(Sampler, float3(ShadowCoord.xy, (float) Slice)).r;
+
+        float4 distQuad = Shadowmap.GatherRed(Sampler, float3(ShadowCoord.xy, (float) Slice));
+        float2 fracShadow = stc - tcs;
+        float dist = lerp(lerp(distQuad.w, distQuad.z, fracShadow.x), lerp(distQuad.x, distQuad.y, fracShadow.x), fracShadow.y);
         
         float linearDist = linearize_depth(dist, ClipNearFar.x, ClipNearFar.y);
         float linearDepth = linearize_depth(ShadowCoord.z, ClipNearFar.x, ClipNearFar.y);
@@ -82,113 +148,103 @@ float shadow_linear_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerState Sample
     return 0.0;
 }
 
-float shadow_linear_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float Bias)
+float shadow_linear_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
 {
-    static const uint kernelSize = 81;
-    static const float2 kernel[kernelSize] =
+    if (is_inside_uv(ShadowCoord.xyz))
     {
-        float2(-4.0, -4.0), float2(-3.0, -4.0), float2(-2.0, -4.0), float2(-1.0, -4.0), float2(0.0, -4.0), float2(1.0, -4.0), float2(2.0, -4.0), float2(3.0, -4.0), float2(4.0, -4.0),
-        float2(-4.0, -3.0), float2(-3.0, -3.0), float2(-2.0, -3.0), float2(-1.0, -3.0), float2(0.0, -3.0), float2(1.0, -3.0), float2(2.0, -3.0), float2(3.0, -3.0), float2(4.0, -3.0),
-        float2(-4.0, -2.0), float2(-3.0, -2.0), float2(-2.0, -2.0), float2(-1.0, -2.0), float2(0.0, -2.0), float2(1.0, -2.0), float2(2.0, -2.0), float2(3.0, -2.0), float2(4.0, -2.0),
-        float2(-4.0, -1.0), float2(-3.0, -1.0), float2(-2.0, -1.0), float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0), float2(2.0, -1.0), float2(3.0, -1.0), float2(4.0, -1.0),
-        float2(-4.0,  0.0), float2(-3.0,  0.0), float2(-2.0,  0.0), float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0), float2(2.0,  0.0), float2(3.0,  0.0), float2(4.0,  0.0),
-        float2(-4.0,  1.0), float2(-3.0,  1.0), float2(-2.0,  1.0), float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0), float2(2.0,  1.0), float2(3.0,  1.0), float2(4.0,  1.0),
-        float2(-4.0,  2.0), float2(-3.0,  2.0), float2(-2.0,  2.0), float2(-1.0,  2.0), float2(0.0,  2.0), float2(1.0,  2.0), float2(2.0,  2.0), float2(3.0,  2.0), float2(4.0,  2.0),
-        float2(-4.0,  3.0), float2(-3.0,  3.0), float2(-2.0,  3.0), float2(-1.0,  3.0), float2(0.0,  3.0), float2(1.0,  3.0), float2(2.0,  3.0), float2(3.0,  3.0), float2(4.0,  3.0),
-        float2(-4.0,  4.0), float2(-3.0,  4.0), float2(-2.0,  4.0), float2(-1.0,  4.0), float2(0.0,  4.0), float2(1.0,  4.0), float2(2.0,  4.0), float2(3.0,  4.0), float2(4.0,  4.0)
-    };
-    
-    float shadow = 0.0;
-    float kernelRadius = 9;
-    float2 texelSize = rcp(Resolution);
-    ShadowCoord.xy = clamp(ShadowCoord.xy, texelSize * kernelRadius, 1 - texelSize * kernelRadius);
-    if (is_inside_uv(ShadowCoord.xyz)) 
-    {
-        [unroll(kernelSize)]
-        for (uint i = 0; i < kernelSize; ++i)
+        const float kernelRadius = 3.0;
+        float2 texelSize = rcp(Resolution);
+        ShadowCoord.xy = clamp(ShadowCoord.xy, texelSize * kernelRadius, 1.0 - texelSize * kernelRadius);
+        
+        float sum = 0;
+        float weightSum = 0;
+        
+        [unroll(g_Gaussian3x3_KernelSize)]
+        for (uint i = 0; i < g_Gaussian3x3_KernelSize; ++i)
         {
-            float2 offset = kernel[i] * texelSize * 0.5;
-            
-            float dist = Shadowmap.Sample(Sampler, float3(ShadowCoord.xy + offset, (float) Slice)).r;
+            float2 offset = g_Gaussian3x3_Kernel[i] * texelSize * ScaleFactor;
+            float dist = Shadowmap.SampleLevel(Sampler, float3(ShadowCoord.xy + offset, (float) Slice), 0).r;
+
             float linearDist = linearize_depth(dist, ClipNearFar.x, ClipNearFar.y);
             float linearDepth = linearize_depth(ShadowCoord.z, ClipNearFar.x, ClipNearFar.y);
             if (linearDist + Bias < linearDepth)
             {
-                shadow += 1.0;
+                sum += 1.0 * g_Gaussian3x3_Weights[i];
             }
+            
+            weightSum += g_Gaussian3x3_Weights[i];
         }
+        
+        return saturate(sum / weightSum);
     }
     
-    return saturate(shadow / (float) kernelSize);
+    return 0.0;
 }
 
-float shadow_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
+float shadow_linear_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
 {
-    static const uint kernelSize = 9;
-    static const float2 kernel[kernelSize] =
+    if (is_inside_uv(ShadowCoord.xyz))
     {
-        float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0),
-        float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0),
-        float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0)
-    };
-
-    float shadow = 0.0;
-    float2 texelSize = rcp(Resolution);
-    
-    [unroll(kernelSize)]
-    for (uint i = 0; i < kernelSize; ++i)
-    {
-
-        float2 offset = kernel[i] * texelSize * ScaleFactor;
-#if SHADOWMAP_FAST_COMPUTATION
-        float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
-#else
-        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
-#endif
-        if (depth_test_nonlinear(dist, ShadowCoord.z))
+        const float kernelRadius = 5.0;
+        float2 texelSize = rcp(Resolution);
+        ShadowCoord.xy = clamp(ShadowCoord.xy, texelSize * kernelRadius, 1.0 - texelSize * kernelRadius);
+        
+        float sum = 0;
+        float weightSum = 0;
+        
+        [unroll(g_Gaussian5x5_KernelSize)]
+        for (uint i = 0; i < g_Gaussian5x5_KernelSize; ++i)
         {
-            shadow += dist;
+            float2 offset = g_Gaussian5x5_Kernel[i] * texelSize * ScaleFactor;
+            float dist = Shadowmap.SampleLevel(Sampler, float3(ShadowCoord.xy + offset, (float) Slice), 0).r;
+
+            float linearDist = linearize_depth(dist, ClipNearFar.x, ClipNearFar.y);
+            float linearDepth = linearize_depth(ShadowCoord.z, ClipNearFar.x, ClipNearFar.y);
+            if (linearDist + Bias < linearDepth)
+            {
+                sum += 1.0 * g_Gaussian5x5_Weights[i];
+            }
+            
+            weightSum += g_Gaussian5x5_Weights[i];
         }
+        
+        return saturate(sum / weightSum);
     }
     
-    return saturate(shadow / (float) kernelSize);
+    return 0.0;
 }
 
-float shadow_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
+float shadow_linear_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
 {
-    static const uint kernelSize = 81;
-    static const float2 kernel[kernelSize] =
+    if (is_inside_uv(ShadowCoord.xyz))
     {
-        float2(-4.0, -4.0), float2(-3.0, -4.0), float2(-2.0, -4.0), float2(-1.0, -4.0), float2(0.0, -4.0), float2(1.0, -4.0), float2(2.0, -4.0), float2(3.0, -4.0), float2(4.0, -4.0),
-        float2(-4.0, -3.0), float2(-3.0, -3.0), float2(-2.0, -3.0), float2(-1.0, -3.0), float2(0.0, -3.0), float2(1.0, -3.0), float2(2.0, -3.0), float2(3.0, -3.0), float2(4.0, -3.0),
-        float2(-4.0, -2.0), float2(-3.0, -2.0), float2(-2.0, -2.0), float2(-1.0, -2.0), float2(0.0, -2.0), float2(1.0, -2.0), float2(2.0, -2.0), float2(3.0, -2.0), float2(4.0, -2.0),
-        float2(-4.0, -1.0), float2(-3.0, -1.0), float2(-2.0, -1.0), float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0), float2(2.0, -1.0), float2(3.0, -1.0), float2(4.0, -1.0),
-        float2(-4.0,  0.0), float2(-3.0,  0.0), float2(-2.0,  0.0), float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0), float2(2.0,  0.0), float2(3.0,  0.0), float2(4.0,  0.0),
-        float2(-4.0,  1.0), float2(-3.0,  1.0), float2(-2.0,  1.0), float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0), float2(2.0,  1.0), float2(3.0,  1.0), float2(4.0,  1.0),
-        float2(-4.0,  2.0), float2(-3.0,  2.0), float2(-2.0,  2.0), float2(-1.0,  2.0), float2(0.0,  2.0), float2(1.0,  2.0), float2(2.0,  2.0), float2(3.0,  2.0), float2(4.0,  2.0),
-        float2(-4.0,  3.0), float2(-3.0,  3.0), float2(-2.0,  3.0), float2(-1.0,  3.0), float2(0.0,  3.0), float2(1.0,  3.0), float2(2.0,  3.0), float2(3.0,  3.0), float2(4.0,  3.0),
-        float2(-4.0,  4.0), float2(-3.0,  4.0), float2(-2.0,  4.0), float2(-1.0,  4.0), float2(0.0,  4.0), float2(1.0,  4.0), float2(2.0,  4.0), float2(3.0,  4.0), float2(4.0,  4.0)
-    };
-
-    float shadow = 0.0;
-    float2 texelSize = rcp(Resolution);
-    
-    [unroll(kernelSize)]
-    for (uint i = 0; i < kernelSize; ++i)
-    {
-        float2 offset = kernel[i] * texelSize * ScaleFactor;
-#if SHADOWMAP_FAST_COMPUTATION
-        float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
-#else
-        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
-#endif
-        if (depth_test_nonlinear(dist, ShadowCoord.z))
+        const float kernelRadius = 9.0;
+        float2 texelSize = rcp(Resolution);
+        ShadowCoord.xy = clamp(ShadowCoord.xy, texelSize * kernelRadius, 1.0 - texelSize * kernelRadius);
+        
+        float sum = 0;
+        float weightSum = 0;
+        
+        [unroll(g_Gaussian9x9_KernelSize)]
+        for (uint i = 0; i < g_Gaussian9x9_KernelSize; ++i)
         {
-            shadow += dist;
-        }
-    }
+            float2 offset = g_Gaussian9x9_Kernel[i] * texelSize * ScaleFactor;
+            float dist = Shadowmap.SampleLevel(Sampler, float3(ShadowCoord.xy + offset, (float) Slice), 0).r;
 
-    return saturate(shadow / (float) kernelSize);
+            float linearDist = linearize_depth(dist, ClipNearFar.x, ClipNearFar.y);
+            float linearDepth = linearize_depth(ShadowCoord.z, ClipNearFar.x, ClipNearFar.y);
+            if (linearDist + Bias < linearDepth)
+            {
+                sum += 1.0 * g_Gaussian9x9_Weights[i];
+            }
+            
+            weightSum += g_Gaussian9x9_Weights[i];
+        }
+        
+        return saturate(sum / weightSum);
+    }
+    
+    return 0.0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

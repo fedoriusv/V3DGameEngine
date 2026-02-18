@@ -238,7 +238,8 @@ void EditorViewScreen::build()
         .addWidget(ui::WidgetCheckBox("PCF", m_sceneData->m_settings._shadowsParams._PCF)
             .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
                 {
-                    m_sceneData->m_settings._shadowsParams._PCF = enable ? 1.0f : 0.0f;
+                    static f32 oldValue = m_sceneData->m_settings._shadowsParams._PCF;
+                    m_sceneData->m_settings._shadowsParams._PCF = enable ? oldValue : 0.0f;
                 })
             )
         .addWidget(ui::WidgetText("Textel scale "))
@@ -284,7 +285,7 @@ void EditorViewScreen::build()
         )
         .addWidget(ui::WidgetHorizontalLayout()
         .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentLeft)
-            .addWidget(ui::WidgetCheckBox("Show punctual shadows", m_sceneData->m_settings._shadowsParams._debugPunctualLightShadows)
+            .addWidget(ui::WidgetCheckBox("Show punctual shadows.", m_sceneData->m_settings._shadowsParams._debugPunctualLightShadows)
                 .setOnChangedValueEvent([this](ui::Widget* w, bool enable)
                 {
                     m_sceneData->m_settings._shadowsParams._debugPunctualLightShadows = enable;

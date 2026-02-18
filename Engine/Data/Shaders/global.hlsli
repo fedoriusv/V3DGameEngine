@@ -178,6 +178,75 @@ float2 cubemap_face_UV(float3 Dir, uint Face)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+// Gaussian3x3
+static const int g_Gaussian3x3_KernelSize = 9;
+static const float2 g_Gaussian3x3_Kernel[g_Gaussian3x3_KernelSize] =
+    {
+        float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0),
+        float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0),
+        float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0)
+    };
+
+static const int g_Gaussian3x3_WeightsSum = 16;
+static const int g_Gaussian3x3_Weights[g_Gaussian3x3_KernelSize] =
+    {
+        1, 2, 1,
+        2, 4, 2,
+        1, 2, 1
+    };
+
+// Gaussian5x5
+static const int g_Gaussian5x5_KernelSize = 25;
+static const float2 g_Gaussian5x5_Kernel[g_Gaussian5x5_KernelSize] =
+    {
+        float2(-2.0, -2.0), float2(-1.0, -2.0), float2(0.0, -2.0), float2(1.0, -2.0), float2(2.0, -2.0),
+        float2(-2.0, -1.0), float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0), float2(2.0, -1.0),
+        float2(-2.0,  0.0), float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0), float2(2.0,  0.0),
+        float2(-2.0,  1.0), float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0), float2(2.0,  1.0),
+        float2(-2.0,  2.0), float2(-1.0,  2.0), float2(0.0,  2.0), float2(1.0,  2.0), float2(2.0,  2.0),
+    };
+
+static const int g_Gaussian5x5_WeightsSum = 256;
+static const int g_Gaussian5x5_Weights[g_Gaussian5x5_KernelSize] =
+    {
+        1, 4,  6,  4,  1,
+        4, 16, 24, 16, 4,
+        6, 24, 36, 24, 6,
+        4, 16, 24, 16, 4,
+        1, 4,  6,  4,  1
+    };
+
+// Gaussian9x9
+static const int g_Gaussian9x9_KernelSize = 81;
+static const float2 g_Gaussian9x9_Kernel[g_Gaussian9x9_KernelSize] =
+    {
+        float2(-4.0, -4.0), float2(-3.0, -4.0), float2(-2.0, -4.0), float2(-1.0, -4.0), float2(0.0, -4.0), float2(1.0, -4.0), float2(2.0, -4.0), float2(3.0, -4.0), float2(4.0, -4.0),
+        float2(-4.0, -3.0), float2(-3.0, -3.0), float2(-2.0, -3.0), float2(-1.0, -3.0), float2(0.0, -3.0), float2(1.0, -3.0), float2(2.0, -3.0), float2(3.0, -3.0), float2(4.0, -3.0),
+        float2(-4.0, -2.0), float2(-3.0, -2.0), float2(-2.0, -2.0), float2(-1.0, -2.0), float2(0.0, -2.0), float2(1.0, -2.0), float2(2.0, -2.0), float2(3.0, -2.0), float2(4.0, -2.0),
+        float2(-4.0, -1.0), float2(-3.0, -1.0), float2(-2.0, -1.0), float2(-1.0, -1.0), float2(0.0, -1.0), float2(1.0, -1.0), float2(2.0, -1.0), float2(3.0, -1.0), float2(4.0, -1.0),
+        float2(-4.0,  0.0), float2(-3.0,  0.0), float2(-2.0,  0.0), float2(-1.0,  0.0), float2(0.0,  0.0), float2(1.0,  0.0), float2(2.0,  0.0), float2(3.0,  0.0), float2(4.0,  0.0),
+        float2(-4.0,  1.0), float2(-3.0,  1.0), float2(-2.0,  1.0), float2(-1.0,  1.0), float2(0.0,  1.0), float2(1.0,  1.0), float2(2.0,  1.0), float2(3.0,  1.0), float2(4.0,  1.0),
+        float2(-4.0,  2.0), float2(-3.0,  2.0), float2(-2.0,  2.0), float2(-1.0,  2.0), float2(0.0,  2.0), float2(1.0,  2.0), float2(2.0,  2.0), float2(3.0,  2.0), float2(4.0,  2.0),
+        float2(-4.0,  3.0), float2(-3.0,  3.0), float2(-2.0,  3.0), float2(-1.0,  3.0), float2(0.0,  3.0), float2(1.0,  3.0), float2(2.0,  3.0), float2(3.0,  3.0), float2(4.0,  3.0),
+        float2(-4.0,  4.0), float2(-3.0,  4.0), float2(-2.0,  4.0), float2(-1.0,  4.0), float2(0.0,  4.0), float2(1.0,  4.0), float2(2.0,  4.0), float2(3.0,  4.0), float2(4.0,  4.0)
+    };
+
+static const int g_Gaussian9x9_WeightsSum = 65536;
+static const int g_Gaussian9x9_Weights[g_Gaussian9x9_KernelSize] =
+    {
+        1,  8,   28,   56,   70,   56,   28,   8,   1,
+        8,  64,  224,  448,  560,  448,  224,  64,  8,
+        28, 224, 784,  1568, 1960, 1568, 784,  224, 28,
+        56, 448, 1568, 3136, 3920, 3136, 1568, 448, 56,
+        70, 560, 1960, 3920, 4900, 3920, 1960, 560, 70,
+        56, 448, 1568, 3136, 3920, 3136, 1568, 448, 56,
+        28, 224, 784,  1568, 1960, 1568, 784,  224, 28,
+        8,  64,  224,  448,  560,  448,  224,  64,  8,
+        1,  8,   28,   56,   70,   56,   28,   8,   1
+    };
+
+///////////////////////////////////////////////////////////////////////////////////////
+
 struct ModelBuffer
 {
     float4x4 modelMatrix;

@@ -928,7 +928,7 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
             {
                 ImGui::SetNextItemWidth(static_cast<f32>(idCtx->_size._width));
             }
-            active = ImGui::DragFloat("", &value, step, idCtx->_range[0], idCtx->_range[1], "%.2f", flags);
+            active = ImGui::DragFloat("", &value, step, idCtx->_range[0], idCtx->_range[1], "%.3f", flags);
             ImGui::PopID();
 
             if (pushCount > 0)

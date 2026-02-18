@@ -180,16 +180,20 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
 
                 struct PunctualLightBuffer
                 {
-                    math::Matrix4D lightSpaceMatrix[6];
-                    math::float2   clipNearFar;
-                    math::float2   viewSliceOffsetCount;
                     math::Vector3D position;
                     math::float4   color;
                     math::float4   attenuation;
                     f32            intensity;
                     f32            temperature;
+
+                    math::float2   clipNearFar;
+                    math::Matrix4D lightSpaceMatrix[6];
+                    math::float2   shadowResolution;
                     f32            shadowBaseBias;
-                    f32            applyShadow;
+                    u32            shadowSliceOffset;
+                    u32            shadowFaceMask;
+                    u32            shadowPCFMode;
+                    f32          _pad[2];
                 } lightBuffer;
 
                 lightBuffer.position = itemLight.object->getTransform().getPosition();
@@ -199,18 +203,20 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 lightBuffer.temperature = light.getTemperature();
 
                 lightBuffer.clipNearFar = { 0.0f, 0.0f };
-                lightBuffer.viewSliceOffsetCount = { 0.0f, 0.0f };
+                lightBuffer.shadowResolution = { (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height };
                 lightBuffer.shadowBaseBias = 0.0f;
-                lightBuffer.applyShadow = false;
+                lightBuffer.shadowSliceOffset = 0;
+                lightBuffer.shadowFaceMask = 0b0;
+                lightBuffer.shadowPCFMode = scene.m_settings._shadowsParams._PCF;
 
                 if (i < k_maxPunctualShadowmapCount && shadowData && shadowData->_punctualLightsFlags[i])
                 {
                     auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = shadowData->_punctualLightsData[i];
                     memcpy(lightBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
                     lightBuffer.clipNearFar = plane;
-                    lightBuffer.viewSliceOffsetCount = { i * 6.0f, 6.0f };
                     lightBuffer.shadowBaseBias = scene.m_settings._shadowsParams._punctualLightBias;
-                    lightBuffer.applyShadow = true;
+                    lightBuffer.shadowSliceOffset = i * 6;
+                    lightBuffer.shadowFaceMask = 0b00111111;
                 }
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,

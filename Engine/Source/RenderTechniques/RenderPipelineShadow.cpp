@@ -73,6 +73,12 @@ void RenderPipelineShadowStage::create(renderer::Device* device, SceneData& scen
     createRenderTarget(device, scene);
     createPipelines(device, scene);
 
+    m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
+    m_shadowSamplerState->setEnableCompareOp(true);
+    m_shadowSamplerState->setCompareOp(renderer::CompareOperation::LessOrEqual);
+    m_shadowSamplerState->setBorderColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+
     m_created = true;
 }
 
@@ -545,12 +551,6 @@ void RenderPipelineShadowStage::createPipelines(renderer::Device* device, scene:
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureDepth);
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_TextureNormals);
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, t_DirectionCascadeShadows);
-
-        m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-        m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-        m_shadowSamplerState->setEnableCompareOp(true);
-        m_shadowSamplerState->setCompareOp(renderer::CompareOperation::LessOrEqual);
-        m_shadowSamplerState->setBorderColor({ 0.0f, 0.0f, 0.0f, 0.0f });
     }
 }
 

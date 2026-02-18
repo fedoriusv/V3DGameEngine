@@ -2,6 +2,7 @@
 #include "viewport.hlsli"
 #include "offscreen_common.hlsli"
 #include "lighting_common.hlsli"
+#include "shadow_common.hlsli"
 
 #ifndef DEBUG_PUNCTUAL_SHADOWMAPS
 #define DEBUG_PUNCTUAL_SHADOWMAPS 0
@@ -9,16 +10,19 @@
 
 struct PunctualLightBuffer
 {
-    matrix lightSpaceMatrix[6];
-    float2 clipNearFar;
-    float2 viewSliceOffest;
     float3 position;
     float4 color;
     float4 attenuation;
     float  intensity;
     float  temperature;
+    
+    float2 clipNearFar;
+    matrix lightSpaceMatrix[6];
+    float2 shadowMapResolution;
     float  shadowBaseBias;
-    float  applyShadow;
+    uint   shadowSliceOffset;
+    uint   shadowFaceMask;
+    uint   shadowPCFMode;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -59,6 +63,7 @@ VS_SIMPLE_OUTPUT main_vs(VS_SIMPLE_INPUT Input)
 float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
 {
     float shadow = 0.0;
+    const float2 scaleFactor = 0.75.xx;
     
     float3 lightDirection = WorldPos - cb_Light.position.rgb;
     float lightDistance = length(lightDirection);
@@ -66,7 +71,7 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     {
         return 0.0;
     }
-
+    
     float NdotL = saturate(dot(Normal, normalize(lightDirection)));
     float NdotV = saturate(dot(Normal, cb_Viewport.cameraPosition.xyz));
     float slopeBias = max(0.001 * (1.0 - NdotL), 0.0001);
@@ -80,11 +85,25 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     float4 lightModelViewProj = mul(cb_Light.lightSpaceMatrix[face], float4(offsetPos, 1.0));
     float3 shadowCoord = lightModelViewProj.xyz / lightModelViewProj.w;
 
-    uint3 shadowmapDim;
-    t_TextureShadowmaps.GetDimensions(shadowmapDim.x, shadowmapDim.y, shadowmapDim.z);
+    if (cb_Light.shadowPCFMode == 1)
+    {
+        return shadow_linear_sample_PCF_3x3(
+            t_TextureShadowmaps, s_SamplerState, cb_Light.shadowMapResolution, cb_Light.clipNearFar, float4(uv, shadowCoord.z, lightModelViewProj.w), cb_Light.shadowSliceOffset + face, scaleFactor, cb_Light.shadowBaseBias);
+
+    }
+    else if (cb_Light.shadowPCFMode == 2)
+    {
+        return shadow_linear_sample_PCF_5x5(
+            t_TextureShadowmaps, s_SamplerState, cb_Light.shadowMapResolution, cb_Light.clipNearFar, float4(uv, shadowCoord.z, lightModelViewProj.w), cb_Light.shadowSliceOffset + face, scaleFactor, cb_Light.shadowBaseBias);
+    }
+    else if (cb_Light.shadowPCFMode == 3)
+    {
+        return shadow_linear_sample_PCF_9x9(
+            t_TextureShadowmaps, s_SamplerState, cb_Light.shadowMapResolution, cb_Light.clipNearFar, float4(uv, shadowCoord.z, lightModelViewProj.w), cb_Light.shadowSliceOffset + face, scaleFactor, cb_Light.shadowBaseBias);
+    }
     
-    shadow = shadow_linear_sample_PCF_1x1(t_TextureShadowmaps, s_ShadowSamplerState, shadowmapDim.xy, cb_Light.clipNearFar, float4(uv, shadowCoord.z, lightModelViewProj.w), cb_Light.viewSliceOffest.x + face);
-    return shadow;
+    return shadow_linear_sample_PCF_1x1(
+        t_TextureShadowmaps, s_SamplerState, cb_Light.shadowMapResolution, cb_Light.clipNearFar, float4(uv, shadowCoord.z, lightModelViewProj.w), cb_Light.shadowSliceOffset + face, cb_Light.shadowBaseBias * 1.0);;
 }
 
 [[vk::location(0)]] float4 light_accumulation_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0
@@ -115,8 +134,7 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
         light.intensity = cb_Light.intensity;
         light.temperature = cb_Light.temperature;
 
-        float3 lightDirection = worldPos - cb_Light.position.xyz;
-        float shadow = cb_Light.applyShadow > 0.0 ? punctual_light_shadow(worldPos, normals) : 0.0;
+        float shadow = cb_Light.shadowFaceMask > 0.0 ? punctual_light_shadow(worldPos, normals) : 0.0;
         float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
 #if DEBUG_PUNCTUAL_SHADOWMAPS
         color.rgb = lerp(color.rgb, float3(1.0, 1.0, 1.0), shadow);
@@ -124,7 +142,7 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
         return float4(color.rgb, 1.0);
     }
     
-    return float4(0.0, 0.0, 0.0, 1.0);
+    return float4(0.0, 0.0, 0.0, 0.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
