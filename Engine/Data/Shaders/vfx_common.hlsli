@@ -11,8 +11,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 
 VS_SIMPLE_OUTPUT _horizontal_billboard_vs(
-    in uniform ConstantBuffer<Viewport> Viewport,
-    in uniform ConstantBuffer<ModelBuffer> Model,
+    in Viewport Viewport,
+    in ModelBuffer Model,
     uint VertexID)
 {
     const float scale = 0.02f;
@@ -57,8 +57,8 @@ VS_SIMPLE_OUTPUT _horizontal_billboard_vs(
 }
 
 VS_SIMPLE_OUTPUT _billboard_vs(
-    in uniform ConstantBuffer<Viewport> Viewport,
-    in uniform ConstantBuffer<ModelBuffer> Model,
+    in Viewport Viewport,
+    in ModelBuffer Model,
     uint VertexID)
 {
     // Define quad corners based on vertexID

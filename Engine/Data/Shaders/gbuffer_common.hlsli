@@ -43,9 +43,9 @@ struct PS_GBUFFER_STRUCT
 ///////////////////////////////////////////////////////////////////////////////////////
 
 VS_GBUFFER_STANDARD_OUTPUT _gbuffer_standard_vs(
-    in VS_GBUFFER_STANDARD_INPUT Input, 
-    in uniform ConstantBuffer<Viewport> Viewport,
-    in uniform ConstantBuffer<ModelBuffer> Model)
+    in VS_GBUFFER_STANDARD_INPUT Input,
+    in Viewport Viewport,
+    in ModelBuffer Model)
 {
     VS_GBUFFER_STANDARD_OUTPUT Output;
    
@@ -77,8 +77,8 @@ float2 calc_velocity(float4 position, float4 prevPosition)
 
 PS_GBUFFER_STRUCT _gbuffer_standard_ps(
     in PS_GBUFFER_STANDARD_INPUT Input,
-    in uniform ConstantBuffer<Viewport> Viewport,
-    in uniform ConstantBuffer<ModelBuffer> Model,
+    in Viewport Viewport,
+    in ModelBuffer Model,
     in float3 Albedo,
     in float3 Normal,
     in float Roughness,
@@ -106,8 +106,8 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
 
 PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     in PS_GBUFFER_STANDARD_INPUT Input,
-    in uniform ConstantBuffer<Viewport> Viewport,
-    in uniform ConstantBuffer<ModelBuffer> Model,
+    in Viewport Viewport,
+    in ModelBuffer Model,
     in float3 Albedo,
     in float Opacity,
     in float3 Normal,
