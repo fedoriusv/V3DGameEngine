@@ -488,10 +488,10 @@ void RenderPipelineShadowStage::createPipelines(renderer::Device* device, scene:
     }
 
     {
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("light_point_shadows.hlsl", "point_shadows_vs",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("light_point_shadows.hlsl", "shadows_ps",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "light_point_shadows.hlsl", "point_shadows_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "light_point_shadows.hlsl", "shadows_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 0;
@@ -526,10 +526,10 @@ void RenderPipelineShadowStage::createPipelines(renderer::Device* device, scene:
             { "SHADOWMAP_FAST_COMPUTATION", "0" },
         };
 
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("offscreen.hlsl", "offscreen_vs",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("screen_space_shadow.hlsl", "screen_space_shadow_ps",
-            defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "screen_space_shadow.hlsl", "screen_space_shadow_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 
         m_SSShadowsPipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_SSShadowsRenderTarget->getRenderPassDesc(),
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "screen_space_shadows_pipeline");
