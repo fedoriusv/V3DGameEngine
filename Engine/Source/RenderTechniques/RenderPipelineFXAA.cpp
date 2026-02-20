@@ -38,9 +38,9 @@ void RenderPipelineFXAAStage::create(renderer::Device* device, scene::SceneData&
         createRenderTarget(device, scene, frame);
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
-            "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+            "offscreen.hlsl", "offscreen_vs", {}, {});
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
-            "fxaa.hlsl", "fxaa_ps", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+            "fxaa.hlsl", "fxaa_ps", {}, {});
 
         renderer::RenderPassDesc desc{};
         desc._countColorAttachment = 1;
@@ -83,19 +83,11 @@ void RenderPipelineFXAAStage::destroy(renderer::Device* device, scene::SceneData
 
 void RenderPipelineFXAAStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::FXAA)
+    if (isEnabled())
     {
+        ASSERT(scene.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::FXAA, "must be enabled");
         create(device, scene, frame);
-        m_enabled = true;
-    }
-    else
-    {
-        destroy(device, scene, frame);
-        m_enabled = false;
-    }
 
-    if (m_enabled)
-    {
         if (!m_renderTarget)
         {
             createRenderTarget(device, scene, frame);
@@ -115,11 +107,18 @@ void RenderPipelineFXAAStage::prepare(renderer::Device* device, scene::SceneData
         frame.m_frameResources.bind("input_target_taa", inputTarget_handle);
         frame.m_frameResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
     }
+    else
+    {
+        ASSERT(scene.m_settings._vewportParams._antiAliasingMode != scene::AntiAliasing::FXAA, "must be disabled");
+        destroy(device, scene, frame);
+    }
+
 }
 
 void RenderPipelineFXAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_created, "must be created");
+    ASSERT(scene.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::FXAA, "must be enabled");
 
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {

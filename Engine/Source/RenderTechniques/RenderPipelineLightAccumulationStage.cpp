@@ -131,11 +131,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
 
             ObjectHandle shadowmaps_handle = scene.m_globalResources.get("shadowmaps_array");
-            if (!shadowmaps_handle.isValid())
-            {
-                shadowmaps_handle = scene.m_globalResources.get("default_array");
-                ASSERT(shadowmaps_handle.isValid(), "must be valid");
-            }
+            ASSERT(shadowmaps_handle.isValid(), "must be valid");
             renderer::Texture2D* shadowmapsTexture = shadowmaps_handle.as<renderer::Texture2D>();
 
             m_lightRenderTarget->setColorTexture(0, renderTargetTexture,

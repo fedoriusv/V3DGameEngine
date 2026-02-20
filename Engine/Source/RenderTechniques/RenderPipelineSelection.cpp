@@ -36,14 +36,19 @@ RenderPipelineSelectionStage::~RenderPipelineSelectionStage()
 
 void RenderPipelineSelectionStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (m_created)
+    {
+        return;
+    }
+
     createRenderTarget(device, scene, frame);
 
     //VertexFormatStandardDesc
     {
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("gbuffer.hlsl", "gbuffer_standard_vs",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("gbuffer.hlsl", "gbuffer_selection_ps",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "gbuffer.hlsl", "gbuffer_standard_vs", {}, {});
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "gbuffer.hlsl", "gbuffer_selection_ps", {}, {});
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatStandardDesc, m_renderTarget->getRenderPassDesc(),
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_standard_pipeline");
@@ -68,10 +73,10 @@ void RenderPipelineSelectionStage::create(renderer::Device* device, scene::Scene
 
     //VertexFormatSimpleLitDesc
     {
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("simple.hlsl", "simple_vs",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("simple.hlsl", "simple_selection_ps",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "simple.hlsl", "simple_vs", {}, {});
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "simple.hlsl", "simple_selection_ps", {}, {});
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, m_renderTarget->getRenderPassDesc(),
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_simple_pipeline");
@@ -96,10 +101,10 @@ void RenderPipelineSelectionStage::create(renderer::Device* device, scene::Scene
 
     //VertexFormatEmptyDesc
     {
-        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("simple.hlsl", "billboard_vs",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("simple.hlsl", "simple_selection_ps",
-            {}, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "simple.hlsl", "billboard_vs", {}, {});
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "simple.hlsl", "simple_selection_ps", {}, {});
 
         renderer::GraphicsPipelineState* pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatEmptyDesc, m_renderTarget->getRenderPassDesc(),
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "selection_billboard_pipeline");
@@ -122,25 +127,34 @@ void RenderPipelineSelectionStage::create(renderer::Device* device, scene::Scene
 
         m_pipelines.push_back(pipeline);
     }
+
+    m_created = true;
 }
 
 void RenderPipelineSelectionStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene, frame);
-
-    for (auto& pipeline : m_pipelines)
+    if (m_created)
     {
-        const renderer::ShaderProgram* program = pipeline->getShaderProgram();
-        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+        destroyRenderTarget(device, scene, frame);
 
-        V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
-        pipeline = nullptr;
+        for (auto& pipeline : m_pipelines)
+        {
+            const renderer::ShaderProgram* program = pipeline->getShaderProgram();
+            V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+            V3D_DELETE(pipeline, memory::MemoryLabel::MemoryGame);
+            pipeline = nullptr;
+        }
+        m_pipelines.clear();
+
+        m_created = false;
     }
-    m_pipelines.clear();
 }
 
 void RenderPipelineSelectionStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
+
     if (!m_renderTarget)
     {
         createRenderTarget(device, scene, frame);
@@ -154,6 +168,8 @@ void RenderPipelineSelectionStage::prepare(renderer::Device* device, scene::Scen
 
 void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
+
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
             TRACE_PROFILER_SCOPE("Selection", color::rgba8::GREEN);

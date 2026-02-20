@@ -40,6 +40,15 @@ namespace scene
             SHADER_PARAMETER(cb_Model);
         };
 
+        struct DebugVisualizerMaterialParameters
+        {
+            SHADER_PARAMETER(cb_Viewport);
+            SHADER_PARAMETER(cb_Visualizer);
+            SHADER_PARAMETER(s_LinearSampler);
+            SHADER_PARAMETER(t_RenderTargetTexture);
+            SHADER_PARAMETER(t_VisualizeTexture);
+        };
+
         void createRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
         void destroyRenderTarget(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame);
 
@@ -47,6 +56,10 @@ namespace scene
         renderer::RenderTargetState* m_renderTarget;
         std::vector<renderer::GraphicsPipelineState*> m_pipelines;
         std::vector<MaterialParameters> m_parameters;
+
+        renderer::GraphicsPipelineState* m_debugVisualizerPipeline;
+        renderer::Texture2D* m_debugVisualizerTexture;
+        DebugVisualizerMaterialParameters m_debugVisualizerParameters;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

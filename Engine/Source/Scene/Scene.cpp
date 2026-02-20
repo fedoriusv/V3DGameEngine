@@ -248,11 +248,6 @@ void SceneHandler::updateScene(f32 dt)
                     }
                 }
 
-                if (passID & (1 << toEnumType(ScenePass::MaskedOpaque)))
-                {
-                    int a = 0;
-                }
-
                 ASSERT(index < toEnumType(ScenePass::Count), "out of range");
                 m_sceneData.m_renderLists[index].push_back(item);
             }

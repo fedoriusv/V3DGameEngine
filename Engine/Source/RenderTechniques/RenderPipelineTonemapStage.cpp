@@ -86,9 +86,10 @@ void RenderPipelineTonemapStage::prepare(renderer::Device* device, scene::SceneD
     {
         inputTarget_handle = scene.m_globalResources.get("color_target");
     }
-
     renderer::Texture2D* inputTargetTexture = inputTarget_handle.as<renderer::Texture2D>();
     frame.m_frameResources.bind("input_target_tonemap", inputTarget_handle);
+
+    scene.m_globalResources.bind("final_target", m_tonemapRenderTarget->getColorTexture<renderer::Texture2D>(0));
     frame.m_frameResources.bind("render_target", m_tonemapRenderTarget->getColorTexture<renderer::Texture2D>(0));
 }
 
@@ -154,7 +155,7 @@ void RenderPipelineTonemapStage::execute(renderer::Device* device, scene::SceneD
             cmdList->endRenderTarget();
         };
 
-    addRenderJob("Tonemap Job", renderJob, device, scene);
+    addRenderJob("Tonemap Job", renderJob, device, scene, true);
 }
 
 void RenderPipelineTonemapStage::createRenderTarget(renderer::Device* device, scene::SceneData& data, scene::FrameData& frame)
@@ -164,7 +165,6 @@ void RenderPipelineTonemapStage::createRenderTarget(renderer::Device* device, sc
 
     renderer::Texture2D* tonemap = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
         renderer::Format::Format_R8G8B8A8_UNorm, data.m_viewportSize, renderer::TextureSamples::TextureSamples_x1, "tonemap");
-    data.m_globalResources.bind("final_target", tonemap);
 
     m_tonemapRenderTarget->setColorTexture(0, tonemap,
         {

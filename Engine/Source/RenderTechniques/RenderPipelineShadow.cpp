@@ -527,7 +527,7 @@ void RenderPipelineShadowStage::createPipelines(renderer::Device* device, scene:
         };
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
-            "offscreen.hlsl", "offscreen_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+            "offscreen.hlsl", "offscreen_vs", {}, {});
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
             "screen_space_shadow.hlsl", "screen_space_shadow_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 

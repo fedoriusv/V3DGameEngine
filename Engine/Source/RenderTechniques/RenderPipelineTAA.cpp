@@ -89,19 +89,11 @@ void RenderPipelineTAAStage::destroy(renderer::Device* device, scene::SceneData&
 
 void RenderPipelineTAAStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    if (scene.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::TAA)
+    if (isEnabled())
     {
+        ASSERT(scene.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::TAA, "must be enabled");
         create(device, scene, frame);
-        m_enabled = true;
-    }
-    else
-    {
-        destroy(device, scene, frame);
-        m_enabled = false;
-    }
 
-    if (m_enabled)
-    {
         if (m_renderTarget->getRenderArea() != scene.m_viewportSize)
         {
             destroyRenderTarget(device, scene, frame);
@@ -117,11 +109,17 @@ void RenderPipelineTAAStage::prepare(renderer::Device* device, scene::SceneData&
         frame.m_frameResources.bind("input_target_taa", inputTarget_handle);
         frame.m_frameResources.bind("render_target", m_renderTarget->getColorTexture<renderer::Texture2D>(0));
     }
+    else
+    {
+        ASSERT(scene.m_settings._vewportParams._antiAliasingMode != scene::AntiAliasing::TAA, "must be disabled");
+        destroy(device, scene, frame);
+    }
 }
 
 void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
     ASSERT(m_created, "must be created");
+    ASSERT(scene.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::TAA, "must be enabled");
 
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {

@@ -33,6 +33,11 @@ RenderPipelineDeferredLightingStage::~RenderPipelineDeferredLightingStage()
 
 void RenderPipelineDeferredLightingStage::create(renderer::Device* device, SceneData& scene, FrameData& frame)
 {
+    if (m_created)
+    {
+        return;
+    }
+
     createRenderTarget(device, scene, frame);
     m_debugShadowCascades = scene.m_settings._shadowsParams._debugShadowCascades;
 
@@ -41,10 +46,10 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, Scene
         { "DEBUG_SHADOWMAP_CASCADES", std::to_string(m_debugShadowCascades) },
     };
 
-    const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>("offscreen.hlsl", "offscreen_vs",
-        defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
-    const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>("deferred_lighting.hlsl", "deffered_lighting_ps",
-        defines, {}, resource::ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV);
+    const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+        "offscreen.hlsl", "offscreen_vs", defines, {});
+    const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+        "deferred_lighting.hlsl", "deffered_lighting_ps", defines, {});
 
     m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, renderer::VertexInputAttributeDesc(), m_deferredRenderTarget->getRenderPassDesc(),
         V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "deffered_light_pipeline");
@@ -68,21 +73,29 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, Scene
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureMaterial);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureDepth);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureScreenSpaceShadows);
+
+    m_created = true;
 }
 
 void RenderPipelineDeferredLightingStage::destroy(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene, frame);
+    if (m_created)
+    {
+        destroyRenderTarget(device, scene, frame);
 
-    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
-    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+        const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
-    m_pipeline = nullptr;
+        V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
+        m_pipeline = nullptr;
+
+        m_created = false;
+    }
 }
 
 void RenderPipelineDeferredLightingStage::prepare(renderer::Device* device, SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
 #if DEBUG
     if (m_debugShadowCascades != scene.m_settings._shadowsParams._debugShadowCascades)
     {
@@ -104,6 +117,8 @@ void RenderPipelineDeferredLightingStage::prepare(renderer::Device* device, Scen
 
 void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, SceneData& scene, FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
+
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame) -> void
         {
             TRACE_PROFILER_SCOPE("DeferredLighting", color::rgba8::GREEN);
