@@ -16,8 +16,6 @@ RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& si
     , m_trackerFramebuffer(this, std::bind(&RenderTargetState::destroyFramebuffers, this, std::placeholders::_1))
     , m_trackerRenderpass(this, std::bind(&RenderTargetState::destroyRenderPasses, this, std::placeholders::_1))
 {
-    LOG_DEBUG("RenderTargetState::RenderTargetState constructor %llx", this);
-
     ASSERT(countAttacment < m_device->getDeviceCaps()._maxColorAttachments, "index >= maxColorattachments");
     m_renderpassDesc._countColorAttachment = countAttacment;
     m_renderpassDesc._viewsMask = viewsMask;
@@ -26,7 +24,6 @@ RenderTargetState::RenderTargetState(Device* device, const math::Dimension2D& si
 
 RenderTargetState::~RenderTargetState()
 {
-    LOG_DEBUG("RenderTargetState::RenderTargetState destructor %llx", this);
     m_trackerFramebuffer.release();
     m_trackerRenderpass.release();
 }

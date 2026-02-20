@@ -289,8 +289,9 @@ VulkanCommandBufferManager::VulkanCommandBufferManager(VulkanDevice* device, Vul
 
     , m_poolFlag(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT)
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("VulkanCommandBufferManager constructor %llx", this);
-
+#endif
     if (m_device.getVulkanDeviceCaps()._individuallyResetForCommandBuffers)
     {
         m_poolFlag |= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -305,8 +306,9 @@ VulkanCommandBufferManager::VulkanCommandBufferManager(VulkanDevice* device, Vul
 
 VulkanCommandBufferManager::~VulkanCommandBufferManager()
 {
+#if VULKAN_DEBUG
     LOG_DEBUG("~VulkanCommandBufferManager destructor %llx", this);
-
+#endif
     ASSERT(m_usedCmdBuffers.empty(), "already used");
 
     for (u32 level = 0; level < CommandBufferLevel::CommandBufferLevelCount; ++level)

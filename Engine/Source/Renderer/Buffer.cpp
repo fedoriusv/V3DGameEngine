@@ -43,16 +43,12 @@ VertexBuffer::VertexBuffer(Device* device, BufferUsageFlags usage, u32 count, u3
     , m_size(size)
     , m_count(count)
 {
-    LOG_DEBUG("VertexBuffer::VertexBuffer constructor %llx", this);
-
     m_buffer = m_device->createBuffer(RenderBuffer::Type::VertexBuffer, usage, size, name);
     ASSERT(m_buffer.isValid(), "nullptr");
 }
 
 VertexBuffer::~VertexBuffer()
 {
-    LOG_DEBUG("VertexBuffer::VertexBuffer destructor %llx", this);
-
     m_device->destroyBuffer(m_buffer);
     m_buffer = BufferHandle(nullptr);
 }
@@ -65,8 +61,6 @@ IndexBuffer::IndexBuffer(Device* device, BufferUsageFlags usage, IndexBufferType
     , m_type(type)
     , m_count(count)
 {
-    LOG_DEBUG("IndexBuffer::IndexBuffer constructor %llx", this);
-
     u64 size = m_count * (type == IndexBufferType::IndexType_16) ? sizeof(u16) : sizeof(u32);
     m_buffer = m_device->createBuffer(RenderBuffer::Type::IndexBuffer, usage, size * count, name);
     ASSERT(m_buffer.isValid(), "nullptr");
@@ -74,8 +68,6 @@ IndexBuffer::IndexBuffer(Device* device, BufferUsageFlags usage, IndexBufferType
 
 IndexBuffer::~IndexBuffer()
 {
-    LOG_DEBUG("IndexBuffer::IndexBuffer destructor %llx", this);
-
     m_device->destroyBuffer(m_buffer);
     m_buffer = BufferHandle(nullptr);
 }
@@ -87,16 +79,12 @@ UnorderedAccessBuffer::UnorderedAccessBuffer(Device* device, BufferUsageFlags us
     , m_device(device)
     , m_size(size)
 {
-    LOG_DEBUG("UnorderedAccessBuffer::UnorderedAccessBuffer constructor %llx", this);
-
     m_buffer = m_device->createBuffer(RenderBuffer::Type::UnorderedAccess, usage, size, name);
     ASSERT(m_buffer.isValid(), "nullptr");
 }
 
 UnorderedAccessBuffer::~UnorderedAccessBuffer()
 {
-    LOG_DEBUG("UnorderedAccessBuffer::UnorderedAccessBuffer destructor %llx", this);
-
     m_device->destroyBuffer(m_buffer);
     m_buffer = BufferHandle(nullptr);
 }
