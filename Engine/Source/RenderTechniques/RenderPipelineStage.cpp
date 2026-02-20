@@ -21,17 +21,8 @@ RenderPipelineStage::~RenderPipelineStage()
 
 void RenderPipelineStage::onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event)
 {
+    //do nothing
 }
-
-bool RenderPipelineStage::isEnabled() const
-{
-    return m_enabled;
-}
-
-//void RenderPipelineStage::delayedDelete(v3d::Object* object, memory::MemoryLabel label)
-//{
-//    m_renderTechnique.m_delayedDeleteList.emplace_back(object, label);
-//}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +59,10 @@ void RenderTechnique::prepare(renderer::Device* device, scene::SceneData& scene,
 {
     for (auto& [id, stage] : m_stages)
     {
-        stage->prepare(device, scene, frame);
+        if (stage->isEnabled())
+        {
+            stage->prepare(device, scene, frame);
+        }
     }
 }
 
@@ -85,6 +79,12 @@ void RenderTechnique::execute(renderer::Device* device, scene::SceneData& scene,
 
 void RenderTechnique::submit(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (!m_batchJobs.empty()) //flush pending jobs
+    {
+        flushRenderJobs(device, m_batchJobs, scene);
+        m_batchJobs.clear();
+    }
+       
     for (auto& [cmd, renderTask] : m_dependencyList)
     {
         renderTask->waitCompetition();
@@ -102,7 +102,10 @@ void RenderTechnique::onChanged(renderer::Device* device, scene::SceneData& scen
 {
     for (auto& [id, stage] : m_stages)
     {
-        stage->onChanged(device, scene, event);
+        if (stage->isEnabled())
+        {
+            stage->onChanged(device, scene, event);
+        }
     }
 }
 
@@ -124,12 +127,6 @@ RenderPipelineStage* RenderTechnique::getStage(const std::string& id)
 void RenderTechnique::addStage(const std::string& id, RenderPipelineStage* stage)
 {
     m_stages.emplace_back(id, stage);
-}
-
-void RenderTechnique::addRenderJob(renderer::Device* device, renderer::CmdListRender* cmds, task::TaskScheduler& worker, task::Task* renderTask)
-{
-    m_dependencyList.emplace_back(cmds, renderTask);
-    worker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
 }
 
 renderer::CmdListRender* RenderTechnique::acquireCmdList(renderer::Device* device)

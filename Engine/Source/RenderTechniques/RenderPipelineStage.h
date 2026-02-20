@@ -50,9 +50,8 @@ namespace scene
 
     private:
 
-        void addRenderJob(renderer::Device* device, renderer::CmdListRender* cmd, task::TaskScheduler& worker, task::Task* renderTask);
-
-        [[nodiscard]] renderer::CmdListRender* acquireCmdList(renderer::Device* device);
+        template<typename Func>
+        void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch = false);
 
         struct Stage
         {
@@ -68,8 +67,62 @@ namespace scene
         std::vector<RenderJobFunc> m_batchJobs;
         std::vector<std::tuple<Object*, memory::MemoryLabel>> m_delayedDeleteList;
 
+        void flushRenderJobs(renderer::Device* device, std::vector<RenderTechnique::RenderJobFunc>& jobs, const scene::SceneData& scene);
+        [[nodiscard]] renderer::CmdListRender* acquireCmdList(renderer::Device* device);
+
         friend RenderPipelineStage;
     };
+
+    template<typename Func>
+    inline void RenderTechnique::addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch)
+    {
+        if (batch)
+        {
+            m_batchJobs.emplace_back(std::forward<Func>(func));
+            return;
+        }
+
+        if (m_batchJobs.empty())
+        {
+            renderer::CmdListRender* cmdList = acquireCmdList(device);
+            scene::FrameData& frameData = scene.renderFrameData();
+
+            task::Task* renderTask = new task::Task;
+            renderTask->init(name, std::forward<Func>(func), device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(frameData));
+
+            m_dependencyList.emplace_back(cmdList, renderTask);
+            scene.m_taskWorker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
+        }
+        else
+        {
+            m_batchJobs.emplace_back(std::forward<Func>(func));
+
+            std::vector<RenderTechnique::RenderJobFunc> tempBatchJobs;
+            std::swap(tempBatchJobs, m_batchJobs);
+
+            flushRenderJobs(device, tempBatchJobs, scene);
+        }
+    }
+
+    inline void RenderTechnique::flushRenderJobs(renderer::Device* device, std::vector<RenderTechnique::RenderJobFunc>& jobs, const scene::SceneData& scene)
+    {
+        renderer::CmdListRender* cmdList = acquireCmdList(device);
+        scene::FrameData& frameData = scene.renderFrameData();
+
+        auto batchFunc = [](std::vector<RenderTechnique::RenderJobFunc>& jobs, renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame)
+            {
+                for (auto& job : jobs)
+                {
+                    std::invoke(job, device, cmdList, scene, frame);
+                }
+            };
+
+        task::Task* renderTask = new task::Task;
+        renderTask->init(batchFunc, jobs, device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(frameData));
+
+        m_dependencyList.emplace_back(cmdList, renderTask);
+        scene.m_taskWorker.executeTask(renderTask, task::TaskPriority::Normal, task::TaskMask::WorkerThread);
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -89,56 +142,38 @@ namespace scene
         virtual void onChanged(renderer::Device* device, scene::SceneData& scene, const event::GameEvent* event);
 
         bool isEnabled() const;
+        void setEnabled(bool enabled);
+
+    private:
+
+        std::string          m_id;
+        RenderTechnique&     m_renderTechnique;
+        bool                 m_enabled;
 
     protected:
 
         template<typename Func>
         void addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch = false);
 
-        std::string          m_id;
-        RenderTechnique&     m_renderTechnique;
-        bool                 m_enabled;
         bool                 m_created;
     };
+
+    inline bool RenderPipelineStage::isEnabled() const
+    {
+        return m_enabled;
+    }
+
+    inline void RenderPipelineStage::setEnabled(bool enabled)
+    {
+        m_enabled = enabled;
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     template<typename Func>
     inline void RenderPipelineStage::addRenderJob(const std::string& name, Func&& func, renderer::Device* device, const scene::SceneData& scene, bool batch)
     {
-        if (batch)
-        {
-            m_renderTechnique.m_batchJobs.emplace_back(std::forward<Func>(func));
-            return;
-        }
-
-        renderer::CmdListRender* cmdList = m_renderTechnique.acquireCmdList(device);
-        scene::FrameData& frameData = scene.renderFrameData();
-
-        task::Task* renderTask = new task::Task;
-        if (m_renderTechnique.m_batchJobs.empty())
-        {
-            renderTask->init(name, std::forward<Func>(func), device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(frameData));
-        }
-        else
-        {
-            m_renderTechnique.m_batchJobs.emplace_back(std::forward<Func>(func));
-
-            std::vector<RenderTechnique::RenderJobFunc> tempBatchJobs;
-            std::swap(tempBatchJobs, m_renderTechnique.m_batchJobs);
-
-            auto batchFunc = [](std::vector<RenderTechnique::RenderJobFunc>& jobs, renderer::Device* device, renderer::CmdListRender* cmdList, const scene::SceneData& scene, const scene::FrameData& frame)
-                {
-                    for (auto& job : jobs)
-                    {
-                        std::invoke(job, device, cmdList, scene, frame);
-                    }
-                };
-
-            renderTask->init(batchFunc, tempBatchJobs, device, cmdList, std::reference_wrapper<const scene::SceneData>(scene), std::reference_wrapper<const scene::FrameData>(frameData));
-        }
-
-        m_renderTechnique.addRenderJob(device, cmdList, scene.m_taskWorker, renderTask);
+        m_renderTechnique.addRenderJob(name, std::forward<Func>(func), device, std::reference_wrapper<const scene::SceneData>(scene), batch);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
