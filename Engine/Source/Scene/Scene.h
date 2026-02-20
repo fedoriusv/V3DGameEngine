@@ -182,7 +182,7 @@ namespace scene
 
         void finalize();
 
-        friend RenderPipelineStage;
+        friend RenderTechnique;
         friend SceneHandler;
     };
 
