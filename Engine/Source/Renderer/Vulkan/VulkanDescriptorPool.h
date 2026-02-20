@@ -202,8 +202,8 @@ namespace vk
         VulkanDescriptorPoolProvider() = delete;
         VulkanDescriptorPoolProvider(const VulkanDescriptorPoolProvider&) = delete;
 
-        VulkanDevice&                 m_device;
-        GenericDescriptorPools* const m_descriptorPools;
+        VulkanDevice&            m_device;
+        GenericDescriptorPools*  m_descriptorPools;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////

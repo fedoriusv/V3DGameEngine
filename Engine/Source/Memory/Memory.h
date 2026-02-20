@@ -80,7 +80,7 @@ void operator delete[](void* ptr, v3d::memory::MemoryLabel label, v3d::u64 align
 #   define V3D_NEW(type, label) ::new(label, alignof(type), __FILE_PATH__, __FILE_LINE__) type
 #   define V3D_NEW_ALIGNED(type, label, align) ::new(label, align, __FILE_PATH__, __FILE_LINE__) type
 #   define V3D_PLACMENT_NEW(ptr, type) ::new(ptr) type
-#   define V3D_DELETE(ptr, label) v3d::memory::internal_delete(ptr, label, __FILE_PATH__, __FILE_LINE__)
+#   define V3D_DELETE(ptr, label) v3d::memory::internal_delete(ptr, label, __FILE_PATH__, __FILE_LINE__); ptr = nullptr
 
 #   define V3D_MALLOC(size, label) v3d::memory::internal_malloc(size, label, 0, __FILE_PATH__, __FILE_LINE__)
 #   define V3D_MALLOC_ALIGNED(size, label, align) v3d::memory::internal_malloc(size, label, align, __FILE_PATH__, __FILE_LINE__)

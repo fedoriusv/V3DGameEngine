@@ -377,9 +377,9 @@ void VulkanDevice::destroyCommandList(CmdList* cmdList)
     // TODO
     s32 slot = vkCmdList->m_concurrencySlot;
     m_maskOfActiveThreadPool &= ~(1 << slot);
-    V3D_DELETE(vkCmdList, memory::MemoryLabel::MemoryRenderCore);
-
     m_cmdLists.erase(std::remove(m_cmdLists.begin(), m_cmdLists.end(), vkCmdList));
+
+    V3D_DELETE(vkCmdList, memory::MemoryLabel::MemoryRenderCore);
 }
 
 u32 VulkanDevice::prepareConcurrencySlot()
@@ -1263,8 +1263,9 @@ void VulkanDevice::destroyTexture(TextureHandle texture)
 
     ASSERT(texture.isValid(), "nullptr");
     VulkanImage* vkImage = static_cast<VulkanImage*>(texture.as<RenderTexture>());
-    m_resourceDeleter.addResourceToDelete(vkImage, [vkImage](VulkanResource* resource) -> void
+    m_resourceDeleter.addResourceToDelete(vkImage, [](VulkanResource* resource) -> void
         {
+            VulkanImage* vkImage = static_cast<VulkanImage*>(resource);
             vkImage->destroy();
             V3D_DELETE(vkImage, memory::MemoryLabel::MemoryRenderCore);
         });
@@ -1308,6 +1309,7 @@ void VulkanDevice::destroyBuffer(BufferHandle buffer)
     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer.as<RenderBuffer>());
     m_resourceDeleter.addResourceToDelete(vkBuffer, [vkBuffer](VulkanResource* resource) -> void
         {
+            VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(resource);
             vkBuffer->destroy();
             V3D_DELETE(vkBuffer, memory::MemoryLabel::MemoryRenderCore);
         });
