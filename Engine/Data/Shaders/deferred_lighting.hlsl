@@ -32,7 +32,7 @@
     float depth = t_TextureDepth.SampleLevel(s_SamplerState, Input.UV, 0).r;
     if (depth > 0.0) //TODO move to stencil test
     {
-        float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, Input.UV, depth);
+        float3 worldPos = _reconstruct_world_pos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, Input.UV, depth);
         
         EnvironmentBuffer environment;
         environment.wetness = 0.0f;

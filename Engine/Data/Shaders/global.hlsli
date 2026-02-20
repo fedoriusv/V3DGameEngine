@@ -57,18 +57,18 @@ typedef VS_SIMPLE_OUTPUT PS_SIMPLE_INPUT;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-bool is_inside_uv(in float3 Coord)
+bool _inside_uv(in float3 Coord)
 {
     return all(Coord >= 0.0.xxx) && all(Coord <= 1.0.xxx);
 }
 
-bool is_outside_uv(in float3 Coord)
+bool _outside_uv(in float3 Coord)
 {
     return any(Coord < 0.0.xxx) || any(Coord > 1.0.xxx);
 }
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float linearize_depth(in float Depth, in float NearPlane, in float FarPlane)
+float _linearize_depth(in float Depth, in float NearPlane, in float FarPlane)
 {
 #if REVERSED_DEPTH
     return (NearPlane * FarPlane) / (NearPlane + Depth * (FarPlane - NearPlane));
@@ -77,7 +77,7 @@ float linearize_depth(in float Depth, in float NearPlane, in float FarPlane)
 #endif
 }
 
-bool depth_test_nonlinear(in float Depth, in float TestValue)
+bool _nonlinear_depth_test(in float Depth, in float TestValue)
 {
 #if REVERSED_DEPTH
     return Depth > TestValue; // [1..0]
@@ -119,7 +119,7 @@ float4 linear_srgb(float4 lin)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-uint cubemap_face_id(in float3 Dir)
+uint _cubemap_face_id(in float3 Dir)
 {
     float3 a = abs(Dir);
     if (a.x > a.y && a.x > a.z)
@@ -136,7 +136,7 @@ uint cubemap_face_id(in float3 Dir)
     }
 }
 
-float2 cubemap_face_UV(float3 Dir, uint Face)
+float2 _cubemap_face_UV(float3 Dir, uint Face)
 {
     float2 uv;
     float ma;

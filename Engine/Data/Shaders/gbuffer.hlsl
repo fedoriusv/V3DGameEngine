@@ -61,6 +61,10 @@ VS_GBUFFER_STANDARD_OUTPUT gbuffer_billboard_vs(uint VertexID : SV_VERTEXID)
 
 PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_GBUFFER_STANDARD_INPUT Input)
 {
+    float2 uv = Input.UV;
+    float height = t_TextureHeight.Sample(s_SamplerState, uv).r;
+    uv = _calculate_uv_displacment(Input, cb_Viewport, cb_Model, height, Input.UV);
+
 #if SEPARATE_MATERIALS
     float3 albedo = srgb_linear(t_TextureAlbedo.Sample(s_SamplerState, uv).rgb);
     float3 normal = t_TextureNormal.Sample(s_SamplerState, uv).rgb * 2.0 - 1.0;

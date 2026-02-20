@@ -68,7 +68,7 @@ VS_GBUFFER_STANDARD_OUTPUT _gbuffer_standard_vs(
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float2 calc_velocity(float4 position, float4 prevPosition)
+float2 _calc_velocity(float4 position, float4 prevPosition)
 {
     float2 pos = (prevPosition.xy / prevPosition.w) * 0.5 + 0.5;
     float2 prevPos = (prevPosition.xy / prevPosition.w) * 0.5 + 0.5;
@@ -86,7 +86,7 @@ PS_GBUFFER_STRUCT _gbuffer_standard_ps(
 {
     PS_GBUFFER_STRUCT Output;
     
-    float2 velocity = calc_velocity(Input.ClipPos, Input.PrevClipPos);
+    float2 velocity = _calc_velocity(Input.ClipPos, Input.PrevClipPos);
     
     float3 N = normalize(Input.Normal);
     float3 B = normalize(Input.Bitangent);
@@ -116,7 +116,7 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
 {
     PS_GBUFFER_STRUCT Output;
 
-    float2 velocity = calc_velocity(Input.ClipPos, Input.PrevClipPos);
+    float2 velocity = _calc_velocity(Input.ClipPos, Input.PrevClipPos);
     
     float3 N = normalize(Input.Normal);
     float3 B = normalize(Input.Bitangent);
@@ -130,6 +130,35 @@ PS_GBUFFER_STRUCT _gbuffer_standard_alpha_ps(
     Output.Velocity = velocity;
 
     return Output;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+float2 _calculate_uv_displacment(
+    in PS_GBUFFER_STANDARD_INPUT Input,
+    in Viewport Viewport,
+    in ModelBuffer Model,
+    in float Height,
+    in float2 UV)
+{
+    return UV;
+    //float3 N = normalize(Input.Normal);
+    //float3 B = normalize(Input.Bitangent);
+    //float3 T = normalize(Input.Tangent);
+    //float3x3 TBN = float3x3(T, B, N);
+    
+    //float3 viewDirWS = normalize(Viewport.cameraPosition.xyz - Input.WorldPos);
+    //float3 viewDirTS = normalize(mul(viewDirWS, TBN));
+    //float bumpHeight = 0.05f;
+    //float2 offsetUV = viewDirTS.xy / viewDirTS.z * (Height * bumpHeight);
+    //return offsetUV - UV;
+    
+    //if (uv.x > 1.0 || uv.y > 1.0 || uv.x < 0.0 || uv.y < 0.0)
+    //{
+    //    discard;
+    //}
+   
+    //return parallax_mapping(Height, bumpHeight, UV, viewDirTS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

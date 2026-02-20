@@ -86,8 +86,8 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     float3 bias = cb_Light.shadowBaseBias + slopeBias + viewBias;
     float3 offsetPos = WorldPos + Normal * bias;
     
-    uint face = cubemap_face_id(lightDirection);
-    float2 uv = cubemap_face_UV(lightDirection, face);
+    uint face = _cubemap_face_id(lightDirection);
+    float2 uv = _cubemap_face_UV(lightDirection, face);
     
     float4 lightModelViewProj = mul(cb_Light.lightSpaceMatrix[face], float4(offsetPos, 1.0));
     float3 shadowCoord = lightModelViewProj.xyz / lightModelViewProj.w;
@@ -125,7 +125,7 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     float depth = t_TextureDepth.SampleLevel(s_SamplerState, positionScreenUV, 0).r;
     if (depth > 0.0) //TODO move to stencil test
     {
-        float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, positionScreenUV, depth);
+        float3 worldPos = _reconstruct_world_pos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, positionScreenUV, depth);
         
         if (cb_Light.lightType == POINT_LIGHT)
         {
@@ -163,9 +163,9 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
             if (axial <= 0 || axial >= range)
                 discard;
 
-            float cosAngle = dot(normalize(V), cb_Light.direction);
-            if (cosAngle <= cb_Light.CosOuterAngle)
-                discard;
+            //float cosAngle = dot(normalize(V), cb_Light.direction);
+            //if (cosAngle <= cb_Light.CosOuterAngle)
+            //    discard;
             
             LightBuffer light;
             light.direction = worldPos - cb_Light.position.xyz;

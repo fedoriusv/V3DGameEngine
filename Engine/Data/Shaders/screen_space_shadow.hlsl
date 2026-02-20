@@ -142,7 +142,7 @@ float direction_light_shadows(in float3 WorldPos, in float3 Normal, out float Ca
     float depth = t_TextureDepth.SampleLevel(s_SamplerState, Input.UV, 0).r;
     if (depth > 0.0) //TODO move to stencil test
     {
-        float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, Input.UV, depth);
+        float3 worldPos = _reconstruct_world_pos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, Input.UV, depth);
         
         float cascadeID = 0.0;
         float directShadow = direction_light_shadows(worldPos, normal, cascadeID);

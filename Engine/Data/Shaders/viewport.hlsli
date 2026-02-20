@@ -27,17 +27,17 @@ struct Viewport
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float3 reconstruct_WorldPos(float4x4 invProjection, float4x4 invView, float2 uv, float depth)
+float3 _reconstruct_world_pos(in float4x4 InvProjection, in float4x4 InvView, in float2 UV, in float Depth)
 {
     float4 NDC;
-    NDC.xy = float2(uv.x * 2.0f - 1.0f, -(uv.y * 2.0f - 1.0f));
-    NDC.z = depth;
+    NDC.xy = float2(UV.x * 2.0f - 1.0f, -(UV.y * 2.0f - 1.0f));
+    NDC.z = Depth;
     NDC.w = 1.0f;
 
-    float4 viewSpacePos = mul(invProjection, NDC);
+    float4 viewSpacePos = mul(InvProjection, NDC);
     viewSpacePos /= viewSpacePos.w;
     
-    float4 worldSpacePos = mul(invView, viewSpacePos);
+    float4 worldSpacePos = mul(InvView, viewSpacePos);
     return worldSpacePos.xyz;
 }
 
