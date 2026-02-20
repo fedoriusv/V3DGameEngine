@@ -51,6 +51,25 @@ namespace renderer
             memset(this, 0, sizeof(RenderPassDesc));
         }
 
+        RenderPassDesc(Format color) noexcept
+        {
+            memset(this, 0, sizeof(RenderPassDesc));
+
+            _countColorAttachment = 1;
+            _hasDepthStencilAttachment = false;
+            _attachmentsDesc[0]._format = color;
+        }
+
+        RenderPassDesc(Format color, Format depth) noexcept
+        {
+            memset(this, 0, sizeof(RenderPassDesc));
+
+            _countColorAttachment = 1;
+            _hasDepthStencilAttachment = true;
+            _attachmentsDesc[0]._format = color;
+            _attachmentsDesc.back()._format = depth;
+        }
+
         bool operator==(const RenderPassDesc& other) const
         {
             if (this == &other)
