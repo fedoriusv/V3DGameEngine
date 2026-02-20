@@ -499,7 +499,7 @@ void EditorPropertyScreen::buildLightProp()
                     .addWidget(ui::WidgetText("Intensity"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setStep(0.01f)
-                        .setRange(-100.0f, 1000.f)
+                        .setRange(0.0f, 1000.f)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyIntensity = static_cast<ui::WidgetInputDragFloat*>(w);
@@ -554,7 +554,6 @@ void EditorPropertyScreen::buildLightProp()
                                     {
                                         math::float4 attenuation = light->getAttenuation();
                                         light->setRadius(val);
-                                        light->setAttenuation(attenuation._x, attenuation._y, attenuation._z, val);
                                         m_selectedNode->setScale(scene::TransformMode::Local, { val , val, val });
 
                                         m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
@@ -565,26 +564,64 @@ void EditorPropertyScreen::buildLightProp()
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
                     .setVisible(isSpot)
-                    .addWidget(ui::WidgetText("Radius outer"))
-                    .addWidget(ui::WidgetInputDragFloat(0.f)
+                    .addWidget(ui::WidgetText("Range(Height)"))
+                    .addWidget(ui::WidgetInputDragFloat(1.f)
                         .setSize({ 80, 20 })
-                        .setStep(0.01)
+                        .setRange(0.01f, 1000.f)
+                        .setStep(0.1)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
+
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
+                                if (m_selectedNode)
+                                {
+                                    if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
+                                    {
+                                        light->setRange(val);
+                                        f32 scale = val * tanf(light->getOuterAngle() * math::k_degToRad);
+                                        m_selectedNode->setScale(scene::TransformMode::Local, { scale, scale, val });
+                                        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    }
+                                }
+                            })
+                    )
+                )
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .setVisible(isSpot)
+                    .addWidget(ui::WidgetText("Radius degrees  outer(falloff)"))
+                    .addWidget(ui::WidgetInputDragFloat(0.f)
+                        .setSize({ 80, 20 })
+                        .setStep(0.01)
+                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
+                                    {
+                                        light->setOuterAngle(val);
+                                        f32 test = tanf(val * math::k_degToRad);
+                                        f32 scale = light->getRange() * tanf(val * math::k_degToRad);
+                                        m_selectedNode->setScale(scene::TransformMode::Local, { scale, scale, light->getRange() });
+                                        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    }
+                                }
                             })
                     )
                     .addWidget(ui::WidgetText("innter"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 80, 20 })
                         .setStep(0.01)
-                        .setOnCreated([this](ui::Widget* w) -> void
-                            {
-                            })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
+                                if (m_selectedNode)
+                                {
+                                    if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
+                                    {
+                                        light->setInnerAngle(val);
+                                    }
+                                }
                             })
                     )
                 )
@@ -605,9 +642,7 @@ void EditorPropertyScreen::buildLightProp()
                                 {
                                     if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
                                     {
-                                        math::float4 attenuation = light->getAttenuation();
-                                        light->setAttenuation(val._x, val._y, val._z, attenuation._w);
-
+                                        light->setAttenuation(val._x, val._y, val._z);
                                         m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                     }
                                 }

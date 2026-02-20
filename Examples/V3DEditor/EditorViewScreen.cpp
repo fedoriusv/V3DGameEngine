@@ -58,7 +58,7 @@ void EditorViewScreen::build()
 {
     ui::WidgetPopup& popup = *m_popup;
     popup
-        .setSize({ 350, 700 })
+        .setSize({ 400, 700 })
 
         //Camera
         .addWidget(ui::WidgetLayout()
@@ -291,7 +291,7 @@ void EditorViewScreen::build()
                     m_sceneData->m_settings._shadowsParams._debugPunctualLightShadows = enable;
                 })
             )
-            .addWidget(ui::WidgetText("Bias "))
+            .addWidget(ui::WidgetText("Bias  (1 = 1.0)"))
             .addWidget(ui::WidgetInputDragFloat(m_sceneData->m_settings._shadowsParams._punctualLightBias)
                 .setStep(0.001f)
                 .setSize({ 80, 20 })

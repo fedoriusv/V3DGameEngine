@@ -160,7 +160,7 @@ EditorScene::EditorScene() noexcept
                 {
                     if (event->_key == event::KeyCode::KeyKey_F) //focus on selected object
                     {
-                        //m_cameraHandler->setTarget(m_sceneData.m_generalList[m_activeIndex]->_object->getPosition());
+                        m_cameraHandler->setTarget(m_sceneData.m_generalRenderList[m_selectedIndex]->object->getTransform().getPosition());
                     }
                 }
                 m_cameraHandler->handleInputEventCallback(m_inputHandler, event);
@@ -346,6 +346,9 @@ void EditorScene::preRender(f32 dt)
         m_sceneData.m_renderLists[toEnumType(scene::ScenePass::Selected)].push_back(m_sceneData.m_generalRenderList[m_selectedIndex]);
     }
 
+    m_mainPipeline.getStage("FXAA")->setEnabled(m_sceneData.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::FXAA);
+    m_mainPipeline.getStage("TAA")->setEnabled(m_sceneData.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::TAA);
+
     SceneHandler::preRender(m_device, dt);
 }
 
@@ -393,6 +396,14 @@ void EditorScene::onChanged(const math::Matrix4D& view)
 
 renderer::Texture2D* EditorScene::getOutputTexture() const
 {
+    if (m_sceneData.m_settings._vewportParams._renderTargetID)
+    {
+        ObjectHandle debug = m_sceneData.m_globalResources.get("final_visualize");
+        ASSERT(debug.isValid(), "must be valid");
+        renderer::Texture2D* renderTarget = objectFromHandle<renderer::Texture2D>(debug);
+        return renderTarget;
+    }
+
     ObjectHandle final = m_sceneData.m_globalResources.get("final_target");
     ASSERT(final.isValid(), "must be valid");
     renderer::Texture2D* renderTarget = objectFromHandle<renderer::Texture2D>(final);
@@ -555,11 +566,11 @@ scene::PointLight* EditorScene::addPointLightComponent(const math::Vector3D& pos
         addNode(pointLightNode);
     }
 
-    scene::PointLight* pointLight = scene::LightHelper::createPointLight(m_device, 1.f, "Light");
+    scene::PointLight* pointLight = scene::LightHelper::createPointLight(m_device, 1.f, name);
     pointLight->setColor(color);
     pointLight->setIntensity(30.f);
     pointLight->setTemperature(4000.0);
-    pointLight->setAttenuation(1.0, 0.09, 0.032, radius);
+    pointLight->setAttenuation(1.0, 0.09, 0.032);
     pointLight->setRadius(radius);
     pointLightNode->addComponent(pointLight);
 
@@ -658,7 +669,7 @@ void EditorScene::test_loadScene(const std::string& name)
             {
                 node->setScale(scene::TransformMode::Local, { 10.0f, 10.0f, 10.0f });
                 pointLight->setRadius(10.0f);
-                pointLight->setAttenuation(1.0, 0.5f, 2.0f, 10.0f);
+                pointLight->setAttenuation(1.0, 0.5f, 2.0f);
 
                 ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
                 ASSERT(uv_h.isValid(), "must be valid");
@@ -715,6 +726,7 @@ void EditorScene::test_loadTestScene()
     m_sceneData.m_settings._shadowsParams._cascadeSlopeBias = { 4.0f, 8.0f, 15.0f, 30.0f };
     m_sceneData.m_settings._shadowsParams._PCF = 2.0f;
     m_sceneData.m_settings._tonemapParams._ev100 = 0.5f;
+    m_sceneData.m_settings._vewportParams._moveSpeed = 5.0f;
 
     test_loadLights();
 
@@ -850,23 +862,24 @@ void EditorScene::test_loadLights()
     renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
 
     addSunLight({ 30.f, 90.0f, 0.0f }, { 1.f, 1.f, 1.f, 1.f }, "SunLight");
-    addPointLightComponent({ 1.0f, 1.0f, -1.0f }, 5.0f, { 1.f, 1.f, 1.f, 1.f }, "PointLight0");
-    addPointLightComponent({ -1.0f, 0.3f, 1.0f }, 1.0f, { 1.f, 0.f, 0.f, 1.f }, "PointLight1");
+    //addPointLightComponent({ 1.0f, 1.0f, -1.0f }, 5.0f, { 1.f, 1.f, 1.f, 1.f }, "PointLight0");
+    //addPointLightComponent({ -1.0f, 0.3f, 1.0f }, 1.0f, { 1.f, 0.f, 0.f, 1.f }, "PointLight1");
 
-   /* {
+    /*{
         scene::SceneNode* spotLightNode = new scene::SceneNode();
-        spotLightNode->m_name = "Flashlight";
-        spotLightNode->setPosition(scene::TransformMode::Local, { 0.f, 0.f, 0.f });
-        m_sceneData.m_nodes.push_back(spotLightNode);
+        spotLightNode->m_name = "Spotlight0";
+        spotLightNode->setPosition(scene::TransformMode::Local, { -2.f, 1.f, 0.f });
+        spotLightNode->setRotation(scene::TransformMode::Local, { 90.f, 0.f, 0.f });
+        addNode(spotLightNode);
 
-        scene::PointLight* flashLight = scene::LightHelper::createPointLight(m_device, 1.f, "Light1");
-        flashLight->setColor({ 1.f, 1.f, 1.f, 1.f });
-        flashLight->setIntensity(30.f);
-        flashLight->setTemperature(4000.0);
-        flashLight->setAttenuation(1.0, 0.09, 0.032, 1.0f);
-        spotLightNode->addComponent(flashLight);
+        scene::SpotLight* spotLight = scene::LightHelper::createSpotLight(m_device, 1.0f, 30.0f, "SpotLight0");
+        spotLight->setColor({ 1.f, 1.f, 1.f, 1.f });
+        spotLight->setIntensity(30.f);
+        spotLight->setTemperature(4000.0);
+        spotLight->setAttenuation(1.0, 0.09, 0.032);
+        spotLightNode->addComponent(spotLight);
 
-        if (m_editorMode)
+        if (isEditorMode())
         {
             scene::Billboard* icon = new scene::Billboard(m_device);
             spotLightNode->addComponent(icon);
@@ -878,8 +891,7 @@ void EditorScene::test_loadLights()
 
             {
                 scene::SceneNode* debugNode = new scene::SceneNode();
-                debugNode->m_name = "FlashlightDebug";
-                debugNode->setPosition(scene::TransformMode::Local, { 0.f, -1.f, 0.f });
+                debugNode->m_name = "SpotlightDebug";
                 spotLightNode->addChild(debugNode);
 
                 scene::Mesh* sphere = scene::MeshHelper::createCone(m_device, 1.f, 1.f, 16, "spotLight");
@@ -887,7 +899,7 @@ void EditorScene::test_loadLights()
                 debugNode->addComponent(sphere);
 
                 scene::Material* material = new scene::Material(m_device);
-                material->setProperty("materialID", toEnumType(scene::RenderPipelinePass::Debug));
+                material->setProperty("materialID", toEnumType(scene::ScenePass::Debug));
                 material->setProperty("pipelineID", 1U);
                 material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
                 debugNode->addComponent(material);
