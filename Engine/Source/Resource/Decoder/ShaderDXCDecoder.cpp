@@ -32,6 +32,7 @@
 #endif //USE_SPIRV
 
 #define LOG_LOADIMG_TIME (DEBUG || 1)
+#define PRINT_BITECODE 0
 
 namespace v3d
 {
@@ -528,7 +529,7 @@ bool ShaderDXCDecoder::compile(const std::string& source, const renderer::Shader
         }
     }
 
-#if defined(DEBUG)
+#if (defined(DEBUG) && PRINT_BITECODE)
     {
         if (flags & ShaderCompileFlag::ShaderCompile_UseDXCompilerForSpirV)
         {
