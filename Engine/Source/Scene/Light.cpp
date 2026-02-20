@@ -100,14 +100,12 @@ bool DirectionalLight::save(stream::Stream* stream, u32 offset) const
 
 PointLight::PointLight(renderer::Device* device) noexcept
     : ComponentBase<PointLight, Light>(device, Type::PointLight)
-    , m_radius(1.f)
 {
     LOG_DEBUG("PointLight::PointLight constructor %llx", this);
 }
 
 PointLight::PointLight(renderer::Device* device, const LightHeader& header) noexcept
     : ComponentBase<PointLight, Light>(device, header)
-    , m_radius(1.f)
 {
     ASSERT(header.getResourceSubType<Type>() == Type::PointLight, "must be PointLight");
     LOG_DEBUG("PointLight::PointLight constructor %llx", this);
@@ -135,7 +133,6 @@ bool PointLight::load(const stream::Stream* stream, u32 offset)
     stream->read<f32>(m_temperature);
     stream->read<math::float4>(m_attenuation);
     stream->read<bool>(m_shadowCaster);
-    stream->read<f32>(m_radius);
 
     m_loaded = true;
     return true;
@@ -151,16 +148,16 @@ bool PointLight::save(stream::Stream* stream, u32 offset) const
 
 SpotLight::SpotLight(renderer::Device* device) noexcept
     : ComponentBase<SpotLight, Light>(device, Type::SpotLight)
-    , m_innerAngle(0.0f)
-    , m_outerAngle(0.0f)
+    , m_outerAngle(30.0f)
+    , m_innerAngle(10.0f)
 {
     LOG_DEBUG("SpotLight::SpotLight constructor %llx", this);
 }
 
 SpotLight::SpotLight(renderer::Device* device, const LightHeader& header) noexcept
     : ComponentBase<SpotLight, Light>(device, header)
-    , m_innerAngle(0.0f)
-    , m_outerAngle(0.0f)
+    , m_outerAngle(30.0f)
+    , m_innerAngle(10.0f)
 {
     ASSERT(header.getResourceSubType<Type>() == Type::SpotLight, "must be SpotLight");
     LOG_DEBUG("SpotLight::SpotLight constructor %llx", this);
@@ -220,10 +217,12 @@ PointLight* LightHelper::createPointLight(renderer::Device* device, f32 radius, 
     return light;
 }
 
-SpotLight* LightHelper::createSpotLight(renderer::Device* device, const std::string& name)
+SpotLight* LightHelper::createSpotLight(renderer::Device* device, f32 range, f32 apexAngle, const std::string& name)
 {
     SpotLight* light = V3D_NEW(SpotLight, memory::MemoryLabel::MemoryObject)(device);
     light->m_header.setName(name);
+    light->setRange(range);
+    light->setOuterAngle(apexAngle);
 
     return light;
 }

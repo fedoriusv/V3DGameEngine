@@ -154,7 +154,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             {
                 auto& entry = scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)][i];
                 const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
-                const scene::PointLight& light = *static_cast<const scene::PointLight*>(itemLight.light);
+                const scene::Light& light = *static_cast<const scene::Light*>(itemLight.light);
 
                 cmdList->setPipelineState(*m_pipeline);
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
@@ -193,14 +193,34 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                     u32            shadowSliceOffset;
                     u32            shadowFaceMask;
                     u32            shadowPCFMode;
-                    f32          _pad[2];
+
+                    u32            lightType;
+                    f32            outerRadius;
+                    math::Vector3D direction;
                 } lightBuffer;
+
+                static auto fillLightByType = [&lightBuffer](const scene::Light& light) -> void
+                    {
+                        if (light.getType() == typeOf<scene::PointLight>())
+                        {
+                            const scene::PointLight& pLight = *static_cast<const scene::PointLight*>(&light);
+                            lightBuffer.lightType = 1;
+                        }
+                        else if (light.getType() == typeOf<scene::SpotLight>())
+                        {
+                            const scene::SpotLight& sLight = *static_cast<const scene::SpotLight*>(&light);
+                            lightBuffer.lightType = 2;
+                            lightBuffer.outerRadius = sLight.getOuterAngle();
+                        }
+                    };
 
                 lightBuffer.position = itemLight.object->getTransform().getPosition();
                 lightBuffer.color = light.getColor();
                 lightBuffer.attenuation = light.getAttenuation();
                 lightBuffer.intensity = light.getIntensity();
                 lightBuffer.temperature = light.getTemperature();
+                lightBuffer.lightType = 0;
+                lightBuffer.outerRadius = 0;
 
                 lightBuffer.clipNearFar = { 0.0f, 0.0f };
                 lightBuffer.shadowResolution = { (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height };
@@ -208,6 +228,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 lightBuffer.shadowSliceOffset = 0;
                 lightBuffer.shadowFaceMask = 0b0;
                 lightBuffer.shadowPCFMode = scene.m_settings._shadowsParams._PCF;
+                lightBuffer.direction = itemLight.object->getDirection();
 
                 if (i < k_maxPunctualShadowmapCount && shadowData && shadowData->_punctualLightsFlags[i])
                 {
@@ -218,6 +239,8 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                     lightBuffer.shadowSliceOffset = i * 6;
                     lightBuffer.shadowFaceMask = 0b00111111;
                 }
+
+                fillLightByType(light);
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                     {

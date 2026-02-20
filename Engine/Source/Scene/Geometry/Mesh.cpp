@@ -254,124 +254,112 @@ Mesh* MeshHelper::createCone(renderer::Device* device, f32 radius, f32 height, u
 
     std::vector<u32> indices;
     std::vector<scene::VertexFormatSimpleLit> vertices;
-    u32 centerIndex = 0;
 
+    // -----------------------------
+    // Apex vertex
+    // -----------------------------
+    uint32_t apexIndex = (uint32_t)vertices.size();
+
+    vertices.push_back({
+        {0,0,0},                 // position
+        {0,0,-1},                // temp normal (not very important for apex)
+        {0.5f, 0.0f}             // uv
+        });
+
+    // -----------------------------
+    // Side ring vertices
+    // -----------------------------
+    uint32_t sideStart = (uint32_t)vertices.size();
+
+    for (uint32_t i = 0; i <= segments; i++)
     {
-        // Tip vertex (top)
-        scene::VertexFormatSimpleLit tip = {};
-        tip.position[0] = 0.0f;
-        tip.position[1] = height;
-        tip.position[2] = 0.0f;
-        tip.normal[0] = 0.0f;
-        tip.normal[1] = 1.0f;
-        tip.normal[2] = 0.0f;
-        tip.UV[0] = 0.5f;
-        tip.UV[1] = 0.0f;
-        u32 tipIndex = (u32)vertices.size();
-        vertices.push_back(tip);
+        float t = (float)i / segments;
+        float angle = t * math::k_pi * 2.0f;
 
-        // Side ring vertices
-        for (u32 i = 0; i <= segments; ++i)
-        {
-            f32 theta = (f32)i / segments * 2.0f * math::k_pi;
-            f32 x = cosf(theta);
-            f32 z = sinf(theta);
+        float x = cosf(angle) * radius;
+        float y = sinf(angle) * radius;
+        float z = height;
 
-            // Position on base circle
-            f32 px = radius * x;
-            f32 py = 0.0f;
-            f32 pz = radius * z;
+        // Normal for cone side
+        math::float3 sideNormal({
+            x,
+            y,
+            radius / height
+            });
+        sideNormal.normalize();
 
-            // Normal (pointing halfway between side and up)
-            f32 nx = x;
-            f32 ny = radius / sqrtf(radius * radius + height * height);
-            f32 nz = z;
-            f32 len = sqrtf(nx * nx + ny * ny + nz * nz);
-            nx /= len; ny /= len; nz /= len;
-
-            f32 u = (f32)i / segments;
-            f32 v = 1.0f;
-
-            scene::VertexFormatSimpleLit vtx;
-            vtx.position[0] = px;
-            vtx.position[1] = py;
-            vtx.position[2] = pz;
-            vtx.normal[0] = nx;
-            vtx.normal[1] = ny;
-            vtx.normal[2] = nz;
-            vtx.UV[0] = u;
-            vtx.UV[1] = v;
-
-            vertices.push_back(vtx);
-        }
-
-        // Side triangles (tip to base ring)
-        for (u32 i = 1; i <= segments; ++i)
-        {
-            indices.push_back(tipIndex);
-            indices.push_back(tipIndex + i);
-            indices.push_back(tipIndex + i + 1);
-        }
-
-        // Center of base
-        scene::VertexFormatSimpleLit center = {};
-        center.position[0] = 0.0f;
-        center.position[1] = 0.0f;
-        center.position[2] = 0.0f;
-        center.normal[0] = 0.0f;
-        center.normal[1] = -1.0f;
-        center.normal[2] = 0.0f;
-        center.UV[0] = 0.5f;
-        center.UV[1] = 0.5f;
-        centerIndex = (u32)vertices.size();
-        vertices.push_back(center);
-
-        // Base circle vertices again (flat bottom)
-        for (u32 i = 0; i <= segments; ++i)
-        {
-            f32 theta = (f32)i / segments * 2.0f * math::k_pi;
-            f32 x = cosf(theta);
-            f32 z = sinf(theta);
-
-            f32 px = radius * x;
-            f32 py = 0.0f;
-            f32 pz = radius * z;
-
-            scene::VertexFormatSimpleLit vtx;
-            vtx.position[0] = px;
-            vtx.position[1] = py;
-            vtx.position[2] = pz;
-            vtx.normal[0] = 0.0f;
-            vtx.normal[1] = -1.0f;
-            vtx.normal[2] = 0.0f;
-            vtx.UV[0] = 0.5f + x * 0.5f;
-            vtx.UV[1] = 0.5f + z * 0.5f;
-
-            vertices.push_back(vtx);
-        }
-
-        renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(scene::VertexFormatSimpleLitDesc), "VertexBuffer");
-        cmdList->upload(vertexBuffer, 0, vertices.size() * sizeof(scene::VertexFormatSimpleLit), vertices.data());
-        mesh->m_vertexBuffer.push_back(vertexBuffer);
-
-        std::for_each(vertices.cbegin(), vertices.cend(), [bb = &mesh->m_boundingBox](const scene::VertexFormatSimpleLit& vertex)
-            {
-                bb->expand(vertex.position);
+        vertices.push_back({
+            {x, y, z},
+            sideNormal,
+            {t, 1.0f}
             });
     }
 
+    // -----------------------------
+    // Side indices (triangle fan from apex)
+    // -----------------------------
+    for (uint32_t i = 0; i < segments; i++)
     {
-        for (u32 i = 1; i <= segments; ++i)
-        {
-            indices.push_back(centerIndex);
-            indices.push_back(centerIndex + i + 1);
-            indices.push_back(centerIndex + i);
-        }
-
-        renderer::IndexBuffer* indexBuffer = V3D_NEW(renderer::IndexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::Buffer_GPUOnly, renderer::IndexBufferType::IndexType_32, indices.size(), "IndexBuffer");
-        cmdList->upload(indexBuffer, 0, indices.size() * sizeof(u32), indices.data());
-        mesh->m_indexBuffer = indexBuffer;
+        indices.push_back(apexIndex);
+        indices.push_back(sideStart + i);
+        indices.push_back(sideStart + i + 1);
     }
+
+    // -----------------------------
+    // Base center vertex
+    // -----------------------------
+    uint32_t baseCenterIndex = (uint32_t)vertices.size();
+
+    vertices.push_back({
+        {0,0,height},
+        {0,0,1},
+        {0.5f,0.5f}
+        });
+
+    // -----------------------------
+    // Base ring vertices
+    // -----------------------------
+    uint32_t baseStart = (uint32_t)vertices.size();
+
+    for (uint32_t i = 0; i <= segments; i++)
+    {
+        float t = (float)i / segments;
+        float angle = t * math::k_pi * 2.0f;
+
+        float x = cosf(angle) * radius;
+        float y = sinf(angle) * radius;
+
+        vertices.push_back({
+            {x, y, height},
+            {0,0,1},
+            {0.5f + x / (2 * radius), 0.5f + y / (2 * radius)}
+            });
+    }
+
+    // -----------------------------
+    // Base indices
+    // -----------------------------
+    for (uint32_t i = 0; i < segments; i++)
+    {
+        indices.push_back(baseCenterIndex);
+        indices.push_back(baseStart + i + 1);
+        indices.push_back(baseStart + i);
+    }
+
+
+    renderer::VertexBuffer* vertexBuffer = V3D_NEW(renderer::VertexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::BufferUsage::Buffer_GPUOnly, vertices.size(), vertices.size() * sizeof(scene::VertexFormatSimpleLitDesc), "VertexBuffer");
+    cmdList->upload(vertexBuffer, 0, vertices.size() * sizeof(scene::VertexFormatSimpleLit), vertices.data());
+    mesh->m_vertexBuffer.push_back(vertexBuffer);
+
+    std::for_each(vertices.cbegin(), vertices.cend(), [bb = &mesh->m_boundingBox](const scene::VertexFormatSimpleLit& vertex)
+        {
+            bb->expand(vertex.position);
+        });
+
+    renderer::IndexBuffer* indexBuffer = V3D_NEW(renderer::IndexBuffer, memory::MemoryLabel::MemoryObject)(device, renderer::Buffer_GPUOnly, renderer::IndexBufferType::IndexType_32, indices.size(), "IndexBuffer");
+    cmdList->upload(indexBuffer, 0, indices.size() * sizeof(u32), indices.data());
+    mesh->m_indexBuffer = indexBuffer;
+
 
     device->submit(cmdList, true);
     device->destroyCommandList(cmdList);

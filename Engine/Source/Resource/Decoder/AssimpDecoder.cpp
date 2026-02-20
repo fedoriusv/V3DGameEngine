@@ -1247,7 +1247,7 @@ u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream, Mod
         color._x = light->mColorDiffuse.r / intensity;
         color._y = light->mColorDiffuse.g / intensity;
         color._z = light->mColorDiffuse.b / intensity;
-        color._w = 1.f;
+        color._w = std::max(light->mSize.x, 1.0f);
 
         u32 colorStreamSize =
             sizeof(color) +
@@ -1274,10 +1274,6 @@ u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream, Mod
         else if (light->mType == aiLightSourceType::aiLightSource_POINT)
         {
             type = scene::Light::Type::PointLight;
-
-            f32 radius = std::max(light->mSize.x, 1.0f);
-            colorStreamSize += sizeof(radius);
-
             scene::Light::LightHeader header(type);
             resource::ResourceHeader::fill(&header, name, colorStreamSize, mainStreamOffset + sizeof(ResourceHeader));
 
@@ -1287,7 +1283,6 @@ u32 AssimpDecoder::decodeLight(const aiScene* scene, stream::Stream* stream, Mod
             lightsStreamSize += stream->write<f32>(temperature);
             lightsStreamSize += stream->write<math::float4>(attenuation);
             lightsStreamSize += stream->write<bool>(shadowCast);
-            lightsStreamSize += stream->write<f32>(radius);
         }
         else if (light->mType == aiLightSourceType::aiLightSource_SPOT)
         {

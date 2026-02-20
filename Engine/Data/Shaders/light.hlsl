@@ -8,6 +8,9 @@
 #define DEBUG_PUNCTUAL_SHADOWMAPS 0
 #endif
 
+#define POINT_LIGHT 1
+#define SPOT_LIGHT  2
+
 struct PunctualLightBuffer
 {
     float3 position;
@@ -15,7 +18,7 @@ struct PunctualLightBuffer
     float4 attenuation;
     float  intensity;
     float  temperature;
-    
+
     float2 clipNearFar;
     matrix lightSpaceMatrix[6];
     float2 shadowMapResolution;
@@ -23,6 +26,10 @@ struct PunctualLightBuffer
     uint   shadowSliceOffset;
     uint   shadowFaceMask;
     uint   shadowPCFMode;
+    
+    uint  lightType;
+    float CosOuterAngle;
+    float3 direction;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -119,27 +126,57 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     if (depth > 0.0) //TODO move to stencil test
     {
         float3 worldPos = reconstruct_WorldPos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, positionScreenUV, depth);
-        float lightDistance = distance(worldPos, cb_Light.position.xyz);
-        float radius = cb_Light.attenuation.w;
-        clip(radius - lightDistance);
         
-        EnvironmentBuffer environment;
-        environment.wetness = 0.f;
-        environment.shadowSaturation = 0.01f; //temp
+        if (cb_Light.lightType == POINT_LIGHT)
+        {
+            float lightDistance = distance(worldPos, cb_Light.position.xyz);
+            float radius = cb_Light.attenuation.w;
+            clip(radius - lightDistance);
         
-        LightBuffer light;
-        light.direction = worldPos - cb_Light.position.xyz;
-        light.color = cb_Light.color;
-        light.attenuation = cb_Light.attenuation;
-        light.intensity = cb_Light.intensity;
-        light.temperature = cb_Light.temperature;
+            EnvironmentBuffer environment;
+            environment.wetness = 0.f;
+            environment.shadowSaturation = 0.01f; //temp
+        
+            LightBuffer light;
+            light.direction = worldPos - cb_Light.position.xyz;
+            light.color = cb_Light.color;
+            light.attenuation = cb_Light.attenuation;
+            light.intensity = cb_Light.intensity;
+            light.temperature = cb_Light.temperature;
 
-        float shadow = cb_Light.shadowFaceMask > 0.0 ? punctual_light_shadow(worldPos, normals) : 0.0;
-        float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
+            float shadow = cb_Light.shadowFaceMask > 0.0 ? punctual_light_shadow(worldPos, normals) : 0.0;
+            float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
 #if DEBUG_PUNCTUAL_SHADOWMAPS
         color.rgb = lerp(color.rgb, float3(1.0, 1.0, 1.0), shadow);
 #endif
-        return float4(color.rgb, 1.0);
+            return float4(color.rgb, 1.0);
+        }
+        else if (cb_Light.lightType == SPOT_LIGHT)
+        {
+            //float lightDistance = distance(worldPos, cb_Light.position.xyz);
+            float range = cb_Light.attenuation.w;
+            //clip(range - lightDistance);
+            
+            float3 V = worldPos - cb_Light.position.xyz;
+            float axial = dot(V, cb_Light.direction);
+
+            if (axial <= 0 || axial >= range)
+                discard;
+
+            float cosAngle = dot(normalize(V), cb_Light.direction);
+            if (cosAngle <= cb_Light.CosOuterAngle)
+                discard;
+            
+            LightBuffer light;
+            light.direction = worldPos - cb_Light.position.xyz;
+            light.color = cb_Light.color;
+            light.attenuation = cb_Light.attenuation;
+            light.intensity = cb_Light.intensity;
+            light.temperature = cb_Light.temperature;
+            
+            float4 color = light.color;
+            return float4(color.rgb, 1.0);
+        }
     }
     
     return float4(0.0, 0.0, 0.0, 0.0);
