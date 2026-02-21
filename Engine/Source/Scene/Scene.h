@@ -124,7 +124,7 @@ namespace scene
 
         struct TonemapParams
         {
-            u32 _tonemapper = 0;
+            u32 _tonemapper = 1;
             u32 _lut = 0;
             f32 _gamma = 2.2f;
             f32 _ev100 = 1.0;
