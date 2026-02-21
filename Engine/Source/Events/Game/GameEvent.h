@@ -17,14 +17,11 @@ namespace event
     {
         enum class GameEventType : u32
         {
-            UnknownGameEvent,
-            SelectObject,
-            MultiSelectObjects,
-            TransformObject,
+            Unknown,
             HotReload,
-            CustomEvent,
+            Custom,
 
-            GameEventsCount
+            EventsCount
         };
 
         enum Priority : u32
@@ -36,6 +33,7 @@ namespace event
         };
 
         GameEvent(GameEventType type) noexcept;
+        GameEvent(u32 customEventID) noexcept;
         virtual ~GameEvent() = default;
 
         bool operator<(const GameEvent& event);
@@ -55,6 +53,15 @@ namespace event
         static_assert(sizeof(GameEvent) == 32, "wrong size");
     }
 
+    inline GameEvent::GameEvent(u32 customEventID) noexcept
+        : _timeStamp(utils::Timer::getCurrentTime())
+        , _eventType(GameEventType::Custom)
+        , _priority(Normal)
+        , _customEventID(customEventID)
+    {
+        static_assert(sizeof(GameEvent) == 32, "wrong size");
+    }
+
     inline bool GameEvent::operator<(const GameEvent& event)
     {
         return _priority < event._priority;
@@ -64,18 +71,18 @@ namespace event
 
     struct ShaderHotReload : event::GameEvent
     {
-        ShaderHotReload(const std::string& filename)
+        ShaderHotReload(const std::string& folder, const std::string& filename)
             : event::GameEvent(GameEvent::GameEventType::HotReload)
+            , m_folder(folder)
             , m_file(filename)
         {
         }
 
         virtual ~ShaderHotReload() = default;
 
+        std::string m_folder;
         std::string m_file;
     };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 

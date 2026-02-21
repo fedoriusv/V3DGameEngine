@@ -26,10 +26,18 @@
 
 using namespace v3d;
 
+enum class EditorEventType : u32
+{
+    UnknownEvent,
+    SelectObject,
+    TransformObject,
+    UpdateNodeGraph,
+};
+
 struct EditorSelectionEvent : event::GameEvent
 {
     EditorSelectionEvent(scene::SceneNode* node) noexcept
-        : event::GameEvent(GameEvent::GameEventType::SelectObject)
+        : event::GameEvent(toEnumType(EditorEventType::SelectObject))
         , _node(node)
     {
     }
@@ -42,7 +50,7 @@ struct EditorSelectionEvent : event::GameEvent
 struct EditorTransformEvent : event::GameEvent
 {
     EditorTransformEvent(scene::SceneNode* node, scene::TransformMode mode, const scene::Transform& transform) noexcept
-        : event::GameEvent(GameEvent::GameEventType::TransformObject)
+        : event::GameEvent(toEnumType(EditorEventType::TransformObject))
         , _node(node)
         , _mode(mode)
         , _transform(transform)
@@ -54,6 +62,19 @@ struct EditorTransformEvent : event::GameEvent
     scene::SceneNode* _node;
     scene::TransformMode _mode;
     scene::Transform _transform;
+};
+
+struct EditorUpdateNodeGraphEvent : event::GameEvent
+{
+    EditorUpdateNodeGraphEvent(scene::SceneNode* node) noexcept
+        : event::GameEvent(toEnumType(EditorEventType::UpdateNodeGraph))
+        , _node(node)
+    {
+    }
+
+    virtual ~EditorUpdateNodeGraphEvent() = default;
+
+    scene::SceneNode* _node;
 };
 
 constexpr u32 k_emptyIndex = -1;

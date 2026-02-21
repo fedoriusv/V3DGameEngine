@@ -213,6 +213,7 @@ namespace scene
         void addNode(SceneNode* node);
         /*void removeNode(SceneNode* node);
         void updateNode(SceneNode* node)*/
+        void nodeGraphChanged();
 
         void registerTechnique(RenderTechnique* technique);
         void unregisterTechnique(RenderTechnique* technique);

@@ -75,15 +75,17 @@ void EditorContentScreen::build()
                         layout.addWidget(ui::WidgetHorizontalLayout()
                             .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentRight)
                             .setFontSize(ui::WidgetLayout::SmallFont)
-                            .addWidget(ui::WidgetCheckBox("Show", root->m_visible)
+                            .addWidget(ui::WidgetCheckBox("Show", root->isVisible())
                                 .setOnChangedValueEvent([this, root](ui::Widget* w, bool val) -> void
                                     {
-                                        root->m_visible = val;
+                                        root->setVisible(val);
+                                        m_gameEventRecevier->sendEvent(new EditorUpdateNodeGraphEvent(root));
                                     }))
                             .addWidget(ui::WidgetCheckBox("Debug", false)
                                 .setOnChangedValueEvent([this, root](ui::Widget* w, bool val) -> void
                                     {
-                                        root->m_debug = val;
+                                        root->setDebug(val);
+                                        m_gameEventRecevier->sendEvent(new EditorUpdateNodeGraphEvent(root));
                                     })
                             )
                         );
@@ -137,7 +139,7 @@ bool EditorContentScreen::handleGameEvent(event::GameEventHandler* handler, cons
 {
     if (m_loaded)
     {
-        if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
+        if (event->_eventType == event::GameEvent::GameEventType::Custom && event->_customEventID == toEnumType(EditorEventType::SelectObject))
         {
             const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
             if (m_selectedWidget)

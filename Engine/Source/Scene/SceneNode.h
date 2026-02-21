@@ -64,10 +64,14 @@ namespace scene
         void setScale(TransformMode mode, const math::Vector3D& scale);
         void setTransform(TransformMode mode, const math::Matrix4D& transform);
 
+        void setVisible(bool visible);
+        void setDebug(bool debug);
+
         math::Vector3D getDirection() const;
         const Transform& getTransform() const;
         const Transform& getPrevTransform() const;
         const Transform& getTransform(TransformMode mode) const;
+        bool isVisible() const;
 
     public:
 
@@ -75,8 +79,6 @@ namespace scene
         std::list<SceneNode*>                   m_children;
         std::list<std::tuple<Component*, bool>> m_components;
         std::string                             m_name;
-        bool                                    m_visible = true;
-        bool                                    m_debug = false;
 
     private:
 
@@ -84,6 +86,8 @@ namespace scene
         Transform             m_transform[2];
         Transform             m_prevTransform;
 
+        bool                  m_visible = true;
+        bool                  m_debug = false;
         bool                  m_dirty = true;
 
     protected:
@@ -127,6 +131,18 @@ namespace scene
         m_dirty = true;
     }
 
+    inline void SceneNode::setVisible(bool visible)
+    {
+        m_visible = visible;
+        m_dirty = true;
+    }
+
+    inline void SceneNode::setDebug(bool debug)
+    {
+        m_debug = debug;
+        m_dirty = true;
+    }
+
     inline math::Vector3D SceneNode::getDirection() const
     {
         return math::Vector3D(
@@ -148,6 +164,11 @@ namespace scene
     inline const Transform& SceneNode::getTransform(TransformMode mode) const
     {
         return m_transform[toEnumType(mode)];
+    }
+
+    inline bool SceneNode::isVisible() const
+    {
+        return m_visible;
     }
 
     inline void SceneNode::forEach(SceneNode* node, const std::function<void(SceneNode* parent, SceneNode* node)>& entry)
@@ -180,13 +201,14 @@ namespace scene
     struct NodeEntry
     {
         NodeEntry() noexcept;
+        virtual ~NodeEntry() = default;
 
         SceneNode*  object;
         u32         passMask;
         u32         pipelineID;
     };
 
-    struct DrawNodeEntry : NodeEntry
+    struct DrawNodeEntry final : NodeEntry
     {
         DrawNodeEntry() noexcept;
 
@@ -194,14 +216,14 @@ namespace scene
         Component* material;
     };
 
-    struct LightNodeEntry : NodeEntry
+    struct LightNodeEntry final : NodeEntry
     {
         LightNodeEntry() noexcept;
 
         Component* light;
     };
 
-    struct SkyboxNodeEntry : NodeEntry
+    struct SkyboxNodeEntry final  : NodeEntry
     {
         SkyboxNodeEntry() noexcept;
 

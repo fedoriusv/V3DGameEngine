@@ -53,7 +53,7 @@ void SceneData::finalize()
 {
     static std::function<void(scene::SceneNode* node)> processNode = [&](scene::SceneNode* node)
         {
-            if (!node->m_visible)
+            if (!node->isVisible())
             {
                 return;
             }
@@ -66,22 +66,23 @@ void SceneData::finalize()
                 entry->object = node;
                 entry->geometry = geometry;
                 entry->material = material;
+                entry->passMask = 0;
                 if (material)
                 {
                     if (material->getShadingModel() == scene::MaterialShadingModel::Custom)
                     {
-                        entry->passMask = 1 << toEnumType((scene::ScenePass)material->getProperty<u32>("materialID"));
+                        entry->passMask |= 1 << toEnumType((scene::ScenePass)material->getProperty<u32>("materialID"));
                         entry->pipelineID = material->getProperty<u32>("pipelineID");
                     }
                     else if (material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness)
                     {
                         bool isOpaque = true;
-                        entry->passMask = isOpaque ? (1 << toEnumType(scene::ScenePass::Opaque)) : (1 << toEnumType(scene::ScenePass::Transparency));
+                        entry->passMask |= isOpaque ? (1 << toEnumType(scene::ScenePass::Opaque)) : (1 << toEnumType(scene::ScenePass::Transparency));
                         entry->pipelineID = material->getShadingModel() == scene::MaterialShadingModel::PBR_MetallicRoughness ? 0 : 1;
                     }
                 }
 
-                if (geometry->isShadowsCasted())
+                if (geometry->isCastShadow())
                 {
                     entry->passMask |= 1 << toEnumType(scene::ScenePass::Shadowmap);
                 }
@@ -139,6 +140,13 @@ void SceneData::finalize()
                 processNode(child);
             }
         };
+
+    //todo use custom alloc for objects
+    for (auto& entry : m_generalRenderList)
+    {
+        delete entry;
+    }
+    m_generalRenderList.clear(); 
 
     for (auto& node : m_nodes)
     {
@@ -227,30 +235,27 @@ void SceneHandler::updateScene(f32 dt)
         //fructum test
         //TODO
 
-        if (item->object->m_visible)
+        u32 count = std::bit_width(item->passMask);
+        for (u32 index = 0; index < count; ++index)
         {
-            u32 count = std::bit_width(item->passMask);
-            for (u32 index = 0; index < count; ++index)
+            u32 passID = 1 << index;
+            if ((item->passMask & passID) == 0)
             {
-                u32 passID = 1 << index;
-                if ((item->passMask & passID) == 0)
+                continue;
+            }
+
+            if (passID & (1 << toEnumType(ScenePass::Shadowmap)))
+            {
+                //Skip geometry if an object far away from long range distance
+                f32 distance = item->object->getTransform().getPosition().distanceFrom(m_sceneData.m_camera->getPosition());
+                if (distance > m_sceneData.m_settings._shadowsParams._longRange)
                 {
                     continue;
                 }
-
-                if (passID & (1 << toEnumType(ScenePass::Shadowmap)))
-                {
-                    //Skip geometry if an object far away from long range distance
-                    f32 distance = item->object->getTransform().getPosition().distanceFrom(m_sceneData.m_camera->getPosition());
-                    if (distance > m_sceneData.m_settings._shadowsParams._longRange)
-                    {
-                        continue;
-                    }
-                }
-
-                ASSERT(index < toEnumType(ScenePass::Count), "out of range");
-                m_sceneData.m_renderLists[index].push_back(item);
             }
+
+            ASSERT(index < toEnumType(ScenePass::Count), "out of range");
+            m_sceneData.m_renderLists[index].push_back(item);
         }
     }
 
@@ -315,6 +320,11 @@ void SceneHandler::submitRender(renderer::Device* device)
 void SceneHandler::addNode(SceneNode* node)
 {
     m_sceneData.m_nodes.push_back(node);
+    nodeGraphChanged();
+}
+
+void SceneHandler::nodeGraphChanged()
+{
     m_nodeGraphChanged = true;
 }
 

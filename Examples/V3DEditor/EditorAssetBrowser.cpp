@@ -69,7 +69,7 @@ void EditorAssetBrowser::update(f32 dt)
 
 bool EditorAssetBrowser::handleGameEvent(event::GameEventHandler* handler, const event::GameEvent* event)
 {
-    if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
+    if (event->_eventType == event::GameEvent::GameEventType::Custom && event->_customEventID == toEnumType(EditorEventType::SelectObject))
     {
         const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
         m_loaded = false;

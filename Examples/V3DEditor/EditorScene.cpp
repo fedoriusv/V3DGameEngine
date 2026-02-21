@@ -170,7 +170,7 @@ EditorScene::EditorScene() noexcept
 
     m_gameHandler->bind([this](const event::GameEvent* event, event::GameEvent::GameEventType type, u64 ID)
         {
-            if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
+            if (event->_eventType == event::GameEvent::GameEventType::Custom && event->_customEventID == toEnumType(EditorEventType::SelectObject))
             {
                 const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
                 scene::SceneNode* selectedNode = selectionEvent->_node;
@@ -182,6 +182,10 @@ EditorScene::EditorScene() noexcept
                 {
                     m_selectedIndex = m_sceneData.m_generalRenderList.size() - std::distance(found, m_sceneData.m_generalRenderList.cend());
                 }
+            }
+            if (event->_eventType == event::GameEvent::GameEventType::Custom && event->_customEventID == toEnumType(EditorEventType::UpdateNodeGraph))
+            {
+                nodeGraphChanged();
             }
             else if (event->_eventType == event::GameEvent::GameEventType::HotReload)
             {
@@ -341,7 +345,7 @@ void EditorScene::preRender(f32 dt)
     m_sceneData.m_globalResources.bind("current_lut", std::get<1>(m_LUTs[m_sceneData.m_settings._tonemapParams._lut]));
 
     SceneHandler::updateScene(dt);
-    if (m_selectedIndex != k_emptyIndex && m_sceneData.m_generalRenderList[m_selectedIndex]->object->m_visible)
+    if (m_selectedIndex != k_emptyIndex && m_sceneData.m_generalRenderList[m_selectedIndex]->object->isVisible())
     {
         m_sceneData.m_renderLists[toEnumType(scene::ScenePass::Selected)].push_back(m_sceneData.m_generalRenderList[m_selectedIndex]);
     }

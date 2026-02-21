@@ -93,7 +93,7 @@ bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event:
         return true;
     }
 
-    if (event->_eventType == event::GameEvent::GameEventType::SelectObject)
+    if (event->_eventType == event::GameEvent::GameEventType::Custom && event->_customEventID == toEnumType(EditorEventType::SelectObject))
     {
         const EditorSelectionEvent* selectionEvent = static_cast<const EditorSelectionEvent*>(event);
         m_selectedNode = selectionEvent->_node;
@@ -107,7 +107,7 @@ bool EditorGizmo::handleGameEvent(event::GameEventHandler* handler, const event:
 
         m_gizmo->setActive(false);
     }
-    else if (event->_eventType == event::GameEvent::GameEventType::TransformObject)
+    else if (event->_eventType == event::GameEvent::GameEventType::Custom && event->_customEventID == toEnumType(EditorEventType::TransformObject))
     {
         const EditorTransformEvent* transformEvent = static_cast<const EditorTransformEvent*>(event);
         if (m_selectedNode && m_currentOp > -1)
