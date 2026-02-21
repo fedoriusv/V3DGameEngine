@@ -67,9 +67,11 @@ void RenderPipelineZPrepassStage::create(renderer::Device* device, scene::SceneD
     m_depthPipeline->setDepthWrite(true);
     m_depthPipeline->setDepthTest(true);
     m_depthPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-    m_depthPipeline->setStencilTest(true);
-    m_depthPipeline->setStencilCompareOp(renderer::CompareOperation::Always, 0xFF);
-    m_depthPipeline->setStencilOp(renderer::StencilOperation::Replace, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+    //m_depthPipeline->setStencilTest(true);
+    //m_depthPipeline->setStencilFrontFaceCompareOp(renderer::CompareOperation::Always, 0xFF);
+    //m_depthPipeline->setStencilFrontFaceOp(renderer::StencilOperation::Replace, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+    //m_depthPipeline->setStencilBackFaceCompareOp(renderer::CompareOperation::Always, 0xFF);
+    //m_depthPipeline->setStencilBackFaceOp(renderer::StencilOperation::Replace, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
 
     BIND_SHADER_PARAMETER(m_depthPipeline, m_depthParameters, cb_Viewport);
     BIND_SHADER_PARAMETER(m_depthPipeline, m_depthParameters, cb_Model);
@@ -126,7 +128,7 @@ void RenderPipelineZPrepassStage::execute(renderer::Device* device, scene::Scene
                 cmdList->beginRenderTarget(*m_depthRenderTarget);
                 cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
                 cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
-                cmdList->setStencilRef(0x1);
+                cmdList->setStencilRef(0x0);
                 cmdList->setPipelineState(*m_depthPipeline);
                 cmdList->bindDescriptorSet(m_depthPipeline->getShaderProgram(), 0,
                     {

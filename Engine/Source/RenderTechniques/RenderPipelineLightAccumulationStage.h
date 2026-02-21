@@ -65,7 +65,7 @@ namespace scene
 
         renderer::SamplerState* m_shadowSamplerState;
         renderer::RenderTargetState* m_lightRenderTarget;
-        renderer::GraphicsPipelineState* m_pipeline;
+        renderer::GraphicsPipelineState* m_pipeline[2];
         MaterialParameters m_parameters;
 
         scene::Mesh* m_sphereVolume;

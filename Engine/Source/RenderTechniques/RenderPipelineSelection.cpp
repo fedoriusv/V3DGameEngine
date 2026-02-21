@@ -184,7 +184,7 @@ void RenderPipelineSelectionStage::execute(renderer::Device* device, scene::Scen
             cmdList->beginRenderTarget(*m_renderTarget);
             cmdList->setViewport({ 0.f, 0.f, (f32)scene.m_viewportSize._width, (f32)scene.m_viewportSize._height });
             cmdList->setScissor({ 0.f, 0.f, (f32)scene.m_viewportSize._width, (f32)scene.m_viewportSize._height });
-            cmdList->setStencilRef(0);
+            cmdList->setStencilRef(0x0);
 
             ObjectHandle viewportState_handle = frame.m_frameResources.get("viewport_state");
             ASSERT(viewportState_handle.isValid(), "must be valid");

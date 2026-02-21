@@ -61,9 +61,11 @@ void RenderPipelineDeferredLightingStage::create(renderer::Device* device, Scene
     m_pipeline->setDepthWrite(false);
     m_pipeline->setDepthTest(false);
     m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-    m_pipeline->setStencilTest(false);
-    m_pipeline->setStencilCompareOp(renderer::CompareOperation::NotEqual, 0x0);
-    m_pipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+    //m_pipeline->setStencilTest(false);
+    //m_pipeline->setStencilFrontFaceCompareOp(renderer::CompareOperation::NotEqual, 0x0);
+    //m_pipeline->setStencilFrontFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+    //m_pipeline->setStencilBackFaceCompareOp(renderer::CompareOperation::NotEqual, 0x0);
+    //m_pipeline->setStencilBackFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
 
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Light);

@@ -551,19 +551,34 @@ namespace renderer
         void setStencilWriteMask(u8 writeMask);
 
         /**
-        * @brief setStencilCompareOp method. Depth-Stencil state
+        * @brief setStencilBackFaceCompareOp method. Depth-Stencil state
         * @param CompareOperation op [required]
         * @param u32 compareMask [required]
         */
-        void setStencilCompareOp(CompareOperation op, u32 compareMask);
+        void setStencilBackFaceCompareOp(CompareOperation op, u32 compareMask);
 
         /**
-        * @brief setStencilOp method. Depth-Stencil state
+        * @brief setStencilFrontFaceCompareOp method. Depth-Stencil state
+        * @param CompareOperation op [required]
+        * @param u32 compareMask [required]
+        */
+        void setStencilFrontFaceCompareOp(CompareOperation op, u32 compareMask);
+
+        /**
+        * @brief setStencilBackFaceOp method. Depth-Stencil state
         * @param StencilOperation pass [required]
         * @param StencilOperation fail [required]
         * @param StencilOperation depthFail [required]
         */
-        void setStencilOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail);
+        void setStencilBackFaceOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail);
+
+        /**
+        * @brief setStencilFrontFaceOp method. Depth-Stencil state
+        * @param StencilOperation pass [required]
+        * @param StencilOperation fail [required]
+        * @param StencilOperation depthFail [required]
+        */
+        void setStencilFrontFaceOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail);
 
         /**
         * @brief getDepthCompareOp method. Depth-Stencil state
@@ -812,22 +827,30 @@ namespace renderer
         m_pipelineStateDesc._depthStencilState._stencilBack._writeMask = writeMask;
     }
 
-    inline void GraphicsPipelineState::setStencilCompareOp(CompareOperation op, u32 compareMask)
+    inline void GraphicsPipelineState::setStencilBackFaceCompareOp(CompareOperation op, u32 compareMask)
     {
-        m_pipelineStateDesc._depthStencilState._stencilFront._compareOp = op;
-        m_pipelineStateDesc._depthStencilState._stencilFront._compareMask = compareMask;
         m_pipelineStateDesc._depthStencilState._stencilBack._compareOp = op;
         m_pipelineStateDesc._depthStencilState._stencilBack._compareMask = compareMask;
     }
 
-    inline void GraphicsPipelineState::setStencilOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail)
+    inline void GraphicsPipelineState::setStencilFrontFaceCompareOp(CompareOperation op, u32 compareMask)
+    {
+        m_pipelineStateDesc._depthStencilState._stencilFront._compareOp = op;
+        m_pipelineStateDesc._depthStencilState._stencilFront._compareMask = compareMask;
+    }
+
+    inline void GraphicsPipelineState::setStencilBackFaceOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail)
+    {
+        m_pipelineStateDesc._depthStencilState._stencilBack._passOp = pass;
+        m_pipelineStateDesc._depthStencilState._stencilBack._failOp = fail;
+        m_pipelineStateDesc._depthStencilState._stencilBack._depthFailOp = depthFail;
+    }
+
+    inline void GraphicsPipelineState::setStencilFrontFaceOp(StencilOperation pass, StencilOperation fail, StencilOperation depthFail)
     {
         m_pipelineStateDesc._depthStencilState._stencilFront._passOp = pass;
         m_pipelineStateDesc._depthStencilState._stencilFront._failOp = fail;
         m_pipelineStateDesc._depthStencilState._stencilFront._depthFailOp = depthFail;
-        m_pipelineStateDesc._depthStencilState._stencilBack._passOp = pass;
-        m_pipelineStateDesc._depthStencilState._stencilBack._failOp = fail;
-        m_pipelineStateDesc._depthStencilState._stencilBack._depthFailOp = depthFail;
     }
 
     inline CompareOperation GraphicsPipelineState::getDepthCompareOp() const

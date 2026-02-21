@@ -545,9 +545,11 @@ void RenderPipelineShadowStage::createPipelines(renderer::Device* device, scene:
         m_SSShadowsPipeline->setDepthWrite(false);
         m_SSShadowsPipeline->setDepthTest(false);
         m_SSShadowsPipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-        m_SSShadowsPipeline->setStencilTest(false);
-        m_SSShadowsPipeline->setStencilCompareOp(renderer::CompareOperation::NotEqual, 0x0);
-        m_SSShadowsPipeline->setStencilOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+        //m_SSShadowsPipeline->setStencilTest(false);
+        //m_SSShadowsPipeline->setStencilFrontFaceCompareOp(renderer::CompareOperation::NotEqual, 0x0);
+        //m_SSShadowsPipeline->setStencilFrontFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+        //m_SSShadowsPipeline->setStencilBackFaceCompareOp(renderer::CompareOperation::NotEqual, 0x0);
+        //m_SSShadowsPipeline->setStencilBackFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
 
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_Viewport);
         BIND_SHADER_PARAMETER(m_SSShadowsPipeline, m_SSCascadeShadowParameters, cb_ShadowmapBuffer);

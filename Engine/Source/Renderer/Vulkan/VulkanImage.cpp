@@ -1279,50 +1279,58 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, const color::Color& colo
         return;
     }
 
-    VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
-    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+    if (cmdBuffer->isInsideRenderPass())
     {
-        if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+        //TODO 
+        ASSERT(false, "impls");
+    }
+    else
+    {
+        VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
+        if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
         {
-            layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer))
+            {
+                layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            }
+            else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+            {
+                layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            }
+            else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Storage))
+            {
+                layout = VK_IMAGE_LAYOUT_GENERAL;
+            }
+            else
+            {
+                ASSERT(false, "unknown layout");
+                layout = VK_IMAGE_LAYOUT_GENERAL;
+            }
         }
-        else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Attachment))
+
+        VkPipelineStageFlags stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) || VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Attachment))
         {
-            layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+            {
+                stage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            }
+            else
+            {
+                stage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            }
         }
         else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Storage))
         {
-            layout = VK_IMAGE_LAYOUT_GENERAL;
+            stage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
-        else
-        {
-            ASSERT(false, "unknown layout");
-            layout = VK_IMAGE_LAYOUT_GENERAL;
-        }
-    }
 
-    VkPipelineStageFlags stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Backbuffer) || VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Attachment))
-    {
-        if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        {
-            stage |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        }
-        else
-        {
-            stage |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        }
+        const VkClearColorValue* vkColor = reinterpret_cast<const VkClearColorValue*>(&color);
+        ASSERT(cmdBuffer, "nullptr");
+        cmdBuffer->cmdPipelineBarrier(this, stage, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkColor);
+        cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, stage, layout);
     }
-    else if (VulkanImage::hasUsageFlag(TextureUsage::TextureUsage_Storage))
-    {
-        stage |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }
-
-    const VkClearColorValue* vkColor = reinterpret_cast<const VkClearColorValue*>(&color);
-    ASSERT(cmdBuffer, "nullptr");
-    cmdBuffer->cmdPipelineBarrier(this, stage, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vkColor);
-    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, stage, layout);
 }
 
 void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil)
@@ -1336,17 +1344,34 @@ void VulkanImage::clear(VulkanCommandBuffer* cmdBuffer, f32 depth, u32 stencil)
         return;
     }
 
-    VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
-    if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+    if (cmdBuffer->isInsideRenderPass())
     {
-        layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        std::vector<VkClearAttachment> attachments(1);
+        attachments[0].colorAttachment = VK_ATTACHMENT_UNUSED;
+        attachments[0].clearValue.depthStencil = { depth, stencil };
+        attachments[0].aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+        std::vector<VkClearRect> regions(1);
+        regions[0].baseArrayLayer = 0;
+        regions[0].layerCount = 1;
+        regions[0].rect.offset = { 0, 0 };
+        regions[0].rect.extent = { m_dimension.width, m_dimension.height };
+
+        cmdBuffer->cmdClearAttachments(attachments, regions);
     }
+    else
+    {
+        VkImageLayout layout = cmdBuffer->getResourceStateTracker().getLayout(this, RenderTexture::Subresource());
+        if (layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+        {
+            layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
 
-    const VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
+        const VkClearDepthStencilValue clearDepthStencilValue = { depth, stencil };
 
-    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
-    cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, layout);
+        cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        cmdBuffer->cmdClearImage(this, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDepthStencilValue);
+        cmdBuffer->cmdPipelineBarrier(this, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, layout);
+    }
 }
 
 bool VulkanImage::upload(VulkanCommandBuffer* cmdBuffer, u32 size, const void* data)

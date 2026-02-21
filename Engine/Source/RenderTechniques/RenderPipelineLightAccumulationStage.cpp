@@ -24,11 +24,12 @@ RenderPipelineLightAccumulationStage::RenderPipelineLightAccumulationStage(Rende
     , m_modelHandler(modelHandler)
 
     , m_shadowSamplerState(nullptr)
-    , m_pipeline(nullptr)
     , m_lightRenderTarget(nullptr)
 
     , m_debugPunctualLightShadows(false)
 {
+    m_pipeline[0] = nullptr;
+    m_pipeline[1] = nullptr;
 }
 
 RenderPipelineLightAccumulationStage::~RenderPipelineLightAccumulationStage()
@@ -37,27 +38,40 @@ RenderPipelineLightAccumulationStage::~RenderPipelineLightAccumulationStage()
 
 void RenderPipelineLightAccumulationStage::create(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    if (m_created)
+    {
+        return;
+    }
+
     createRenderTarget(device, scene);
     createPipelines(device, scene);
 
     m_sphereVolume = scene::MeshHelper::createSphere(device, 1.f, 32, 32, "pointLight");
     m_coneVolume = scene::MeshHelper::createCone(device, 1.f, 1.f, 32, "spotLight");
+
+    m_created = true;
 }
 
 void RenderPipelineLightAccumulationStage::destroy(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
-    destroyRenderTarget(device, scene);
-    destroyPipelines(device, scene);
+    if (m_created)
+    {
+        destroyRenderTarget(device, scene);
+        destroyPipelines(device, scene);
 
-    V3D_DELETE(m_sphereVolume, memory::MemoryLabel::MemoryObject);
-    V3D_DELETE(m_coneVolume, memory::MemoryLabel::MemoryObject);
+        V3D_DELETE(m_sphereVolume, memory::MemoryLabel::MemoryObject);
+        V3D_DELETE(m_coneVolume, memory::MemoryLabel::MemoryObject);
 
-    V3D_DELETE(m_shadowSamplerState, memory::MemoryLabel::MemoryGame);
-    m_shadowSamplerState = nullptr;
+        V3D_DELETE(m_shadowSamplerState, memory::MemoryLabel::MemoryGame);
+        m_shadowSamplerState = nullptr;
+
+        m_created = false;
+    }
 }
 
 void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
 #if DEBUG
     if (m_debugPunctualLightShadows != scene.m_settings._shadowsParams._debugPunctualLightShadows)
     {
@@ -84,6 +98,7 @@ void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, sce
 
 void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, scene::SceneData& scene, scene::FrameData& frame)
 {
+    ASSERT(m_created, "must be created");
     if (scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].empty())
     {
         return;
@@ -228,15 +243,12 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                     shadowBuffer.shadowFaceMask = viewsMask;
                 }
 
-                auto fillLightByType = [camera = scene.m_camera, node = itemLight.object](const scene::Light& light, LightBuffer& lightBuffer, ShadowBuffer& shadowBuffer, bool& insideCamera) -> void
+                static auto fillLightByType = [](const scene::Light& light, LightBuffer& lightBuffer, ShadowBuffer& shadowBuffer) -> void
                     {
-                        float distance = camera->getPosition().distanceFrom(node->getTransform().getPosition());
                         if (light.getType() == typeOf<scene::PointLight>())
                         {
                             const scene::PointLight& pLight = *static_cast<const scene::PointLight*>(&light);
                             lightBuffer.lightType = 1;
-
-                            insideCamera = distance < pLight.getRadius();
                         }
                         else if (light.getType() == typeOf<scene::SpotLight>())
                         {
@@ -244,59 +256,51 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                             lightBuffer.lightType = 2;
                             lightBuffer.property._x = sLight.getOuterAngle();
                             lightBuffer.property._y = sLight.getInnerAngle();
-
-                            math::Vector3D lightDirection = node->getDirection().normalize();
-                            math::Vector3D viewDirection = (camera->getPosition() - node->getTransform().getPosition()).normalize();
-                            insideCamera = distance < sLight.getRange() && math::SVector::dot(viewDirection, lightDirection) > sLight.getOuterAngle();
                         }
                     };
 
-                bool insideCamera = false;
-                fillLightByType(light, lightBuffer, shadowBuffer, insideCamera);
-
-                m_pipeline->setCullMode(insideCamera ? renderer::CullMode::CullMode_Back : renderer::CullMode::CullMode_Front);
-                m_pipeline->setDepthClamp(true);
-#if REVERSED_DEPTH
-                m_pipeline->setDepthCompareOp(insideCamera ? renderer::CompareOperation::LessOrEqual : renderer::CompareOperation::GreaterOrEqual);
-#else
-                m_pipeline->setDepthCompareOp(insideCamera ? renderer::CompareOperation::GreaterOrEqual : renderer::CompareOperation::LessOrEqual);
-#endif
-
-                cmdList->setPipelineState(*m_pipeline);
-                cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
-                    {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
-                    });
-
-                cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
-                    {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Model),
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters.cb_Light),
-                        renderer::Descriptor(samplerState, m_parameters.s_SamplerState),
-                        renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), m_parameters.t_TextureBaseColor),
-                        renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters.t_TextureNormal),
-                        renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters.t_TextureMaterial),
-                        renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters.t_TextureDepth),
-                    });
-
-                cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 2,
-                    {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowBuffer, 0, sizeof(shadowBuffer)}, m_parameters.cb_Shadow),
-                        renderer::Descriptor(renderer::TextureView(shadowmapsTexture), m_parameters.t_TextureShadowmaps),
-                        renderer::Descriptor(m_shadowSamplerState, m_parameters.s_ShadowSamplerState),
-                    });
+                fillLightByType(light, lightBuffer, shadowBuffer);
 
                 DEBUG_MARKER_SCOPE(cmdList, std::format("Light {}", light.getName()), color::rgbaf::LTGREY);
-                if (light.getType() == typeOf<scene::PointLight>())
+                for (u32 pass = 0; pass < 2; ++pass)
                 {
-                    renderer::GeometryBufferDesc desc(m_sphereVolume->getIndexBuffer(), 0, m_sphereVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
-                    cmdList->drawIndexed(desc, 0, m_sphereVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                    cmdList->setPipelineState(*m_pipeline[pass]);
+                    cmdList->bindDescriptorSet(m_pipeline[pass]->getShaderProgram(), 0,
+                        {
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
+                        });
+
+                    cmdList->bindDescriptorSet(m_pipeline[pass]->getShaderProgram(), 1,
+                        {
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Model),
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters.cb_Light),
+                            renderer::Descriptor(samplerState, m_parameters.s_SamplerState),
+                            renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), m_parameters.t_TextureBaseColor),
+                            renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters.t_TextureNormal),
+                            renderer::Descriptor(renderer::TextureView(gbufferMaterialTexture, 0, 0), m_parameters.t_TextureMaterial),
+                            renderer::Descriptor(renderer::TextureView(depthStencilTexture), m_parameters.t_TextureDepth),
+                        });
+
+                    cmdList->bindDescriptorSet(m_pipeline[pass]->getShaderProgram(), 2,
+                        {
+                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowBuffer, 0, sizeof(shadowBuffer)}, m_parameters.cb_Shadow),
+                            renderer::Descriptor(renderer::TextureView(shadowmapsTexture), m_parameters.t_TextureShadowmaps),
+                            renderer::Descriptor(m_shadowSamplerState, m_parameters.s_ShadowSamplerState),
+                        });
+
+                    if (light.getType() == typeOf<scene::PointLight>())
+                    {
+                        renderer::GeometryBufferDesc desc(m_sphereVolume->getIndexBuffer(), 0, m_sphereVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
+                        cmdList->drawIndexed(desc, 0, m_sphereVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                    }
+                    else if (light.getType() == typeOf<scene::SpotLight>())
+                    {
+                        renderer::GeometryBufferDesc desc(m_coneVolume->getIndexBuffer(), 0, m_coneVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
+                        cmdList->drawIndexed(desc, 0, m_coneVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                    }
                 }
-                else if (light.getType() == typeOf<scene::SpotLight>())
-                {
-                    renderer::GeometryBufferDesc desc(m_coneVolume->getIndexBuffer(), 0, m_coneVolume->getVertexBuffer(0), sizeof(VertexFormatSimpleLit), 0);
-                    cmdList->drawIndexed(desc, 0, m_coneVolume->getIndexBuffer()->getIndicesCount(), 0, 0, 1);
-                }
+
+                cmdList->clear(depthStencilTexture, 0.f, 0u);
             }
 
             cmdList->endRenderTarget();
@@ -318,6 +322,39 @@ void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* dev
 {
     m_debugPunctualLightShadows = scene.m_settings._shadowsParams._debugPunctualLightShadows;
 
+    //Stencil pass
+    {
+        const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
+            "light.hlsl", "main_vs", {}, {});
+        const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
+            "light.hlsl", "light_stencil_ps", {}, {});
+
+        renderer::RenderPassDesc desc(scene.m_settings._vewportParams._colorFormat, scene.m_settings._vewportParams._depthFormat);
+        m_pipeline[0] = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
+            V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "lighting_stencil");
+
+        m_pipeline[0]->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_pipeline[0]->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_pipeline[0]->setCullMode(renderer::CullMode::CullMode_None);
+        m_pipeline[0]->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
+        m_pipeline[0]->setDepthTest(true);
+        m_pipeline[0]->setDepthWrite(false);
+        m_pipeline[0]->setBlendEnable(0, true);
+        m_pipeline[0]->setColorMask(0, renderer::ColorMask::ColorMask_None);
+        m_pipeline[0]->setStencilTest(true);
+        m_pipeline[0]->setStencilWriteMask(0xFF);
+#if REVERSED_DEPTH
+        m_pipeline[0]->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+        m_pipeline[0]->setStencilFrontFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Increment_Wrap);
+        m_pipeline[0]->setStencilFrontFaceCompareOp(renderer::CompareOperation::Always, 0xFF);
+        m_pipeline[0]->setStencilBackFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Decrement_Wrap);
+        m_pipeline[0]->setStencilBackFaceCompareOp(renderer::CompareOperation::Always, 0xFF);
+#else
+        m_pipeline[0]->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+#endif
+    }
+
+    //Light pass
     {
         const renderer::Shader::DefineList defines =
         {
@@ -325,58 +362,73 @@ void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* dev
         };
 
         const renderer::VertexShader* vertShader = resource::ResourceManager::getInstance()->loadShader<renderer::VertexShader, resource::ShaderSourceFileLoader>(
-            "light.hlsl", "main_vs", {}, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
+            "light.hlsl", "main_vs", {}, {});
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
             "light.hlsl", "light_accumulation_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 
         renderer::RenderPassDesc desc(scene.m_settings._vewportParams._colorFormat, scene.m_settings._vewportParams._depthFormat);
-        m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
+        m_pipeline[1] = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "lighting");
 
-        m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
-        m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_pipeline->setCullMode(renderer::CullMode::CullMode_Front);
-        m_pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
+        m_pipeline[1]->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
+        m_pipeline[1]->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
+        m_pipeline[1]->setCullMode(renderer::CullMode::CullMode_Back);
+        m_pipeline[1]->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
 #if REVERSED_DEPTH
-        m_pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
+        m_pipeline[1]->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
-        m_pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
+        m_pipeline[1]->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
-        m_pipeline->setDepthTest(true);
-        m_pipeline->setDepthWrite(false);
-        m_pipeline->setBlendEnable(0, true);
-        m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
-        m_pipeline->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
-        m_pipeline->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
+        m_pipeline[1]->setDepthTest(false);
+        m_pipeline[1]->setDepthWrite(false);
+        m_pipeline[1]->setStencilTest(true);
+        m_pipeline[1]->setStencilWriteMask(0x0);
+        m_pipeline[1]->setStencilFrontFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+        m_pipeline[1]->setStencilFrontFaceCompareOp(renderer::CompareOperation::NotEqual, 0xFF);
+        m_pipeline[1]->setStencilBackFaceOp(renderer::StencilOperation::Keep, renderer::StencilOperation::Keep, renderer::StencilOperation::Keep);
+        m_pipeline[1]->setStencilBackFaceCompareOp(renderer::CompareOperation::NotEqual, 0x0FF);
+        m_pipeline[1]->setBlendEnable(0, true);
+        m_pipeline[1]->setColorMask(0, renderer::ColorMask::ColorMask_All);
+        m_pipeline[1]->setColorBlendFactor(0, renderer::BlendFactor::BlendFactor_One, renderer::BlendFactor::BlendFactor_One);
+        m_pipeline[1]->setColorBlendOp(0, renderer::BlendOperation::BlendOp_Add);
 
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Model);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Light);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Shadow);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerState);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureBaseColor);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureNormal);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureMaterial);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureDepth);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureShadowmaps);
-        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_ShadowSamplerState);
-
-        m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-        m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-        m_shadowSamplerState->setEnableCompareOp(true);
-        m_shadowSamplerState->setCompareOp(renderer::CompareOperation::LessOrEqual);
-        m_shadowSamplerState->setBorderColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, cb_Viewport);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, cb_Model);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, cb_Light);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, cb_Shadow);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, s_SamplerState);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, t_TextureBaseColor);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, t_TextureNormal);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, t_TextureMaterial);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, t_TextureDepth);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, t_TextureShadowmaps);
+        BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, s_ShadowSamplerState);
     }
+
+    m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
+    m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
+    m_shadowSamplerState->setEnableCompareOp(true);
+    m_shadowSamplerState->setCompareOp(renderer::CompareOperation::LessOrEqual);
+    m_shadowSamplerState->setBorderColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 }
 
 void RenderPipelineLightAccumulationStage::destroyPipelines(renderer::Device* device, scene::SceneData& scene)
 {
-    ASSERT(m_pipeline, "must be valid");
-    const renderer::ShaderProgram* program = m_pipeline->getShaderProgram();
-    V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+    {
+        ASSERT(m_pipeline[0], "must be valid");
+        const renderer::ShaderProgram* program = m_pipeline[0]->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-    V3D_DELETE(m_pipeline, memory::MemoryLabel::MemoryGame);
-    m_pipeline = nullptr;
+        V3D_DELETE(m_pipeline[0], memory::MemoryLabel::MemoryGame);
+    }
+
+    {
+        ASSERT(m_pipeline[1], "must be valid");
+        const renderer::ShaderProgram* program = m_pipeline[1]->getShaderProgram();
+        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
+
+        V3D_DELETE(m_pipeline[1], memory::MemoryLabel::MemoryGame);
+    }
 }
 
 void RenderPipelineLightAccumulationStage::createRenderTarget(renderer::Device* device, scene::SceneData& scene)
