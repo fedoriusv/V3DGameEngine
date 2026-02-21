@@ -20,11 +20,7 @@ bool EditorHotReload::addFile(const std::string& filename)
 {
     if (stream::FileStream::isExists(filename))
     {
-        WatchedFile file;
-        file._path = std::filesystem::absolute(filename);
-        file._modifiedTime = std::filesystem::last_write_time(file._path);
 
-        m_files.push_back(file);
         return true;
     }
 
@@ -38,12 +34,23 @@ u32 EditorHotReload::addFolder(const std::string& dirname)
     u32 result = 0;
     if (stream::FileStream::isDirectory(dirname))
     {
+        std::vector<WatchedFile> list;
         for (const auto& entry : std::filesystem::recursive_directory_iterator(dirname))
         {
-            if (addFile(entry.path().string()))
+            if (stream::FileStream::isExists(entry.path().string()))
             {
+                WatchedFile file;
+                file._path = std::filesystem::absolute(entry.path().string());
+                file._modifiedTime = std::filesystem::last_write_time(file._path);
+
+                list.push_back(file);
                 ++result;
             }
+        }
+
+        if (!list.empty())
+        {
+            m_folders.emplace_back(dirname, std::move(list));
         }
     }
 
@@ -62,20 +69,25 @@ void EditorHotReload::trackFiles()
 {
     std::scoped_lock lock(m_mutex);
 
-    for (auto& file : m_files)
+    for (auto& [folderName, files] : m_folders)
     {
-        std::error_code error;
-        auto time = std::filesystem::last_write_time(file._path, error);
-        if (error)
+        for (auto& file : files)
         {
-            continue;
-        }
+            std::error_code error;
+            auto time = std::filesystem::last_write_time(file._path, error);
+            if (error)
+            {
+                //Skip file system errors
+                continue;
+            }
 
-        if (time > file._modifiedTime + std::chrono::milliseconds(500))
-        {
-            file._modifiedTime = time;
-
-            m_gameEventRecevier->pushEvent(new event::ShaderHotReload(file._path.string()));
+            if (time > file._modifiedTime + std::chrono::milliseconds(500))
+            {
+                file._modifiedTime = time;
+                m_gameEventRecevier->pushEvent(new event::ShaderHotReload(folderName, file._path.string()));
+            }
         }
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }

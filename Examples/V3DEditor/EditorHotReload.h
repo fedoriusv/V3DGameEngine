@@ -15,7 +15,6 @@ public:
     EditorHotReload(event::GameEventReceiver* gameEventRecevier) noexcept;
     ~EditorHotReload();
 
-    bool addFile(const std::string& filename);
     u32 addFolder(const std::string& dirname);
 
     static void hotReloadLoop(EditorHotReload* hotReload);
@@ -26,6 +25,7 @@ private:
     thread::Thread                  m_thread;
     std::mutex                      m_mutex;
 
+    bool addFile(const std::string& filename);
     void trackFiles();
 
     struct WatchedFile
@@ -33,5 +33,6 @@ private:
         std::filesystem::path           _path;
         std::filesystem::file_time_type _modifiedTime;
     };
-    std::vector<WatchedFile> m_files;
+    std::vector<std::tuple<std::string, std::vector<WatchedFile>>> m_folders;
+
 };
