@@ -44,6 +44,9 @@ namespace scene
             }
         };
 
+        using Property = std::variant<std::monostate, u32, f32, math::float4, ObjectHandle>;
+        using Iterator = std::unordered_map<std::string, Property>::iterator;
+
         explicit Material(renderer::Device* device, MaterialShadingModel shadingModel = MaterialShadingModel::Custom) noexcept;
         explicit Material(renderer::Device* device, const MaterialHeader& header) noexcept;
 
@@ -57,15 +60,15 @@ namespace scene
 
         bool hasProperty(const std::string& id) const;
 
+        Iterator begin();
+        Iterator end();
+
     private:
 
         virtual ~Material() = default;
 
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
-
-        using Property = std::variant<std::monostate, u32, f32, math::float4, ObjectHandle>;
-
         MaterialHeader                                      m_header;
         renderer::Device* const                             m_device;
         std::unordered_map<std::string, Property>           m_properties;
@@ -114,6 +117,16 @@ namespace scene
         }
 
         return false;
+    }
+
+    inline Material::Iterator Material::begin()
+    {
+        return m_properties.begin();
+    }
+
+    inline Material::Iterator Material::end()
+    {
+        return m_properties.end();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

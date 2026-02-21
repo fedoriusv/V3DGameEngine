@@ -775,6 +775,13 @@ void EditorPropertyScreen::buildMaterialProp()
     ASSERT(m_window, "must be valid");
     ui::WidgetWindow& window = *m_window;
 
+    const static std::string shadingModel[3] =
+    {
+        "Unlit",
+        "PBR_MetallicRoughness",
+        "Custom",
+    };
+
     ObjectHandle dummy_h = m_sceneData->m_globalResources.get("default_white");
     ASSERT(dummy_h.isValid(), "must be valid");
     renderer::Texture2D* dummyTexture = objectFromHandle<renderer::Texture2D>(dummy_h);
@@ -785,33 +792,65 @@ void EditorPropertyScreen::buildMaterialProp()
         flags |= ui::WidgetTreeNode::TreeNodeFlag::Open;
     }
 
-    window
-        .addWidget(ui::WidgetLayout()
-            .setFontSize(ui::WidgetLayout::MediumFont)
-            .addWidget(ui::WidgetTreeNode("Material", flags)
-                .addWidget(ui::WidgetHorizontalLayout()
-                    .addWidget(ui::WidgetText("MaterialType"))
-                    .addWidget(ui::WidgetText("<text>"))
-                )
-                .addWidget(ui::WidgetText("Name: <text>"))
-                .addWidget(ui::WidgetHorizontalLayout()
-                    .addWidget(ui::WidgetText("BaseColor"))
-                    .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 }))
-                )
-                .addWidget(ui::WidgetText("Name: <text>"))
-                .addWidget(ui::WidgetHorizontalLayout()
-                    .addWidget(ui::WidgetText("Normal  "))
-                    .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 }))
-                )
-                .addWidget(ui::WidgetText("Name: <text>"))
-                .addWidget(ui::WidgetHorizontalLayout()
-                    .addWidget(ui::WidgetText("Material  "))
-                    .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 }))
-                )
-                .addWidget(ui::WidgetHorizontalLayout()
-                    .addWidget(ui::WidgetText("Tint"))
-                    .addWidget(ui::WidgetColorPalette())
-                )
+    scene::Material* material = m_selectedNode->getComponentByType<scene::Material>();
+    ASSERT(material, "must be valid");
+
+    ui::WidgetLayout winLayout = ui::WidgetLayout()
+        .setFontSize(ui::WidgetLayout::MediumFont)
+        .addWidget(ui::WidgetTreeNode("Material", flags)
+            .addWidget(ui::WidgetHorizontalLayout()
+                .addWidget(ui::WidgetText("MaterialType"))
+                .addWidget(ui::WidgetText(shadingModel[toEnumType(material->getShadingModel())]))
             )
         );
+
+    for (auto iter = material->begin(); iter != material->end(); ++iter)
+    {
+        if (ObjectHandle* obj = std::get_if<ObjectHandle>(&iter->second); obj)
+        {
+            renderer::Texture* texture = obj->as<renderer::Texture>();
+
+            winLayout.addWidget(ui::WidgetText("Property: " + iter->first))
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetText("Name: <texture name>" ))
+                    .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 })
+                    )
+                );
+        }
+        else if (math::float4* value = std::get_if<math::float4>(&iter->second); value)
+        {
+            winLayout.addWidget(ui::WidgetText("Property: " + iter->first))
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetColorPalette()
+                        .setColor(*value)
+                        .setOnColorChangedEvent([this, name = iter->first](ui::Widget* w, const color::ColorRGBAF& color)
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Material* material = m_selectedNode->getComponentByType<scene::Material>();
+                                    material->setProperty(name, color);
+                                }
+                            })
+                    )
+                );
+        }
+        else if (f32* value = std::get_if<f32>(&iter->second); value)
+        {
+            winLayout.addWidget(ui::WidgetText("Property: " + iter->first))
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .addWidget(ui::WidgetInputDragFloat(*value)
+                        .setOnChangedValueEvent([this, name = iter->first](ui::Widget* w, f32 value)
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Material* material = m_selectedNode->getComponentByType<scene::Material>();
+                                    material->setProperty(name, value);
+                                }
+                            })
+                    )
+                );
+        }
+    }
+ 
+        window.addWidget(winLayout);
 }
