@@ -118,19 +118,19 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     {
         float3 worldPos = _reconstruct_world_pos(cb_Viewport.invProjectionMatrix, cb_Viewport.invViewMatrix, positionScreenUV, depth);
         
+        EnvironmentBuffer environment;
+        environment.wetness = 0.f;
+        environment.shadowSaturation = 0.01f; //temp
+        
         if (cb_Light.type == POINT_LIGHT)
         {
             float lightDistance = distance(worldPos, cb_Light.position.xyz);
             float radius = cb_Light.attenuation.w;
             clip(radius - lightDistance);
         
-            EnvironmentBuffer environment;
-            environment.wetness = 0.f;
-            environment.shadowSaturation = 0.01f; //temp
-        
             LightBuffer light;
             light = cb_Light;
-            light.direction = worldPos - cb_Light.position.xyz;
+            light.direction = normalize(worldPos - cb_Light.position.xyz);
 
             float shadow = cb_Shadow.shadowFaceMask > 0.0 ? punctual_light_shadow(worldPos, normals) : 0.0;
             float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
@@ -141,29 +141,42 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
         }
         else if (cb_Light.type == SPOT_LIGHT)
         {
-            //todo
-            //float lightDistance = distance(worldPos, cb_Light.position.xyz);
-            float range = cb_Light.attenuation.w;
-            //clip(range - lightDistance);
+            LightBuffer light;
+            light = cb_Light;
+            light.direction = normalize(cb_Light.direction);
             
-            float3 V = worldPos - cb_Light.position.xyz;
-            float axial = dot(V, cb_Light.direction);
-
-            if (axial <= 0 || axial >= range)
-                discard;
-
-            //float cosAngle = dot(normalize(V), cb_Light.direction);
-            //if (cosAngle <= cb_Light.CosOuterAngle)
+            //if (depth < Input.ClipPos.z / Input.ClipPos.w)
             //    discard;
             
-            LightBuffer light;
-            light.direction = worldPos - cb_Light.position.xyz;
-            light.color = cb_Light.color;
-            light.attenuation = cb_Light.attenuation;
-            light.intensity = cb_Light.intensity;
-            light.temperature = cb_Light.temperature;
+            float lightDistance = distance(worldPos, cb_Light.position.xyz);
+            //float range = cb_Light.attenuation.w;
+            //clip(range - lightDistance);
             
-            float4 color = light.color;
+            //float3 V = worldPos - cb_Light.position.xyz;
+            //float axial = dot(V, light.direction);
+            //if (axial <= 0 || axial >= range)
+            //    discard;
+
+            //float cosAngle = dot(normalize(V), light.direction);
+            //if (cosAngle <= cb_Light.propery.a)
+            //    discard;
+            
+            float3 lightPos = cb_Light.position.xyz;
+            float3 lightDir = normalize(cb_Light.direction);
+            float range = cb_Light.attenuation.w;
+            
+            float3 L = worldPos - lightPos;
+            float dist = length(L);
+            float3 Lnorm = L / dist;
+
+            clip(range - dist);
+            float cosAngle = dot(Lnorm, lightDir);
+
+            float cone = saturate((cosAngle - cb_Light.propery.x) / (cb_Light.propery.y - cb_Light.propery.x));
+            clip(cone - 0.001);
+            
+            float shadow = 0.0;
+            float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
             return float4(color.rgb, 1.0);
         }
     }

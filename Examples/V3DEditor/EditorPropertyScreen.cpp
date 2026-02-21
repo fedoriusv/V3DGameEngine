@@ -21,6 +21,8 @@ EditorPropertyScreen::EditorPropertyScreen(event::GameEventReceiver* gameEventRe
     m_lightProperty.m_propertyColor = nullptr;
     m_lightProperty.m_propertyRadius = nullptr;
     m_lightProperty.m_propertyAttenuation = nullptr;
+    m_lightProperty.m_propertyOuterAngle = nullptr;
+    m_lightProperty.m_propertyInnerAngle = nullptr;
     m_lightProperty.m_loadedFlag = 0;
 }
 
@@ -85,7 +87,7 @@ void EditorPropertyScreen::update(f32 dt)
 
     if (m_selectedNode)
     {
-        if (m_transformProperty.m_loadedFlag & 0x1FF)
+        if (m_transformProperty.m_loadedFlag)
         {
             ASSERT(m_transformProperty.m_position[0] && m_transformProperty.m_position[1] && m_transformProperty.m_position[2], "must be valid");
             const math::Vector3D& pos = m_selectedNode->getTransform(m_transformProperty.m_mode).getPosition();
@@ -106,7 +108,7 @@ void EditorPropertyScreen::update(f32 dt)
             m_transformProperty.m_scale[2]->setValue(scl.getZ());
         }
 
-        if (m_lightProperty.m_loadedFlag & 0x31)
+        if (m_lightProperty.m_loadedFlag)
         {
             if (scene::DirectionalLight* light = m_selectedNode->getComponentByType<scene::DirectionalLight>(); light)
             {
@@ -152,7 +154,37 @@ void EditorPropertyScreen::update(f32 dt)
                     }
                 }
             }
+            else if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
+            {
+                f32 inten = light->getIntensity();
+                m_lightProperty.m_propertyIntensity->setValue(inten);
 
+                f32 temp = light->getTemperature();
+                m_lightProperty.m_propertyTemperature->setValue(temp);
+
+                f32 range = light->getRange();
+                m_lightProperty.m_propertyRadius->setValue(range);
+
+                f32 outerAngle = light->getOuterAngle();
+                m_lightProperty.m_propertyOuterAngle->setValue(outerAngle);
+
+                f32 innerAngle = light->getInnerAngle();
+                m_lightProperty.m_propertyInnerAngle->setValue(innerAngle);
+
+                color::ColorRGBAF color = light->getColor();
+                m_lightProperty.m_propertyColor->setColor(color);
+
+                math::float4 att = light->getAttenuation();
+                m_lightProperty.m_propertyAttenuation->setValue(att._x, att._y, att._z);
+
+                if (!m_selectedNode->m_children.empty())
+                {
+                    if (scene::Material* material = m_selectedNode->m_children.front()->getComponentByType<scene::Material>(); material)
+                    {
+                        material->setProperty<math::float4>("DiffuseColor", { color._x, color._y, color._z, 1.0 });
+                    }
+                }
+            }
         }
     }
 }
@@ -222,7 +254,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D pos = m_selectedNode->getTransform(m_transformProperty.m_mode).getPosition();
                                     pos.setX(val);
                                     m_selectedNode->setPosition(m_transformProperty.m_mode, pos);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -243,7 +274,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D pos = m_selectedNode->getTransform(m_transformProperty.m_mode).getPosition();
                                     pos.setY(val);
                                     m_selectedNode->setPosition(m_transformProperty.m_mode, pos);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -264,7 +294,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D pos = m_selectedNode->getTransform(m_transformProperty.m_mode).getPosition();
                                     pos.setZ(val);
                                     m_selectedNode->setPosition(m_transformProperty.m_mode, pos);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -288,7 +317,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D rot = m_selectedNode->getTransform(m_transformProperty.m_mode).getRotation();
                                     rot.setX(val);
                                     m_selectedNode->setRotation(m_transformProperty.m_mode, rot);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -309,7 +337,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D rot = m_selectedNode->getTransform(m_transformProperty.m_mode).getRotation();
                                     rot.setY(val);
                                     m_selectedNode->setRotation(m_transformProperty.m_mode, rot);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -330,7 +357,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D rot = m_selectedNode->getTransform(m_transformProperty.m_mode).getRotation();
                                     rot.setZ(val);
                                     m_selectedNode->setRotation(m_transformProperty.m_mode, rot);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -355,7 +381,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D scale = m_selectedNode->getTransform(m_transformProperty.m_mode).getScale();
                                     scale.setX(val);
                                     m_selectedNode->setScale(m_transformProperty.m_mode, scale);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -377,7 +402,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D scale = m_selectedNode->getTransform(m_transformProperty.m_mode).getScale();
                                     scale.setY(val);
                                     m_selectedNode->setScale(m_transformProperty.m_mode, scale);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -399,7 +423,6 @@ void EditorPropertyScreen::buildTransformProp()
                                     math::Vector3D scale = m_selectedNode->getTransform(m_transformProperty.m_mode).getScale();
                                     scale.setZ(val);
                                     m_selectedNode->setScale(m_transformProperty.m_mode, scale);
-
                                     m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                 }
                             })
@@ -654,7 +677,6 @@ void EditorPropertyScreen::buildLightProp()
                                         math::float4 attenuation = light->getAttenuation();
                                         light->setRadius(val);
                                         m_selectedNode->setScale(scene::TransformMode::Local, { val , val, val });
-
                                         m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                     }
                                 }
@@ -670,7 +692,8 @@ void EditorPropertyScreen::buildLightProp()
                         .setStep(0.1)
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
-
+                                m_lightProperty.m_propertyRadius = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 2;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
@@ -693,6 +716,12 @@ void EditorPropertyScreen::buildLightProp()
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 80, 20 })
                         .setStep(0.01)
+                        .setRange(1.0f, 80.0f)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertyOuterAngle = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 3;
+                            })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
                                 if (m_selectedNode)
@@ -712,6 +741,12 @@ void EditorPropertyScreen::buildLightProp()
                     .addWidget(ui::WidgetInputDragFloat(0.f)
                         .setSize({ 80, 20 })
                         .setStep(0.01)
+                        .setRange(1.0f, 80.0f)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertyInnerAngle = static_cast<ui::WidgetInputDragFloat*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 4;
+                            })
                         .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
                             {
                                 if (m_selectedNode)
@@ -733,7 +768,7 @@ void EditorPropertyScreen::buildLightProp()
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyAttenuation = static_cast<ui::WidgetInputDragFloat3*>(w);
-                                m_lightProperty.m_loadedFlag |= 1 << 3;
+                                m_lightProperty.m_loadedFlag |= 1 << 5;
                             })
                         .setOnChangedValueEvent([this](ui::Widget* w, const math::float3& val) -> void
                             {
@@ -754,7 +789,7 @@ void EditorPropertyScreen::buildLightProp()
                         .setOnCreated([this](ui::Widget* w) -> void
                             {
                                 m_lightProperty.m_propertyColor = static_cast<ui::WidgetColorPalette*>(w);
-                                m_lightProperty.m_loadedFlag |= 1 << 4;
+                                m_lightProperty.m_loadedFlag |= 1 << 6;
                             })
                         .setOnColorChangedEvent([this](ui::Widget* w, const color::ColorRGBAF& color) -> void
                             {
@@ -808,7 +843,7 @@ void EditorPropertyScreen::buildMaterialProp()
     {
         if (ObjectHandle* obj = std::get_if<ObjectHandle>(&iter->second); obj)
         {
-            renderer::Texture* texture = obj->as<renderer::Texture>();
+            //renderer::Texture* texture = obj->as<renderer::Texture>();
 
             winLayout.addWidget(ui::WidgetText("Property: " + iter->first))
                 .addWidget(ui::WidgetHorizontalLayout()

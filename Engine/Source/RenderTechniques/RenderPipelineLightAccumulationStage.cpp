@@ -142,6 +142,17 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                     renderer::TransitionOp::TransitionOp_ColorAttachment, renderer::TransitionOp::TransitionOp_ColorAttachment
                 });
 
+            m_lightRenderTarget->setDepthStencilTexture(depthStencilTexture,
+                {
+                    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0.0f
+                },
+                {
+                    renderer::RenderTargetLoadOp::LoadOp_Load, renderer::RenderTargetStoreOp::StoreOp_Store, 0U
+                },
+                {
+                    renderer::TransitionOp::TransitionOp_DepthStencilReadOnly, renderer::TransitionOp::TransitionOp_DepthStencilAttachment
+                });
+
             cmdList->beginRenderTarget(*m_lightRenderTarget);
             cmdList->setViewport({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
             cmdList->setScissor({ 0.f, 0.f, (f32)viewportState->viewportSize._x, (f32)viewportState->viewportSize._y });
@@ -151,12 +162,6 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 auto& entry = scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)][i];
                 const scene::LightNodeEntry& itemLight = *static_cast<const scene::LightNodeEntry*>(entry);
                 const scene::Light& light = *static_cast<const scene::Light*>(itemLight.light);
-
-                cmdList->setPipelineState(*m_pipeline);
-                cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
-                    {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
-                    });
 
                 struct ModelBuffer
                 {
@@ -223,12 +228,15 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                     shadowBuffer.shadowFaceMask = viewsMask;
                 }
 
-                static auto fillLightByType = [](const scene::Light& light, LightBuffer& lightBuffer, ShadowBuffer& shadowBuffer) -> void
+                auto fillLightByType = [camera = scene.m_camera, node = itemLight.object](const scene::Light& light, LightBuffer& lightBuffer, ShadowBuffer& shadowBuffer, bool& insideCamera) -> void
                     {
+                        float distance = camera->getPosition().distanceFrom(node->getTransform().getPosition());
                         if (light.getType() == typeOf<scene::PointLight>())
                         {
                             const scene::PointLight& pLight = *static_cast<const scene::PointLight*>(&light);
                             lightBuffer.lightType = 1;
+
+                            insideCamera = distance < pLight.getRadius();
                         }
                         else if (light.getType() == typeOf<scene::SpotLight>())
                         {
@@ -236,9 +244,29 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                             lightBuffer.lightType = 2;
                             lightBuffer.property._x = sLight.getOuterAngle();
                             lightBuffer.property._y = sLight.getInnerAngle();
+
+                            math::Vector3D lightDirection = node->getDirection().normalize();
+                            math::Vector3D viewDirection = (camera->getPosition() - node->getTransform().getPosition()).normalize();
+                            insideCamera = distance < sLight.getRange() && math::SVector::dot(viewDirection, lightDirection) > sLight.getOuterAngle();
                         }
                     };
-                fillLightByType(light, lightBuffer, shadowBuffer);
+
+                bool insideCamera = false;
+                fillLightByType(light, lightBuffer, shadowBuffer, insideCamera);
+
+                m_pipeline->setCullMode(insideCamera ? renderer::CullMode::CullMode_Back : renderer::CullMode::CullMode_Front);
+                m_pipeline->setDepthClamp(true);
+#if REVERSED_DEPTH
+                m_pipeline->setDepthCompareOp(insideCamera ? renderer::CompareOperation::LessOrEqual : renderer::CompareOperation::GreaterOrEqual);
+#else
+                m_pipeline->setDepthCompareOp(insideCamera ? renderer::CompareOperation::GreaterOrEqual : renderer::CompareOperation::LessOrEqual);
+#endif
+
+                cmdList->setPipelineState(*m_pipeline);
+                cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 0,
+                    {
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ viewportState, 0, sizeof(scene::ViewportState)}, m_parameters.cb_Viewport)
+                    });
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                     {
@@ -301,23 +329,20 @@ void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* dev
         const renderer::FragmentShader* fragShader = resource::ResourceManager::getInstance()->loadShader<renderer::FragmentShader, resource::ShaderSourceFileLoader>(
             "light.hlsl", "light_accumulation_ps", defines, {}, resource::ShaderCompileFlag::ShaderCompile_ForceReload);
 
-        renderer::RenderPassDesc desc{};
-        desc._countColorAttachment = 1;
-        desc._attachmentsDesc[0]._format = scene.m_settings._vewportParams._colorFormat;
-
+        renderer::RenderPassDesc desc(scene.m_settings._vewportParams._colorFormat, scene.m_settings._vewportParams._depthFormat);
         m_pipeline = V3D_NEW(renderer::GraphicsPipelineState, memory::MemoryLabel::MemoryGame)(device, VertexFormatSimpleLitDesc, desc,
             V3D_NEW(renderer::ShaderProgram, memory::MemoryLabel::MemoryGame)(device, vertShader, fragShader), "lighting");
 
         m_pipeline->setPrimitiveTopology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList);
         m_pipeline->setFrontFace(renderer::FrontFace::FrontFace_Clockwise);
-        m_pipeline->setCullMode(renderer::CullMode::CullMode_Back);
+        m_pipeline->setCullMode(renderer::CullMode::CullMode_Front);
         m_pipeline->setPolygonMode(renderer::PolygonMode::PolygonMode_Fill);
 #if REVERSED_DEPTH
         m_pipeline->setDepthCompareOp(renderer::CompareOperation::GreaterOrEqual);
 #else
         m_pipeline->setDepthCompareOp(renderer::CompareOperation::LessOrEqual);
 #endif
-        m_pipeline->setDepthTest(false);
+        m_pipeline->setDepthTest(true);
         m_pipeline->setDepthWrite(false);
         m_pipeline->setBlendEnable(0, true);
         m_pipeline->setColorMask(0, renderer::ColorMask::ColorMask_All);
