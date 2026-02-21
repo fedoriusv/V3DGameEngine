@@ -174,28 +174,56 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 constantBuffer.tintColour = math::float4{ 1.0, 1.0, 1.0, 1.0 };
                 constantBuffer.objectID = 0;
 
-                struct PunctualLightBuffer
+                struct LightBuffer
                 {
                     math::Vector3D position;
+                    math::Vector3D direction;
                     math::float4   color;
                     math::float4   attenuation;
+                    math::float4   property;
                     f32            intensity;
                     f32            temperature;
+                    u32            lightType;
+                    u32           _pad = 0;
+                } lightBuffer;
 
-                    math::float2   clipNearFar;
+                lightBuffer.position = itemLight.object->getTransform().getPosition();
+                lightBuffer.direction = itemLight.object->getDirection();
+                lightBuffer.color = light.getColor();
+                lightBuffer.attenuation = light.getAttenuation();
+                lightBuffer.intensity = light.getIntensity();
+                lightBuffer.temperature = light.getTemperature();
+                lightBuffer.lightType = 0;
+
+                struct ShadowBuffer
+                {
                     math::Matrix4D lightSpaceMatrix[6];
+                    math::float2   clipNearFar;
                     math::float2   shadowResolution;
                     f32            shadowBaseBias;
                     u32            shadowSliceOffset;
                     u32            shadowFaceMask;
                     u32            shadowPCFMode;
+                } shadowBuffer;
 
-                    u32            lightType;
-                    f32            outerRadius;
-                    math::Vector3D direction;
-                } lightBuffer;
+                shadowBuffer.clipNearFar = { 0.0f, 0.0f };
+                shadowBuffer.shadowResolution = { (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height };
+                shadowBuffer.shadowBaseBias = 0.0f;
+                shadowBuffer.shadowSliceOffset = 0;
+                shadowBuffer.shadowFaceMask = 0b0;
+                shadowBuffer.shadowPCFMode = scene.m_settings._shadowsParams._PCF;
 
-                static auto fillLightByType = [&lightBuffer](const scene::Light& light) -> void
+                if (i < k_maxPunctualShadowmapCount && shadowData && shadowData->_punctualLightsFlags[i])
+                {
+                    auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = shadowData->_punctualLightsData[i];
+                    memcpy(shadowBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
+                    shadowBuffer.clipNearFar = plane;
+                    shadowBuffer.shadowBaseBias = scene.m_settings._shadowsParams._punctualLightBias;
+                    shadowBuffer.shadowSliceOffset = i * 6;
+                    shadowBuffer.shadowFaceMask = viewsMask;
+                }
+
+                static auto fillLightByType = [](const scene::Light& light, LightBuffer& lightBuffer, ShadowBuffer& shadowBuffer) -> void
                     {
                         if (light.getType() == typeOf<scene::PointLight>())
                         {
@@ -206,41 +234,16 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                         {
                             const scene::SpotLight& sLight = *static_cast<const scene::SpotLight*>(&light);
                             lightBuffer.lightType = 2;
-                            lightBuffer.outerRadius = sLight.getOuterAngle();
+                            lightBuffer.property._x = sLight.getOuterAngle();
+                            lightBuffer.property._y = sLight.getInnerAngle();
                         }
                     };
-
-                lightBuffer.position = itemLight.object->getTransform().getPosition();
-                lightBuffer.color = light.getColor();
-                lightBuffer.attenuation = light.getAttenuation();
-                lightBuffer.intensity = light.getIntensity();
-                lightBuffer.temperature = light.getTemperature();
-                lightBuffer.lightType = 0;
-                lightBuffer.outerRadius = 0;
-
-                lightBuffer.clipNearFar = { 0.0f, 0.0f };
-                lightBuffer.shadowResolution = { (f32)scene.m_settings._shadowsParams._size._width, (f32)scene.m_settings._shadowsParams._size._height };
-                lightBuffer.shadowBaseBias = 0.0f;
-                lightBuffer.shadowSliceOffset = 0;
-                lightBuffer.shadowFaceMask = 0b0;
-                lightBuffer.shadowPCFMode = scene.m_settings._shadowsParams._PCF;
-                lightBuffer.direction = itemLight.object->getDirection();
-
-                if (i < k_maxPunctualShadowmapCount && shadowData && shadowData->_punctualLightsFlags[i])
-                {
-                    auto& [pointLightSpaceMatrix, lightPosition, plane, viewsMask] = shadowData->_punctualLightsData[i];
-                    memcpy(lightBuffer.lightSpaceMatrix, pointLightSpaceMatrix.data(), sizeof(math::Matrix4D) * 6);
-                    lightBuffer.clipNearFar = plane;
-                    lightBuffer.shadowBaseBias = scene.m_settings._shadowsParams._punctualLightBias;
-                    lightBuffer.shadowSliceOffset = i * 6;
-                    lightBuffer.shadowFaceMask = 0b00111111;
-                }
-
-                fillLightByType(light);
+                fillLightByType(light, lightBuffer, shadowBuffer);
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &constantBuffer, 0, sizeof(constantBuffer)}, m_parameters.cb_Model),
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters.cb_Light),
                         renderer::Descriptor(samplerState, m_parameters.s_SamplerState),
                         renderer::Descriptor(renderer::TextureView(gbufferAlbedoTexture, 0, 0), m_parameters.t_TextureBaseColor),
                         renderer::Descriptor(renderer::TextureView(gbufferNormalsTexture, 0, 0), m_parameters.t_TextureNormal),
@@ -250,7 +253,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
 
                 cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 2,
                     {
-                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &lightBuffer, 0, sizeof(lightBuffer)}, m_parameters.cb_Light),
+                        renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowBuffer, 0, sizeof(shadowBuffer)}, m_parameters.cb_Shadow),
                         renderer::Descriptor(renderer::TextureView(shadowmapsTexture), m_parameters.t_TextureShadowmaps),
                         renderer::Descriptor(m_shadowSamplerState, m_parameters.s_ShadowSamplerState),
                     });
@@ -324,6 +327,7 @@ void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* dev
         BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
         BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Model);
         BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Light);
+        BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Shadow);
         BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerState);
         BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureBaseColor);
         BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_TextureNormal);

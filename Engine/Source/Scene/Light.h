@@ -65,6 +65,12 @@ namespace scene
         const color::ColorRGBAF& getColor() const;
         const std::string_view getName() const;
 
+        void setCastShadows(bool enabled);
+        void setShadowMask(u8 mask);
+
+        bool isCastShadows() const;
+        u8 getShadowMask() const;
+
     protected:
 
         explicit Light(renderer::Device* device, Type type) noexcept;
@@ -78,6 +84,7 @@ namespace scene
         f32                     m_intensity;
         f32                     m_temperature;
         bool                    m_shadowCaster;
+        u8                      m_shadowMask;
 
         template<class T>
         friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
@@ -128,6 +135,26 @@ namespace scene
     inline const std::string_view Light::getName() const
     {
         return m_header.getName();
+    }
+
+    inline void Light::setCastShadows(bool enabled)
+    {
+        m_shadowCaster = enabled;
+    }
+
+    inline bool Light::isCastShadows() const
+    {
+        return m_shadowCaster;
+    }
+
+    inline void Light::setShadowMask(u8 enabled)
+    {
+        m_shadowMask = enabled;
+    }
+
+    inline u8 Light::getShadowMask() const
+    {
+        return m_shadowMask;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////

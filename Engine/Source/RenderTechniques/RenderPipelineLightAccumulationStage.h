@@ -45,6 +45,7 @@ namespace scene
             SHADER_PARAMETER(cb_Viewport);
             SHADER_PARAMETER(cb_Model);
             SHADER_PARAMETER(cb_Light);
+            SHADER_PARAMETER(cb_Shadow);
             SHADER_PARAMETER(s_SamplerState);
             SHADER_PARAMETER(t_TextureBaseColor);
             SHADER_PARAMETER(t_TextureNormal);

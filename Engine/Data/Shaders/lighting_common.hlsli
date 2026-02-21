@@ -13,8 +13,10 @@ struct LightBuffer
     float3 direction;
     float4 color;
     float4 attenuation;
+    float4 propery; //reserved for custom data
     float  intensity;
     float  temperature;
+    uint   type;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////

@@ -322,6 +322,7 @@ void EditorViewScreen::build()
         .addElement("GBuffer Normals")
         .addElement("Depth")
         .addElement("Lights")
+        .addElement("Light Complexity")
         .setActiveIndex(0)
         .setOnChangedIndexEvent([this](ui::Widget* w, s32 id)
             {

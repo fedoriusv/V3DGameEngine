@@ -540,7 +540,7 @@ scene::DirectionalLight* EditorScene::addSunLight(const math::Vector3D& directio
             directionallightNode->addChild(debugNode);
 
             scene::Mesh* cylinder = scene::MeshHelper::createCylinder(m_device, 0.01f, 0.5f, 16, "lightDirection");
-            cylinder->setShadowsCast(false);
+            cylinder->setCastShadow(false);
             debugNode->addComponent(cylinder);
 
             scene::Material* material = new scene::Material(m_device);
@@ -598,7 +598,7 @@ scene::PointLight* EditorScene::addPointLightComponent(const math::Vector3D& pos
             pointLightNode->addChild(debugNode);
 
             scene::Mesh* sphere = scene::MeshHelper::createSphere(m_device, 1.f, 8, 8, "pointLight");
-            sphere->setShadowsCast(false);
+            sphere->setCastShadow(false);
             debugNode->addComponent(sphere);
 
             scene::Material* material = new scene::Material(m_device);
@@ -659,7 +659,7 @@ void EditorScene::test_loadScene(const std::string& name)
                     node->addChild(debugNode);
 
                     scene::Mesh* cylinder = scene::MeshHelper::createCylinder(m_device, 0.01f, 0.5f, 16, "lightDirection");
-                    cylinder->setShadowsCast(false);
+                    cylinder->setCastShadow(false);
                     debugNode->addComponent(cylinder);
 
                     scene::Material* material = new scene::Material(m_device);
@@ -693,7 +693,7 @@ void EditorScene::test_loadScene(const std::string& name)
                     node->addChild(debugNode);
 
                     scene::Mesh* sphere = scene::MeshHelper::createSphere(m_device, 1.f, 8, 8, "pointLight");
-                    sphere->setShadowsCast(false);
+                    sphere->setCastShadow(false);
                     debugNode->addComponent(sphere);
 
                     scene::Material* material = new scene::Material(m_device);
@@ -866,10 +866,10 @@ void EditorScene::test_loadLights()
     renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
 
     addSunLight({ 30.f, 90.0f, 0.0f }, { 1.f, 1.f, 1.f, 1.f }, "SunLight");
-    //addPointLightComponent({ 1.0f, 1.0f, -1.0f }, 5.0f, { 1.f, 1.f, 1.f, 1.f }, "PointLight0");
-    //addPointLightComponent({ -1.0f, 0.3f, 1.0f }, 1.0f, { 1.f, 0.f, 0.f, 1.f }, "PointLight1");
+    addPointLightComponent({ 1.0f, 1.0f, -1.0f }, 5.0f, { 1.f, 1.f, 1.f, 1.f }, "PointLight0");
+    addPointLightComponent({ -1.0f, 0.3f, 1.0f }, 1.0f, { 1.f, 0.f, 0.f, 1.f }, "PointLight1");
 
-    /*{
+    {
         scene::SceneNode* spotLightNode = new scene::SceneNode();
         spotLightNode->m_name = "Spotlight0";
         spotLightNode->setPosition(scene::TransformMode::Local, { -2.f, 1.f, 0.f });
@@ -899,7 +899,7 @@ void EditorScene::test_loadLights()
                 spotLightNode->addChild(debugNode);
 
                 scene::Mesh* sphere = scene::MeshHelper::createCone(m_device, 1.f, 1.f, 16, "spotLight");
-                sphere->setShadowsCast(false);
+                sphere->setCastShadow(false);
                 debugNode->addComponent(sphere);
 
                 scene::Material* material = new scene::Material(m_device);
@@ -909,7 +909,7 @@ void EditorScene::test_loadLights()
                 debugNode->addComponent(material);
             }
         }
-    }*/
+    }
 }
 
 void EditorScene::editor_loadDebug()

@@ -155,7 +155,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
         u32 viewsMask = 0b00111111; //TODO get from the light
         calculateShadowViews(lightPosition, nearPlane, farPlane, viewsMask, pointLightSpaceMatrix);
         pipelineData->_punctualLightsData[i] = { pointLightSpaceMatrix, lightPosition, math::float2{ nearPlane, farPlane }, viewsMask };
-        pipelineData->_punctualLightsFlags[i] |= 1; //TODO check on shadow cast
+        pipelineData->_punctualLightsFlags[i] = light.isCastShadows();
     }
 
     auto renderJob = [this](renderer::Device* device, renderer::CmdListRender* cmdList, const SceneData& scene, const scene::FrameData& frame) -> void
@@ -176,43 +176,49 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                 scene::LightNodeEntry& itemLight = *static_cast<scene::LightNodeEntry*>(scene.m_renderLists[toEnumType(scene::ScenePass::DirectionLight)][0]);
                 const scene::DirectionalLight& dirLight = *static_cast<const scene::DirectionalLight*>(itemLight.light);
 
-                cmdList->beginRenderTarget(*m_cascadeRenderTarget);
-                cmdList->setViewport({ 0.f, 0.f, (f32)pipelineData->_shadowSize._width, (f32)pipelineData->_shadowSize._height });
-                cmdList->setScissor({ 0.f, 0.f, (f32)pipelineData->_shadowSize._width, (f32)pipelineData->_shadowSize._height });
-                cmdList->setPipelineState(*m_cascadeShadowPipeline);
-
-                for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Shadowmap)])
+                if (dirLight.isCastShadows())
                 {
-                    const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
-                    //TODO skip if long range more than distance to camera
+                    cmdList->beginRenderTarget(*m_cascadeRenderTarget);
+                    cmdList->setViewport({ 0.f, 0.f, (f32)pipelineData->_shadowSize._width, (f32)pipelineData->_shadowSize._height });
+                    cmdList->setScissor({ 0.f, 0.f, (f32)pipelineData->_shadowSize._width, (f32)pipelineData->_shadowSize._height });
+                    cmdList->setPipelineState(*m_cascadeShadowPipeline);
 
-                    struct ShadowBuffer
+                    for (auto& entry : scene.m_renderLists[toEnumType(scene::ScenePass::Shadowmap)])
                     {
-                        math::Matrix4D lightSpaceMatrix[k_maxShadowmapCascadeCount];
-                        math::Matrix4D modelMatrix;
-                        f32            bias;
-                        f32           _pas[3];
-                    } shadowViewBuffer;
+                        const scene::DrawNodeEntry& itemMesh = *static_cast<scene::DrawNodeEntry*>(entry);
 
-                    ASSERT(scene.m_settings._shadowsParams._cascadeCount <= k_maxShadowmapCascadeCount, "size is out range");
-                    memcpy(shadowViewBuffer.lightSpaceMatrix, pipelineData->_directionLightSpaceMatrix.data(), sizeof(math::Matrix4D)* scene.m_settings._shadowsParams._cascadeCount);
-                    shadowViewBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
-                    shadowViewBuffer.bias = 0.0f;
-
-                    cmdList->bindDescriptorSet(m_cascadeShadowPipeline->getShaderProgram(), 0,
+                        struct ShadowBuffer
                         {
-                            renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowViewBuffer, 0, sizeof(shadowViewBuffer) }, m_cascadeShadowParameters.cb_DirectionShadowBuffer)
-                        });
+                            math::Matrix4D lightSpaceMatrix[k_maxShadowmapCascadeCount];
+                            math::Matrix4D modelMatrix;
+                            f32            bias;
+                            f32           _pas[3];
+                        } shadowViewBuffer;
 
-                    DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_cascadeShadowPipeline->getName()), color::rgbaf::LTGREY);
+                        ASSERT(scene.m_settings._shadowsParams._cascadeCount <= k_maxShadowmapCascadeCount, "size is out range");
+                        memcpy(shadowViewBuffer.lightSpaceMatrix, pipelineData->_directionLightSpaceMatrix.data(), sizeof(math::Matrix4D) * scene.m_settings._shadowsParams._cascadeCount);
+                        shadowViewBuffer.modelMatrix = itemMesh.object->getTransform().getMatrix();
+                        shadowViewBuffer.bias = 0.0f;
 
-                    const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
-                    ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(scene::VertexFormatStandard), "must be same");
-                    renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), sizeof(scene::VertexFormatStandard), 0);
-                    cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                        cmdList->bindDescriptorSet(m_cascadeShadowPipeline->getShaderProgram(), 0,
+                            {
+                                renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowViewBuffer, 0, sizeof(shadowViewBuffer) }, m_cascadeShadowParameters.cb_DirectionShadowBuffer)
+                            });
+
+                        DEBUG_MARKER_SCOPE(cmdList, std::format("Object [{}], pipeline [{}]", itemMesh.object->m_name, m_cascadeShadowPipeline->getName()), color::rgbaf::LTGREY);
+
+                        const scene::Mesh& mesh = *static_cast<scene::Mesh*>(itemMesh.geometry);
+                        ASSERT(mesh.getVertexAttribDesc()._inputBindings[0]._stride == sizeof(scene::VertexFormatStandard), "must be same");
+                        renderer::GeometryBufferDesc desc(mesh.getIndexBuffer(), 0, mesh.getVertexBuffer(0), sizeof(scene::VertexFormatStandard), 0);
+                        cmdList->drawIndexed(desc, 0, mesh.getIndexBuffer()->getIndicesCount(), 0, 0, 1);
+                    }
+
+                    cmdList->endRenderTarget();
                 }
-
-                cmdList->endRenderTarget();
+                else
+                {
+                    cmdList->clear(m_cascadeTextureArray, 0.f, 0u);
+                }
             }
 
             if (!scene.m_renderLists[toEnumType(scene::ScenePass::PunctualLights)].empty())
@@ -389,7 +395,6 @@ void RenderPipelineShadowStage::createRenderTarget(renderer::Device* device, Sce
     }
 
     {
-        //TODO use array
         ASSERT(m_punctualShadowTextureArray == nullptr, "must be nullptr");
         m_punctualShadowTextureArray = V3D_NEW(renderer::Texture2D, memory::MemoryLabel::MemoryGame)(device, renderer::TextureUsage::TextureUsage_Attachment | renderer::TextureUsage::TextureUsage_Sampled,
             renderer::Format::Format_D32_SFloat, scene.m_settings._shadowsParams._size, 6 * k_maxPunctualShadowmapCount, 1, "view_shadow");

@@ -165,9 +165,6 @@ bool EditorPropertyScreen::handleGameEvent(event::GameEventHandler* handler, con
         m_selectedNode = selectionEvent->_node;
         m_loaded = false;
     }
-    else if (event->_eventType == event::GameEvent::GameEventType::TransformObject)
-    {
-    }
 
     return false;
 }
@@ -424,12 +421,32 @@ void EditorPropertyScreen::buildGeometryProp()
     }
 
     scene::Mesh* mesh = m_selectedNode->getComponentByType<scene::Mesh>();
+    ASSERT(mesh, "must be valid");
 
     window
         .addWidget(ui::WidgetLayout()
             .setFontSize(ui::WidgetLayout::MediumFont)
             .addWidget(ui::WidgetTreeNode("Geometry", flags)
                 .addWidget(ui::WidgetText("Name: " + std::string(mesh->getName())))
+                .addWidget(ui::WidgetCheckBox("Cast shadow", mesh->isCastShadow())
+                    .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                        {
+                            if (m_selectedNode)
+                            {
+                                scene::Mesh* mesh = m_selectedNode->getComponentByType<scene::Mesh>();
+                                mesh->setCastShadow(val);
+                                m_gameEventRecevier->sendEvent(new EditorUpdateNodeGraphEvent(m_selectedNode));
+                            }
+                        })
+                )
+                .addWidget(ui::WidgetCheckBox("Gravity", false)
+                    .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                        {
+                            //TODO
+                            m_gameEventRecevier->sendEvent(new EditorUpdateNodeGraphEvent(m_selectedNode));
+                        })
+                )
+                .addWidget(ui::WidgetText("LODs: <lods>"))
                 .addWidget(ui::WidgetText("Index Buffer: " + std::to_string(mesh->getIndexBuffer()->getIndicesCount()) + " indices"))
                 .addWidget(ui::WidgetText("Vertex Buffer: " + std::to_string(mesh->getVertexBuffer(0)->getVerticesCount()) + " vertices"))
             )
@@ -495,6 +512,88 @@ void EditorPropertyScreen::buildLightProp()
             .setFontSize(ui::WidgetLayout::MediumFont)
             .addWidget(ui::WidgetTreeNode("Light", flags)
                 .addWidget(ui::WidgetText("Name: " + std::string(light->getName())))
+                .addWidget(ui::WidgetCheckBox("Cast shadows", light->isCastShadows())
+                    .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                        {
+                            if (m_selectedNode)
+                            {
+                                scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+                                light->setCastShadows(val);
+                                m_gameEventRecevier->sendEvent(new EditorUpdateNodeGraphEvent(m_selectedNode));
+                            }
+                        })
+                )
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .setVisible(isPoint)
+                    .setFontSize(ui::WidgetLayout::SmallFont)
+                    .addWidget(ui::WidgetText("Shadow Mask"))
+                    .addWidget(ui::WidgetCheckBox("+X", light->getShadowMask() & 0b00000001)
+                        .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+                                    u8 mask = light->getShadowMask();
+                                    mask = (mask & ~(1 << 0b00000001)) | (val << 0b00000001);
+                                    light->setShadowMask(mask);
+                                }
+                            }))
+                    .addWidget(ui::WidgetCheckBox("-X", light->getShadowMask() & 0b00000010)
+                        .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+                                    u8 mask = light->getShadowMask();
+                                    mask = (mask & ~(1 << 0b00000010)) | (val << 0b00000010);
+                                    light->setShadowMask(mask);
+                                }
+                            }))
+                    .addWidget(ui::WidgetCheckBox("+Y", light->getShadowMask() & 0b00000100)
+                        .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+                                    u8 mask = light->getShadowMask();
+                                    mask = (mask & ~(1 << 0b00000100)) | (val << 0b00000100);
+                                    light->setShadowMask(mask);
+                                }
+                            }))
+                    .addWidget(ui::WidgetCheckBox("-Y", light->getShadowMask() & 0b00001000)
+                        .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+                                    u8 mask = light->getShadowMask();
+                                    mask = (mask & ~(1 << 0b00001000)) | (val << 0b00001000);
+                                    light->setShadowMask(mask);
+                                }
+                            }))
+                    .addWidget(ui::WidgetCheckBox("+Z", light->getShadowMask() & 0b00010000)
+                        .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+                                    u8 mask = light->getShadowMask();
+                                    mask = (mask & ~(1 << 0b00010000)) | (val << 0b00010000);
+                                    light->setShadowMask(mask);
+                                }
+                            }))
+                    .addWidget(ui::WidgetCheckBox("-Z", light->getShadowMask() & 0b00100000)
+                        .setOnChangedValueEvent([this](ui::Widget* w, bool val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
+                                    u8 mask = light->getShadowMask();
+                                    mask = (mask & ~(1 << 0b00100000)) | (val << 0b00100000);
+                                    light->setShadowMask(mask);
+                                }
+                            }))
+                )
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Intensity"))
                     .addWidget(ui::WidgetInputDragFloat(0.f)

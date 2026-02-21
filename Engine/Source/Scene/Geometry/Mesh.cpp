@@ -16,7 +16,7 @@ Mesh::Mesh(renderer::Device* device, MeshType type) noexcept
     , m_topology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList)
 
     , m_indexBuffer(nullptr)
-    , m_castShadows(true)
+    , m_castShadow(true)
 {
     LOG_DEBUG("Mesh::Mesh constructor %llx", this);
 }
@@ -27,7 +27,7 @@ Mesh::Mesh(renderer::Device* device, const MeshHeader& header) noexcept
     , m_topology(renderer::PrimitiveTopology::PrimitiveTopology_TriangleList)
 
     , m_indexBuffer(nullptr)
-    , m_castShadows(true)
+    , m_castShadow(true)
 {
     LOG_DEBUG("Mesh::Mesh constructor %llx", this);
 }

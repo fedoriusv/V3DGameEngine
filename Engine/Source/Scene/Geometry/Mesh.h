@@ -60,8 +60,8 @@ namespace scene
 
         const std::string_view getName() const;
 
-        void setShadowsCast(bool value);
-        bool isShadowsCasted() const;
+        void setCastShadow(bool value);
+        bool isCastShadow() const;
 
     protected:
 
@@ -78,7 +78,7 @@ namespace scene
         renderer::IndexBuffer*               m_indexBuffer;
         std::vector<renderer::VertexBuffer*> m_vertexBuffer;
         math::AABB                           m_boundingBox;
-        bool                                 m_castShadows;
+        bool                                 m_castShadow;
 
         template<class T>
         friend void memory::internal_delete(T* ptr, v3d::memory::MemoryLabel label, const v3d::c8* file, v3d::u32 line);
@@ -111,14 +111,14 @@ namespace scene
         return m_header.getName();
     }
 
-    inline bool Mesh::isShadowsCasted() const
+    inline bool Mesh::isCastShadow() const
     {
-        return m_castShadows;
+        return m_castShadow;
     }
 
-    inline void Mesh::setShadowsCast(bool value)
+    inline void Mesh::setCastShadow(bool value)
     {
-        m_castShadows = value;
+        m_castShadow = value;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
