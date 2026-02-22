@@ -178,6 +178,24 @@ float2 _cubemap_face_UV(float3 Dir, uint Face)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+float3 _bc5_unorm(in float2 RG)
+{
+    float2 xy = RG * 2.0 - 1.0;
+    float z = sqrt(saturate(1.0 - dot(xy, xy)));
+
+    return float3(xy, z);
+}
+
+float3 _bc5_snorm(in float2 RG)
+{
+    float2 xy = RG;
+    float z = sqrt(saturate(1.0 - dot(xy, xy)));
+
+    return float3(xy, z);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
 // Gaussian3x3
 static const int g_Gaussian3x3_KernelSize = 9;
 static const float2 g_Gaussian3x3_Kernel[g_Gaussian3x3_KernelSize] =

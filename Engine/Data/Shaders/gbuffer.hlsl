@@ -72,8 +72,7 @@ PS_GBUFFER_STRUCT gbuffer_standard_ps(PS_GBUFFER_STANDARD_INPUT Input)
     float metalness = t_TextureMetalness.Sample(s_SamplerState, uv).r;
 #else
     float3 albedo = srgb_linear(t_TextureAlbedo.Sample(s_SamplerState, uv).rgb);
-    float3 normal = t_TextureNormal.Sample(s_SamplerState, uv).rgb * 2.0 - 1.0;
-    normal *= -1.0;
+    float3 normal = _bc5_unorm(t_TextureNormal.Sample(s_SamplerState, uv).rg);
     float3 materials = t_TextureMaterial.Sample(s_SamplerState, uv).rgb;
     float metalness = materials.b;
     float roughness = materials.g;
@@ -94,7 +93,7 @@ PS_GBUFFER_STRUCT gbuffer_masked_ps(PS_GBUFFER_STANDARD_INPUT Input)
 #else
     float4 baseColor = t_TextureAlbedo.Sample(s_SamplerState, Input.UV);
     float3 albedo = srgb_linear(baseColor.rgb);
-    float3 normal = t_TextureNormal.Sample(s_SamplerState, Input.UV).rgb * 2.0 - 1.0;
+    float3 normal = _bc5_unorm(t_TextureNormal.Sample(s_SamplerState, Input.UV).rg);
     float3 materials = t_TextureMaterial.Sample(s_SamplerState, Input.UV).rgb;
     float metalness = materials.b;
     float roughness = materials.g;
