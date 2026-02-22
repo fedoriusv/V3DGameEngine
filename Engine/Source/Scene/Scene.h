@@ -171,6 +171,8 @@ namespace scene
         math::Dimension2D                   m_viewportSize;
         scene::CameraController*            m_camera;
 
+        bool                                m_editorMode;
+
     protected:
 
         mutable task::TaskScheduler         m_taskWorker;
@@ -200,15 +202,22 @@ namespace scene
 
         bool isEditorMode() const;
 
+    public:
+
+        DirectionalLight* addDirectionLightComponent(const math::Vector3D& direction, const color::ColorRGBAF& color, const std::string& name, SceneNode* parent = nullptr);
+        PointLight* addPointLightComponent(const math::Vector3D& position, f32 radius, const color::ColorRGBAF& color, const std::string& name, SceneNode* parent = nullptr);
+        SpotLight* addSpotLightComponent(const math::Vector3D& position, f32 range, f32 apexAngle, const color::ColorRGBAF& color, const std::string& name, SceneNode* parent = nullptr);
+
     protected:
 
-        void create(renderer::Device* device);
-        void destroy(renderer::Device* device);
+        void setupRender(renderer::Device* device);
+        void create();
+        void destroy();
 
         void updateScene(f32 dt);
-        void preRender(renderer::Device* device, f32 dt);
-        void postRender(renderer::Device* device, f32 dt);
-        void submitRender(renderer::Device* device);
+        void preRender(f32 dt);
+        void postRender(f32 dt);
+        void submitRender();
 
         void addNode(SceneNode* node);
         /*void removeNode(SceneNode* node);
@@ -218,13 +227,12 @@ namespace scene
         void registerTechnique(RenderTechnique* technique);
         void unregisterTechnique(RenderTechnique* technique);
 
-        SceneData m_sceneData;
+        renderer::Device*                    m_device;
+        SceneData                            m_sceneData;
 
     private:
 
         std::vector<scene::RenderTechnique*> m_renderTechniques;
-
-        bool                                 m_editorMode;
         bool                                 m_nodeGraphChanged;
     };
 

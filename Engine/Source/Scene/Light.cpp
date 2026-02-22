@@ -202,32 +202,5 @@ bool SpotLight::save(stream::Stream* stream, u32 offset) const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DirectionalLight* LightHelper::createDirectionLight(renderer::Device* device, const std::string& name)
-{
-    DirectionalLight* light = V3D_NEW(DirectionalLight, memory::MemoryLabel::MemoryObject)(device);
-    light->m_header.setName(name);
-
-    return light;
-}
-
-PointLight* LightHelper::createPointLight(renderer::Device* device, f32 radius, const std::string& name)
-{
-    PointLight* light = V3D_NEW(PointLight, memory::MemoryLabel::MemoryObject)(device);
-    light->m_header.setName(name);
-    light->setRadius(radius);
-
-    return light;
-}
-
-SpotLight* LightHelper::createSpotLight(renderer::Device* device, f32 range, f32 apexAngle, const std::string& name)
-{
-    SpotLight* light = V3D_NEW(SpotLight, memory::MemoryLabel::MemoryObject)(device);
-    light->m_header.setName(name);
-    light->setRange(range);
-    light->setOuterAngle(apexAngle);
-
-    return light;
-}
-
 } //namespace scene
 } //namespace v3d

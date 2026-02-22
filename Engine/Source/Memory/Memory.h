@@ -29,10 +29,8 @@ namespace memory
         MemorySystem,
         MemoryObject,
         MemoryDynamic,
-
         MemoryGame,
         MemoryRenderCore,
-        MemoryCommandList,
         MemoryUI,
 
         MemoryCount

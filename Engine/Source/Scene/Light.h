@@ -20,7 +20,7 @@ namespace scene
 
     class Mesh;
     class Model;
-    class LightHelper;
+    class SceneHandler;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -176,7 +176,7 @@ namespace scene
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
-        friend LightHelper;
+        friend SceneHandler;
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -201,7 +201,7 @@ namespace scene
         bool load(const stream::Stream* stream, u32 offset = 0) override;
         bool save(stream::Stream* stream, u32 offset = 0) const override;
 
-        friend LightHelper;
+        friend SceneHandler;
     };
 
     inline void PointLight::setRadius(f32 radius)
@@ -244,7 +244,7 @@ namespace scene
         f32 m_outerAngle;
         f32 m_innerAngle;
 
-        friend LightHelper;
+        friend SceneHandler;
     };
 
     inline void SpotLight::setRange(f32 range)
@@ -276,17 +276,6 @@ namespace scene
     {
         return m_outerAngle;
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    class LightHelper
-    {
-    public:
-
-        [[nodisard]] static DirectionalLight* createDirectionLight(renderer::Device* device, const std::string& name = "");
-        [[nodisard]] static PointLight* createPointLight(renderer::Device* device, f32 radius, const std::string& name = "");
-        [[nodisard]] static SpotLight* createSpotLight(renderer::Device* device, f32 range, f32 apexAngle, const std::string& name = "");
-    };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

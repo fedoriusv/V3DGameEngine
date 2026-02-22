@@ -41,6 +41,7 @@ void SceneNode::addChild(SceneNode* node)
     node->m_parent = this;
 }
 
+
 NodeEntry::NodeEntry() noexcept
     : object(nullptr)
     , passMask(1 << toEnumType(scene::ScenePass::Custom))

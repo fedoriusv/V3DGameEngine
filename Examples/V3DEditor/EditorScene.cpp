@@ -221,7 +221,7 @@ scene::SceneData& EditorScene::getSceneData()
 
 void EditorScene::createScene(renderer::Device* device, const math::Dimension2D& viewportSize)
 {
-    m_device = device;
+    setupRender(device);
 
     {
         resource::ResourceManager::createInstance();
@@ -269,15 +269,15 @@ void EditorScene::createScene(renderer::Device* device, const math::Dimension2D&
         //editor_loadDebug();
     }
 
-    SceneHandler::create(device);
+    SceneHandler::create();
 }
 
 void EditorScene::destroyScene()
 {
     unregisterTechnique(&m_mainPipeline);
 
-    SceneHandler::destroy(m_device);
-    m_device = nullptr;
+    SceneHandler::destroy();
+    setupRender(nullptr);
 }
 
 void EditorScene::loadScene()
@@ -353,21 +353,21 @@ void EditorScene::preRender(f32 dt)
     m_mainPipeline.getStage("FXAA")->setEnabled(m_sceneData.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::FXAA);
     m_mainPipeline.getStage("TAA")->setEnabled(m_sceneData.m_settings._vewportParams._antiAliasingMode == scene::AntiAliasing::TAA);
 
-    SceneHandler::preRender(m_device, dt);
+    SceneHandler::preRender(dt);
 }
 
 void EditorScene::postRender(f32 dt)
 {
     TRACE_PROFILER_SCOPE("PostRender", color::rgba8::WHITE);
 
-    SceneHandler::postRender(m_device, dt);
+    SceneHandler::postRender(dt);
 }
 
 void EditorScene::submitRender()
 {
     TRACE_PROFILER_SCOPE("SubmitRender", color::rgba8::WHITE);
 
-    SceneHandler::submitRender(m_device);
+    SceneHandler::submitRender();
 }
 
 void EditorScene::transformSelectedObject(const math::Matrix4D& transform)
@@ -504,114 +504,6 @@ void EditorScene::loadResources()
     m_LUTs.emplace_back("Greyscale LUT", greyscale_lut);
 }
 
-scene::DirectionalLight* EditorScene::addSunLight(const math::Vector3D& direction, const color::ColorRGBAF& color, const std::string& name)
-{
-    scene::SceneNode* directionallightNode = new scene::SceneNode();
-    directionallightNode->m_name = "DirectionLight";
-    directionallightNode->setPosition(scene::TransformMode::Local, { 0.0f, 3.0f, 0.0f });
-    directionallightNode->setRotation(scene::TransformMode::Local, direction);
-    addNode(directionallightNode);
-
-    scene::DirectionalLight* directionalLight = scene::LightHelper::createDirectionLight(m_device, "Sun");
-    directionalLight->setColor(color);
-    directionalLight->setIntensity(5.f);
-    directionalLight->setTemperature(4000.0);
-    directionallightNode->addComponent(directionalLight);
-
-    if (isEditorMode())
-    {
-        ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
-        ASSERT(uv_h.isValid(), "must be valid");
-        renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
-
-        scene::Billboard* icon = new scene::Billboard(m_device);
-        directionallightNode->addComponent(icon);
-
-        scene::Material* material = new scene::Material(m_device);
-        material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
-        material->setProperty("BaseColor", uvGrid);
-        directionallightNode->addComponent(material);
-
-        {
-            scene::SceneNode* debugNode = new scene::SceneNode();
-            debugNode->m_name = "LightDebug";
-            debugNode->setRotation(scene::TransformMode::Local, { 90.f, 0.0f, 0.0f });
-            debugNode->setPosition(scene::TransformMode::Local, { 0.0f, 0.0f, 0.25f });
-            directionallightNode->addChild(debugNode);
-
-            scene::Mesh* cylinder = scene::MeshHelper::createCylinder(m_device, 0.01f, 0.5f, 16, "lightDirection");
-            cylinder->setCastShadow(false);
-            debugNode->addComponent(cylinder);
-
-            scene::Material* material = new scene::Material(m_device);
-            material->setProperty("materialID", toEnumType(scene::ScenePass::Debug));
-            material->setProperty("pipelineID", 0U);
-            material->setProperty("DiffuseColor", color);
-            debugNode->addComponent(material);
-        }
-    }
-
-    return directionalLight;
-}
-
-scene::PointLight* EditorScene::addPointLightComponent(const math::Vector3D& position, f32 radius, const color::ColorRGBAF& color, const std::string& name, scene::SceneNode* parent)
-{
-    scene::SceneNode* pointLightNode = new scene::SceneNode();
-    pointLightNode->m_name = name;
-    pointLightNode->setPosition(scene::TransformMode::Local, position);
-    pointLightNode->setScale(scene::TransformMode::Local, { radius, radius, radius });
-
-    if (parent)
-    {
-        parent->addChild(pointLightNode);
-    }
-    else
-    {
-        addNode(pointLightNode);
-    }
-
-    scene::PointLight* pointLight = scene::LightHelper::createPointLight(m_device, 1.f, name);
-    pointLight->setColor(color);
-    pointLight->setIntensity(30.f);
-    pointLight->setTemperature(4000.0);
-    pointLight->setAttenuation(1.0, 0.09, 0.032);
-    pointLight->setRadius(radius);
-    pointLightNode->addComponent(pointLight);
-
-    if (isEditorMode())
-    {
-        ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
-        ASSERT(uv_h.isValid(), "must be valid");
-        renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
-
-        scene::Billboard* icon = new scene::Billboard(m_device);
-        pointLightNode->addComponent(icon);
-
-        scene::Material* material = new scene::Material(m_device);
-        material->setProperty("Color", math::float4{ 1.0f, 1.0f, 1.0f, 1.0f });
-        material->setProperty("BaseColor", uvGrid);
-        pointLightNode->addComponent(material);
-
-        {
-            scene::SceneNode* debugNode = new scene::SceneNode();
-            debugNode->m_name = "LightDebug";
-            pointLightNode->addChild(debugNode);
-
-            scene::Mesh* sphere = scene::MeshHelper::createSphere(m_device, 1.f, 8, 8, "pointLight");
-            sphere->setCastShadow(false);
-            debugNode->addComponent(sphere);
-
-            scene::Material* material = new scene::Material(m_device);
-            material->setProperty("materialID", toEnumType(scene::ScenePass::Debug));
-            material->setProperty("pipelineID", 1U);
-            material->setProperty("DiffuseColor", color);
-            debugNode->addComponent(material);
-        }
-    }
-
-    return pointLight;
-}
-
 void EditorScene::test_loadScene(const std::string& name)
 {
     //resource::ResourceManager::getInstance()->addPath("../../../../examples/v3deditor/data/SunTemple/");
@@ -734,8 +626,6 @@ void EditorScene::test_loadTestScene()
     m_sceneData.m_settings._tonemapParams._ev100 = 0.5f;
     m_sceneData.m_settings._tonemapParams._gamma = 2.2f;
 
-    test_loadLights();
-
     auto rendomVector = []() ->math::float3
         {
             return { math::random<f32>(0.0, 1.0), math::random<f32>(0.0, 1.0), math::random<f32>(0.0, 1.0) };
@@ -764,6 +654,13 @@ void EditorScene::test_loadTestScene()
     ObjectHandle default_black_h = m_sceneData.m_globalResources.get("default_black");
     ASSERT(default_black_h.isValid(), "must be valid");
     renderer::Texture2D* default_black = objectFromHandle<renderer::Texture2D>(default_black_h);
+
+    {
+        addDirectionLightComponent({ 30.f, 90.f, 0.f }, { 1.f, 1.f, 1.f, 1.f }, "SunLight");
+        addPointLightComponent({ 0.1f, 0.5f, -1.0f }, 5.0f, { 1.f, 1.f, 1.f, 1.f }, "PointLight0");
+        addPointLightComponent({ 1.0f, 0.5f, 0.5f }, 5.0f, { 1.f, 0.f, 0.f, 1.f }, "PointLight1");
+        addSpotLightComponent({ -5.f, 1.f, 1.f }, 8.f, 30.f, { 1.f, 1.f, 1.f, 1.f }, "SpotLight0");
+    }
 
     {
         scene::Model::LoadPolicy policy;
@@ -850,67 +747,6 @@ void EditorScene::test_loadTestScene()
         material->setProperty("BaseColor", loadTexture2D("Skybox/DaySkyHDRI026A_4K-HDR.dds", false));
         material->setProperty("pipelineID", 0U);
         skyboxNode->addComponent(material);
-    }
-}
-
-void EditorScene::test_loadLights()
-{
-    ObjectHandle linear_sampler_h = m_sceneData.m_globalResources.get("linear_sampler_repeat");
-    ASSERT(linear_sampler_h.isValid(), "must be valid");
-    renderer::SamplerState* sampler = objectFromHandle<renderer::SamplerState>(linear_sampler_h);
-
-    ObjectHandle default_black_h = m_sceneData.m_globalResources.get("default_black");
-    ASSERT(default_black_h.isValid(), "must be valid");
-    renderer::Texture2D* defaultBlack = objectFromHandle<renderer::Texture2D>(default_black_h);
-
-    ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
-    ASSERT(uv_h.isValid(), "must be valid");
-    renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
-
-    addSunLight({ 30.f, 90.0f, 0.0f }, { 1.f, 1.f, 1.f, 1.f }, "SunLight");
-    addPointLightComponent({ 1.0f, 1.0f, -1.0f }, 5.0f, { 1.f, 1.f, 1.f, 1.f }, "PointLight0");
-    addPointLightComponent({ -1.0f, 0.3f, 1.0f }, 1.0f, { 1.f, 0.f, 0.f, 1.f }, "PointLight1");
-
-    {
-        scene::SceneNode* spotLightNode = new scene::SceneNode();
-        spotLightNode->m_name = "Spotlight0";
-        spotLightNode->setPosition(scene::TransformMode::Local, { -2.f, 1.f, 0.f });
-        spotLightNode->setRotation(scene::TransformMode::Local, { 90.f, 0.f, 0.f });
-        addNode(spotLightNode);
-
-        scene::SpotLight* spotLight = scene::LightHelper::createSpotLight(m_device, 1.0f, 30.0f, "SpotLight0");
-        spotLight->setColor({ 1.f, 1.f, 1.f, 1.f });
-        spotLight->setIntensity(30.f);
-        spotLight->setTemperature(4000.0);
-        spotLight->setAttenuation(1.0, 0.09, 0.032);
-        spotLightNode->addComponent(spotLight);
-
-        if (isEditorMode())
-        {
-            scene::Billboard* icon = new scene::Billboard(m_device);
-            spotLightNode->addComponent(icon);
-
-            scene::Material* material = new scene::Material(m_device);
-            material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
-            material->setProperty("BaseColor", uvGrid);
-            spotLightNode->addComponent(material);
-
-            {
-                scene::SceneNode* debugNode = new scene::SceneNode();
-                debugNode->m_name = "SpotlightDebug";
-                spotLightNode->addChild(debugNode);
-
-                scene::Mesh* sphere = scene::MeshHelper::createCone(m_device, 1.f, 1.f, 16, "spotLight");
-                sphere->setCastShadow(false);
-                debugNode->addComponent(sphere);
-
-                scene::Material* material = new scene::Material(m_device);
-                material->setProperty("materialID", toEnumType(scene::ScenePass::Debug));
-                material->setProperty("pipelineID", 1U);
-                material->setProperty("DiffuseColor", math::float4{ 1.0, 1.0, 1.0, 1.0 });
-                debugNode->addComponent(material);
-            }
-        }
     }
 }
 

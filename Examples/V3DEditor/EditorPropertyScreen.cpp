@@ -729,7 +729,6 @@ void EditorPropertyScreen::buildLightProp()
                                     if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
                                     {
                                         light->setOuterAngle(val);
-                                        f32 test = tanf(val * math::k_degToRad);
                                         f32 scale = light->getRange() * tanf(val * math::k_degToRad);
                                         m_selectedNode->setScale(scene::TransformMode::Local, { scale, scale, light->getRange() });
                                         m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));

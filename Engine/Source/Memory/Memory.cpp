@@ -18,7 +18,7 @@ std::string MemoryLabelName(MemoryLabel label)
         STR(MemoryDynamic);
         STR(MemoryGame);
         STR(MemoryRenderCore);
-        STR(MemoryCommandList);
+        STR(MemoryUI);
 #undef STR
     default:
         return "UNKNOWN";

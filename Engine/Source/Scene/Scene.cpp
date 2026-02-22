@@ -156,9 +156,9 @@ void SceneData::finalize()
 
 
 SceneHandler::SceneHandler(bool isEditor) noexcept
-    : m_editorMode(isEditor)
-    , m_nodeGraphChanged(true)
+    : m_nodeGraphChanged(true)
 {
+    m_sceneData.m_editorMode = isEditor;
 }
 
 SceneHandler::~SceneHandler()
@@ -167,32 +167,37 @@ SceneHandler::~SceneHandler()
 
 bool SceneHandler::isEditorMode() const
 {
-    return m_editorMode;
+    return m_sceneData.m_editorMode;
 }
 
-void SceneHandler::create(renderer::Device* device)
+void SceneHandler::setupRender(renderer::Device* device)
+{
+    m_device = device;
+}
+
+void SceneHandler::create()
 {
     for (auto& frame : m_sceneData.m_frameState)
     {
-        frame.m_allocator = new thread::ThreadSafeAllocator(4 * 1024 * 1024, m_sceneData.m_taskWorker.getNumberOfCoreThreads());
+        frame.m_allocator = V3D_NEW(thread::ThreadSafeAllocator, memory::MemoryLabel::MemoryObject)(4 * 1024 * 1024, m_sceneData.m_taskWorker.getNumberOfCoreThreads());
     }
 
     for (auto& technique : m_renderTechniques)
     {
-        technique->create(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+        technique->create(m_device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
     }
 }
 
-void SceneHandler::destroy(renderer::Device* device)
+void SceneHandler::destroy()
 {
     for (auto& technique : m_renderTechniques)
     {
-        technique->destroy(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+        technique->destroy(m_device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
     }
 
     for (auto& frame : m_sceneData.m_frameState)
     {
-        delete frame.m_allocator;
+        V3D_DELETE(frame.m_allocator, memory::MemoryLabel::MemoryObject);
         frame.m_allocator = nullptr;
     }
 }
@@ -289,29 +294,29 @@ void SceneHandler::updateScene(f32 dt)
     }
 }
 
-void SceneHandler::preRender(renderer::Device* device, f32 dt)
+void SceneHandler::preRender(f32 dt)
 {
     for (auto& technique : m_renderTechniques)
     {
-        technique->prepare(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+        technique->prepare(m_device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
     }
 }
 
-void SceneHandler::postRender(renderer::Device* device, f32 dt)
+void SceneHandler::postRender(f32 dt)
 {
     for (auto& technique : m_renderTechniques)
     {
-        technique->execute(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+        technique->execute(m_device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
     }
 }
 
-void SceneHandler::submitRender(renderer::Device* device)
+void SceneHandler::submitRender()
 {
     m_sceneData.m_taskWorker.mainThreadLoop();
 
     for (auto& technique : m_renderTechniques)
     {
-        technique->submit(device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
+        technique->submit(m_device, m_sceneData, m_sceneData.m_frameState[m_sceneData.m_stateIndex]);
     }
 
     m_sceneData.m_stateIndex = (m_sceneData.m_stateIndex + 1) % m_sceneData.m_frameState.size();
@@ -336,6 +341,186 @@ void SceneHandler::registerTechnique(scene::RenderTechnique* technique)
 void SceneHandler::unregisterTechnique(scene::RenderTechnique* technique)
 {
     //m_renderTechniques.erase(std::destroy(m_renderTechniques.begin(), m_renderTechniques.end(), technique));
+}
+
+DirectionalLight* SceneHandler::addDirectionLightComponent(const math::Vector3D& direction, const color::ColorRGBAF& color, const std::string& name, SceneNode* parent)
+{
+    SceneNode* directionallightNode = V3D_NEW(SceneNode, memory::MemoryLabel::MemoryGame);
+    directionallightNode->m_name = "DirectionLight";
+    directionallightNode->setPosition(TransformMode::Local, { 0.0f, 3.0f, 0.0f });
+    directionallightNode->setRotation(TransformMode::Local, direction);
+    if (parent)
+    {
+        parent->addChild(directionallightNode);
+    }
+    else
+    {
+        addNode(directionallightNode);
+    }
+
+    DirectionalLight* directionalLight = V3D_NEW(DirectionalLight, memory::MemoryLabel::MemoryObject)(m_device);
+    directionalLight->m_header.setName(name);
+    directionalLight->setColor(color);
+    directionalLight->setIntensity(5.f);
+    directionalLight->setTemperature(4000.0f);
+    directionallightNode->addComponent(directionalLight);
+
+    if (isEditorMode())
+    {
+        ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+        ASSERT(uv_h.isValid(), "must be valid");
+        renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+        Billboard* icon = V3D_NEW(Billboard, memory::MemoryLabel::MemoryObject)(m_device);
+        directionallightNode->addComponent(icon);
+
+        Material* material = V3D_NEW(Material, memory::MemoryLabel::MemoryObject)(m_device);
+        material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+        material->setProperty("BaseColor", uvGrid);
+        directionallightNode->addComponent(material);
+
+        {
+            SceneNode* debugNode = V3D_NEW(SceneNode, memory::MemoryLabel::MemoryGame);
+            debugNode->m_name = "LightDebug";
+            debugNode->setRotation(TransformMode::Local, { 90.f, 0.0f, 0.0f });
+            debugNode->setPosition(TransformMode::Local, { 0.0f, 0.0f, 0.25f });
+            directionallightNode->addChild(debugNode);
+
+            Mesh* cylinder = MeshHelper::createCylinder(m_device, 0.01f, 0.5f, 16, "lightDirection");
+            cylinder->setCastShadow(false);
+            debugNode->addComponent(cylinder);
+
+            Material* material = V3D_NEW(Material, memory::MemoryLabel::MemoryObject)(m_device);
+            material->setProperty("materialID", toEnumType(ScenePass::Debug));
+            material->setProperty("pipelineID", 0U);
+            material->setProperty("DiffuseColor", color);
+            debugNode->addComponent(material);
+        }
+    }
+
+    return directionalLight;
+}
+
+PointLight* SceneHandler::addPointLightComponent(const math::Vector3D& position, f32 radius, const color::ColorRGBAF& color, const std::string& name, scene::SceneNode* parent)
+{
+    scene::SceneNode* pointLightNode = V3D_NEW(SceneNode, memory::MemoryLabel::MemoryGame);
+    pointLightNode->m_name = name;
+    pointLightNode->setPosition(scene::TransformMode::Local, position);
+    pointLightNode->setScale(scene::TransformMode::Local, { radius, radius, radius });
+
+    if (parent)
+    {
+        parent->addChild(pointLightNode);
+    }
+    else
+    {
+        addNode(pointLightNode);
+    }
+
+    PointLight* pointLight = V3D_NEW(PointLight, memory::MemoryLabel::MemoryObject)(m_device);
+    pointLight->m_header.setName(name);
+    pointLight->setColor(color);
+    pointLight->setIntensity(30.f);
+    pointLight->setTemperature(4000.0f);
+    pointLight->setAttenuation(1.0, 0.09, 0.032);
+    pointLight->setRadius(radius);
+    pointLightNode->addComponent(pointLight);
+
+    if (isEditorMode())
+    {
+        ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+        ASSERT(uv_h.isValid(), "must be valid");
+        renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+        scene::Billboard* icon = V3D_NEW(Billboard, memory::MemoryLabel::MemoryObject)(m_device);
+        pointLightNode->addComponent(icon);
+
+        scene::Material* material = V3D_NEW(Material, memory::MemoryLabel::MemoryObject)(m_device);
+        material->setProperty("Color", math::float4{ 1.0f, 1.0f, 1.0f, 1.0f });
+        material->setProperty("BaseColor", uvGrid);
+        pointLightNode->addComponent(material);
+
+        {
+            SceneNode* debugNode = V3D_NEW(SceneNode, memory::MemoryLabel::MemoryGame);
+            debugNode->m_name = "LightDebug";
+            pointLightNode->addChild(debugNode);
+
+            Mesh* sphere = MeshHelper::createSphere(m_device, 1.f, 8, 8, "pointLight");
+            sphere->setCastShadow(false);
+            debugNode->addComponent(sphere);
+
+            Material* material = V3D_NEW(Material, memory::MemoryLabel::MemoryObject)(m_device);
+            material->setProperty("materialID", toEnumType(ScenePass::Debug));
+            material->setProperty("pipelineID", 1U);
+            material->setProperty("DiffuseColor", color);
+            debugNode->addComponent(material);
+        }
+    }
+
+    return pointLight;
+}
+
+SpotLight* SceneHandler::addSpotLightComponent(const math::Vector3D& position, f32 range, f32 apexAngle, const color::ColorRGBAF& color, const std::string& name, scene::SceneNode* parent)
+{
+    SceneNode* spotLightNode = V3D_NEW(SceneNode, memory::MemoryLabel::MemoryGame);
+    spotLightNode->m_name = name;
+
+    f32 scale = range * tanf(apexAngle * math::k_degToRad);
+    spotLightNode->setScale(TransformMode::Local, { scale, scale, range });
+    spotLightNode->setPosition(TransformMode::Local, position);
+    spotLightNode->setRotation(TransformMode::Local, { 15.f, 0.f, 0.f });
+
+    if (parent)
+    {
+        parent->addChild(spotLightNode);
+    }
+    else
+    {
+        addNode(spotLightNode);
+    }
+
+    SpotLight* spotLight = V3D_NEW(SpotLight, memory::MemoryLabel::MemoryObject)(m_device);
+    spotLight->m_header.setName(name);
+    spotLight->setRange(range);
+    spotLight->setOuterAngle(apexAngle);
+    spotLight->setColor(color);
+    spotLight->setIntensity(30.f);
+    spotLight->setTemperature(4000.0f);
+    spotLight->setAttenuation(1.0, 0.09, 0.032);
+    spotLightNode->addComponent(spotLight);
+
+    if (isEditorMode())
+    {
+        ObjectHandle uv_h = m_sceneData.m_globalResources.get("uv_grid");
+        ASSERT(uv_h.isValid(), "must be valid");
+        renderer::Texture2D* uvGrid = objectFromHandle<renderer::Texture2D>(uv_h);
+
+        Billboard* icon = V3D_NEW(Billboard, memory::MemoryLabel::MemoryObject)(m_device);
+        spotLightNode->addComponent(icon);
+
+        Material* material = V3D_NEW(Material, memory::MemoryLabel::MemoryObject)(m_device);
+        material->setProperty("Color", math::float4{ 1.0, 1.0, 1.0, 1.0 });
+        material->setProperty("BaseColor", uvGrid);
+        spotLightNode->addComponent(material);
+
+        {
+            SceneNode* debugNode = V3D_NEW(SceneNode, memory::MemoryLabel::MemoryGame);
+            debugNode->m_name = "LightDebug";
+            spotLightNode->addChild(debugNode);
+
+            Mesh* sphere = MeshHelper::createCone(m_device, 1.f, 1.f, 16, "spotLight");
+            sphere->setCastShadow(false);
+            debugNode->addComponent(sphere);
+
+            Material* material = V3D_NEW(Material, memory::MemoryLabel::MemoryObject)(m_device);
+            material->setProperty("materialID", toEnumType(ScenePass::Debug));
+            material->setProperty("pipelineID", 1U);
+            material->setProperty("DiffuseColor", color);
+            debugNode->addComponent(material);
+        }
+    }
+
+    return spotLight;
 }
 
 } //namespace scene

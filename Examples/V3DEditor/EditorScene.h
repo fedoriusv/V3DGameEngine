@@ -148,11 +148,6 @@ private:
 
     void loadResources();
 
-    scene::DirectionalLight* addSunLight(const math::Vector3D& direction, const color::ColorRGBAF& color, const std::string& name);
-    scene::PointLight* addPointLightComponent(const math::Vector3D& position, f32 radius, const color::ColorRGBAF& color, const std::string& name, scene::SceneNode* parent = nullptr);
-
-    renderer::Device*               m_device;
-
     scene::ModelHandler*            m_modelHandler;
     ui::WidgetHandler*              m_UIHandler;
 
@@ -176,7 +171,6 @@ private:
 
 
     void editor_loadDebug();
-    void test_loadLights();
     void test_loadScene(const std::string& name);
     void test_loadTestScene();
 
