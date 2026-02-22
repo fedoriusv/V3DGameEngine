@@ -90,7 +90,7 @@ void RenderPipelineLightAccumulationStage::prepare(renderer::Device* device, sce
         createRenderTarget(device, scene);
     }
 
-    if (!m_pipeline)
+    if (!m_pipeline[0])
     {
         createPipelines(device, scene);
     }
@@ -414,20 +414,13 @@ void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* dev
 
 void RenderPipelineLightAccumulationStage::destroyPipelines(renderer::Device* device, scene::SceneData& scene)
 {
+    for (u32 pass = 0; pass < 2; ++pass)
     {
-        ASSERT(m_pipeline[0], "must be valid");
-        const renderer::ShaderProgram* program = m_pipeline[0]->getShaderProgram();
+        ASSERT(m_pipeline[pass], "must be valid");
+        const renderer::ShaderProgram* program = m_pipeline[pass]->getShaderProgram();
         V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
 
-        V3D_DELETE(m_pipeline[0], memory::MemoryLabel::MemoryGame);
-    }
-
-    {
-        ASSERT(m_pipeline[1], "must be valid");
-        const renderer::ShaderProgram* program = m_pipeline[1]->getShaderProgram();
-        V3D_DELETE(program, memory::MemoryLabel::MemoryGame);
-
-        V3D_DELETE(m_pipeline[1], memory::MemoryLabel::MemoryGame);
+        V3D_DELETE(m_pipeline[pass], memory::MemoryLabel::MemoryGame);
     }
 }
 

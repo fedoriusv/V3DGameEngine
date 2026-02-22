@@ -9,7 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-float shadow_projection_fast(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float4 ShadowCoord, in int2 Offset, in uint Slice)
+float shadow_projection_fast(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float3 ShadowCoord, in int2 Offset, in uint Slice)
 {
     if (_inside_uv(ShadowCoord.xyz))
     {
@@ -19,7 +19,7 @@ float shadow_projection_fast(Texture2DArray Shadowmap, SamplerComparisonState Co
     return 0.0;
 }
 
-float shadow_projection(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float4 ShadowCoord, in int2 Offset, in uint Slice)
+float shadow_projection(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float3 ShadowCoord, in int2 Offset, in uint Slice)
 {
     if (_inside_uv(ShadowCoord.xyz))
     {
@@ -35,7 +35,7 @@ float shadow_projection(Texture2DArray Shadowmap, SamplerComparisonState Compare
     return 0.0;
 }
 
-float shadow_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float4 ShadowCoord, in uint Slice)
+float shadow_sample(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float3 ShadowCoord, in uint Slice)
 {
 #if SHADOWMAP_FAST_COMPUTATION
     float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord, int2(0, 0), Slice);
@@ -50,7 +50,7 @@ float shadow_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerComparisonState Com
     return 0.0;
 }
 
-float shadow_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
+float shadow_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float3 ShadowCoord, in uint Slice)
 {
     float shadow = 0.0;
     float2 texelSize = rcp(Resolution);
@@ -63,7 +63,7 @@ float shadow_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerComparisonState Com
 #if SHADOWMAP_FAST_COMPUTATION
         float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
 #else
-        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float3(offset.xy, 0.0), int2(0, 0), Slice);
 #endif
         if (_nonlinear_depth_test(dist, ShadowCoord.z))
         {
@@ -74,7 +74,7 @@ float shadow_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerComparisonState Com
     return saturate(shadow / (float) g_Gaussian3x3_KernelSize);
 }
 
-float shadow_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
+float shadow_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float3 ShadowCoord, in uint Slice)
 {
     float shadow = 0.0;
     float2 texelSize = rcp(Resolution);
@@ -86,7 +86,7 @@ float shadow_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerComparisonState Com
 #if SHADOWMAP_FAST_COMPUTATION
         float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
 #else
-        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float3(offset.xy, 0.0), int2(0, 0), Slice);
 #endif
         if (_nonlinear_depth_test(dist, ShadowCoord.z))
         {
@@ -97,7 +97,7 @@ float shadow_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerComparisonState Com
     return saturate(shadow / (float) g_Gaussian5x5_KernelSize);
 }
 
-float shadow_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float4 ShadowCoord, in uint Slice)
+float shadow_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerComparisonState CompareSampler, in float2 Resolution, in float2 ScaleFactor, in float3 ShadowCoord, in uint Slice)
 {
     float shadow = 0.0;
     float2 texelSize = rcp(Resolution);
@@ -109,7 +109,7 @@ float shadow_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerComparisonState Com
 #if SHADOWMAP_FAST_COMPUTATION
         float dist = shadow_projection_fast(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
 #else
-        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float4(offset.xy, 0.0, 0.0), int2(0, 0), Slice);
+        float dist = shadow_projection(Shadowmap, CompareSampler, Resolution, ShadowCoord + float3(offset.xy, 0.0), int2(0, 0), Slice);
 #endif
         if (_nonlinear_depth_test(dist, ShadowCoord.z))
         {
@@ -121,7 +121,7 @@ float shadow_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerComparisonState Com
 }
 
 
-float shadow_linear_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float Bias)
+float shadow_linear_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float3 ShadowCoord, in uint Slice, in float Bias)
 {
     if (_inside_uv(ShadowCoord.xyz))
     {
@@ -148,7 +148,7 @@ float shadow_linear_sample_PCF_1x1(Texture2DArray Shadowmap, SamplerState Sample
     return 0.0;
 }
 
-float shadow_linear_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
+float shadow_linear_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float3 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
 {
     if (_inside_uv(ShadowCoord.xyz))
     {
@@ -177,7 +177,7 @@ float shadow_linear_sample_PCF_3x3(Texture2DArray Shadowmap, SamplerState Sample
     return 0.0;
 }
 
-float shadow_linear_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
+float shadow_linear_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float3 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
 {
     if (_inside_uv(ShadowCoord.xyz))
     {
@@ -206,7 +206,7 @@ float shadow_linear_sample_PCF_5x5(Texture2DArray Shadowmap, SamplerState Sample
     return 0.0;
 }
 
-float shadow_linear_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float4 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
+float shadow_linear_sample_PCF_9x9(Texture2DArray Shadowmap, SamplerState Sampler, in float2 Resolution, in float2 ClipNearFar, in float3 ShadowCoord, in uint Slice, in float2 ScaleFactor, in float Bias)
 {
     if (_inside_uv(ShadowCoord.xyz))
     {
