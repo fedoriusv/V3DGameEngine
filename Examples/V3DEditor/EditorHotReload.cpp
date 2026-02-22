@@ -69,6 +69,11 @@ void EditorHotReload::trackFiles()
 {
     std::scoped_lock lock(m_mutex);
 
+    if (m_folders.empty())
+    {
+        return;
+    }
+
     for (auto& [folderName, files] : m_folders)
     {
         for (auto& file : files)
