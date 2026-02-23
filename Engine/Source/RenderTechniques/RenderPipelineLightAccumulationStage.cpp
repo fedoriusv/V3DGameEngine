@@ -200,7 +200,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                     math::Vector3D direction;
                     math::float4   color;
                     math::float4   attenuation;
-                    math::float4   property;
+                    math::float4   spotAngles;
                     f32            intensity;
                     f32            temperature;
                     u32            lightType;
@@ -211,6 +211,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                 lightBuffer.direction = itemLight.object->getDirection();
                 lightBuffer.color = light.getColor();
                 lightBuffer.attenuation = light.getAttenuation();
+                lightBuffer.spotAngles = { 1.f, 1.f, 1.f, 1.f };
                 lightBuffer.intensity = light.getIntensity();
                 lightBuffer.temperature = light.getTemperature();
                 lightBuffer.lightType = 0;
@@ -254,8 +255,8 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                         {
                             const scene::SpotLight& sLight = *static_cast<const scene::SpotLight*>(&light);
                             lightBuffer.lightType = 2;
-                            lightBuffer.property._x = sLight.getOuterAngle();
-                            lightBuffer.property._y = sLight.getInnerAngle();
+                            lightBuffer.spotAngles._x = cosf(sLight.getOuterAngle() * math::k_degToRad); //cosOuter
+                            lightBuffer.spotAngles._y = cosf(sLight.getInnerAngle() * math::k_degToRad); //cosInner
                         }
                     };
 

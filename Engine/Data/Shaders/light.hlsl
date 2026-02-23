@@ -131,13 +131,13 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
         
         if (cb_Light.type == POINT_LIGHT)
         {
-            float lightDistance = distance(worldPos, cb_Light.position.xyz);
-            float radius = cb_Light.attenuation.w;
-            clip(radius - lightDistance);
-        
             LightBuffer light;
             light = cb_Light;
             light.direction = normalize(worldPos - cb_Light.position.xyz);
+            
+            float lightDistance = distance(worldPos, cb_Light.position.xyz);
+            float radius = cb_Light.attenuation.w;
+            clip(radius - lightDistance);
 
             float shadow = cb_Shadow.shadowFaceMask > 0.0 ? punctual_light_shadow(worldPos, normals) : 0.0;
             float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
@@ -152,36 +152,18 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
             light = cb_Light;
             light.direction = normalize(cb_Light.direction);
             
-            //if (depth < Input.ClipPos.z / Input.ClipPos.w)
-            //    discard;
-            
-            float lightDistance = distance(worldPos, cb_Light.position.xyz);
-            //float range = cb_Light.attenuation.w;
-            //clip(range - lightDistance);
-            
-            //float3 V = worldPos - cb_Light.position.xyz;
-            //float axial = dot(V, light.direction);
-            //if (axial <= 0 || axial >= range)
-            //    discard;
-
-            //float cosAngle = dot(normalize(V), light.direction);
-            //if (cosAngle <= cb_Light.propery.a)
-            //    discard;
-            
-            float3 lightPos = cb_Light.position.xyz;
-            float3 lightDir = normalize(cb_Light.direction);
+            float3 lightDirection = worldPos - cb_Light.position.xyz;
+            float lightDistance = length(lightDirection);
             float range = cb_Light.attenuation.w;
-            
-            float3 L = worldPos - lightPos;
-            float dist = length(L);
-            float3 Lnorm = L / dist;
+            clip(range - lightDistance);
 
-            clip(range - dist);
-            float cosAngle = dot(Lnorm, lightDir);
+            // Cone attenuation
+            float3 LNorm = lightDirection / lightDistance;
+            float cosAngle = dot(LNorm, light.direction);
+            float conAttenuation = saturate((cosAngle - cb_Light.spotAngles.x) / (cb_Light.spotAngles.y - cb_Light.spotAngles.x));
+            conAttenuation *= conAttenuation;
+            light.spotAngles.w = conAttenuation;
 
-            float cone = saturate((cosAngle - cb_Light.propery.x) / (cb_Light.propery.y - cb_Light.propery.x));
-            clip(cone - 0.001);
-            
             float shadow = 0.0;
             float4 color = cook_torrance_BRDF(cb_Viewport, light, environment, worldPos, lightDistance, albedo, normals, roughness, metallic, depth, 1.0 - shadow);
             return float4(color.rgb, 1.0);

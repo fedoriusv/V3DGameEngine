@@ -231,8 +231,18 @@ namespace scene
         void setOuterAngle(f32 degree);
 
         f32 getRange() const;
-        f32 getInnerAngle() const;
+
+        /**
+        * @brief getOuterAngle function.
+        * Apex angle in degree
+        */
         f32 getOuterAngle() const;
+
+        /**
+        * @brief getInnerAngle function.
+        * falloff angle in degree
+        */
+        f32 getInnerAngle() const;
 
     private:
 
@@ -254,11 +264,12 @@ namespace scene
 
     inline void SpotLight::setInnerAngle(f32 degree)
     {
-        m_innerAngle = degree;
+        m_innerAngle = std::min(degree, m_outerAngle);
     }
 
     inline void SpotLight::setOuterAngle(f32 degree)
     {
+        m_innerAngle = std::min(m_innerAngle, m_outerAngle);
         m_outerAngle = degree;
     }
 

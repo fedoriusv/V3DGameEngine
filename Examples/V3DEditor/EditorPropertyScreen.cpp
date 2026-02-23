@@ -773,10 +773,9 @@ void EditorPropertyScreen::buildLightProp()
                             {
                                 if (m_selectedNode)
                                 {
-                                    if (scene::PointLight* light = m_selectedNode->getComponentByType<scene::PointLight>(); light)
+                                    if (scene::Light* light = m_selectedNode->getComponentByType<scene::Light>(); light)
                                     {
                                         light->setAttenuation(val._x, val._y, val._z);
-                                        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
                                     }
                                 }
                             })

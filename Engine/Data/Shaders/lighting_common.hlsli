@@ -12,8 +12,8 @@ struct LightBuffer
     float3 position;
     float3 direction;
     float4 color;
-    float4 attenuation;
-    float4 propery; //reserved for custom data
+    float4 attenuation; // attenuation.x = constant, attenuation.y = linear, attenuation.z = quadratic,  attenuation.w = radius
+    float4 spotAngles;  // spotAngles.x = cosOuter, spotAngles.y = cosInner
     float  intensity;
     float  temperature;
     uint   type;
@@ -181,14 +181,16 @@ float4 cook_torrance_BRDF(
     float kConstant = Light.attenuation.x;
     float kLinear = Light.attenuation.y;
     float kQuadratic = Light.attenuation.z;
+    float range = Light.attenuation.w;
+    float coneFalloff = Light.spotAngles.w; //for spot light
     float attenuation = 1.0 / max(kConstant + kLinear * Distance + kQuadratic * (Distance * Distance), 1e-5);
 
     // Smooth fade to zero near range 
-    float rangeFactor = saturate(1.0 - (Distance / max(Light.attenuation.w, 0.01)));
+    float rangeFactor = saturate(1.0 - (Distance / max(range, 0.01)));
     attenuation *= rangeFactor * rangeFactor; // sharper falloff near the end
-    
+
     float3 lightColor = temperature_RGB(Light.temperature) * Light.color.rgb * Light.intensity;
-    float3 radiance = lightColor * attenuation * Shadow;
+    float3 radiance = lightColor * attenuation * coneFalloff * Shadow;
     
     float3 Lo = (diffuse + specular) * radiance * NdotL;
     

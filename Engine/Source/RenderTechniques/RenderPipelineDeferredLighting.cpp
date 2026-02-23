@@ -179,7 +179,7 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, Scen
                 math::Vector3D direction;
                 math::float4   color;
                 math::float4   attenuation;
-                math::float4   property;
+                math::float4   spotAngles;
                 f32            intensity;
                 f32            temperature;
                 u32            lightType;
@@ -190,6 +190,7 @@ void RenderPipelineDeferredLightingStage::execute(renderer::Device* device, Scen
             lightBuffer.direction = entry->object->getDirection();
             lightBuffer.color = dirLight.getColor();
             lightBuffer.attenuation = { 1.f,  1.f,  1.f, 0.f };
+            lightBuffer.spotAngles = { 1.f, 1.f, 1.f, 1.f };
             lightBuffer.intensity = dirLight.getIntensity();
             lightBuffer.temperature = dirLight.getTemperature();
             lightBuffer.lightType = 0;
