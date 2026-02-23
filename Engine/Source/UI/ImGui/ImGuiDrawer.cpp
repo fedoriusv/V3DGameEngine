@@ -946,6 +946,56 @@ bool ImGuiWidgetDrawer::draw_InputDragValue(Widget* widget, Widget* baseWidget, 
                 idCtx->_value[0] = value;
             }
         }
+        else if (array == 2)
+        {
+            WidgetInputDragFloat2::StateInputDragFloat2* idCtx = static_cast<WidgetInputDragFloat2::StateInputDragFloat2*>(state);
+            setupHorizontalAligment(layoutCtx, 0.f, idCtx->_itemRect.getWidth());
+
+            u32 pushCount = 0;
+            if (idCtx->_stateMask & Widget::State::StateMask::Color)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ idCtx->_textColor._x, idCtx->_textColor._y, idCtx->_textColor._z, idCtx->_textColor._w });
+                ++pushCount;
+            }
+
+            if (idCtx->_stateMask & Widget::State::StateMask::BorderColor)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4{ idCtx->_borderColor._x, idCtx->_borderColor._y, idCtx->_borderColor._z, idCtx->_borderColor._w });
+                ++pushCount;
+            }
+
+            if (idCtx->_stateMask & Widget::State::StateMask::BackgroundColor)
+            {
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{ idCtx->_backgroundColor._x, idCtx->_backgroundColor._y, idCtx->_backgroundColor._z, idCtx->_backgroundColor._w });
+                ++pushCount;
+            }
+
+            auto value = idCtx->_value;
+            f32 step = idCtx->_step;
+            ImGui::PushID(idCtx->_uid);
+            if (idCtx->_stateMask & Widget::State::StateMask::DefindedSize)
+            {
+                ImGui::SetNextItemWidth(static_cast<f32>(idCtx->_size._width));
+            }
+            active = ImGui::DragScalarN("", ImGuiDataType_Float, value.data(), array, step, &idCtx->_range[0], &idCtx->_range[1], "%.3f", flags);
+            ImGui::PopID();
+
+            if (pushCount > 0)
+            {
+                ImGui::PopStyleColor(pushCount);
+            }
+
+            if (active && ImGui::IsItemEdited())
+            {
+                if (idCtx->_onChangedValueEvent)
+                {
+                    const math::float2 val = { value[0], value[1] };
+                    std::invoke(idCtx->_onChangedValueEvent, widget, val);
+                }
+
+                idCtx->_value = value;
+            }
+        }
         else if (array == 3)
         {
             WidgetInputDragFloat3::StateInputDragFloat3* idCtx = static_cast<WidgetInputDragFloat3::StateInputDragFloat3*>(state);

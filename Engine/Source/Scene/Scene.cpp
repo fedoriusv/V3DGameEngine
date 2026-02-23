@@ -482,7 +482,7 @@ SpotLight* SceneHandler::addSpotLightComponent(const math::Vector3D& position, f
     SpotLight* spotLight = V3D_NEW(SpotLight, memory::MemoryLabel::MemoryObject)(m_device);
     spotLight->m_header.setName(name);
     spotLight->setRange(range);
-    spotLight->setOuterAngle(apexAngle);
+    spotLight->setApexAngle(apexAngle, 10.f);
     spotLight->setColor(color);
     spotLight->setIntensity(30.f);
     spotLight->setTemperature(4000.0f);

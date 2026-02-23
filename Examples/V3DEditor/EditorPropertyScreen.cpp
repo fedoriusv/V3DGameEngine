@@ -21,8 +21,7 @@ EditorPropertyScreen::EditorPropertyScreen(event::GameEventReceiver* gameEventRe
     m_lightProperty.m_propertyColor = nullptr;
     m_lightProperty.m_propertyRadius = nullptr;
     m_lightProperty.m_propertyAttenuation = nullptr;
-    m_lightProperty.m_propertyOuterAngle = nullptr;
-    m_lightProperty.m_propertyInnerAngle = nullptr;
+    m_lightProperty.m_propertySpotAngle = nullptr;
     m_lightProperty.m_loadedFlag = 0;
 }
 
@@ -166,10 +165,8 @@ void EditorPropertyScreen::update(f32 dt)
                 m_lightProperty.m_propertyRadius->setValue(range);
 
                 f32 outerAngle = light->getOuterAngle();
-                m_lightProperty.m_propertyOuterAngle->setValue(outerAngle);
-
                 f32 innerAngle = light->getInnerAngle();
-                m_lightProperty.m_propertyInnerAngle->setValue(innerAngle);
+                m_lightProperty.m_propertySpotAngle->setValue(outerAngle, innerAngle);
 
                 color::ColorRGBAF color = light->getColor();
                 m_lightProperty.m_propertyColor->setColor(color);
@@ -711,54 +708,6 @@ void EditorPropertyScreen::buildLightProp()
                     )
                 )
                 .addWidget(ui::WidgetHorizontalLayout()
-                    .setVisible(isSpot)
-                    .addWidget(ui::WidgetText("Radius degrees  outer(falloff)"))
-                    .addWidget(ui::WidgetInputDragFloat(0.f)
-                        .setSize({ 80, 20 })
-                        .setStep(0.01)
-                        .setRange(1.0f, 80.0f)
-                        .setOnCreated([this](ui::Widget* w) -> void
-                            {
-                                m_lightProperty.m_propertyOuterAngle = static_cast<ui::WidgetInputDragFloat*>(w);
-                                m_lightProperty.m_loadedFlag |= 1 << 3;
-                            })
-                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
-                            {
-                                if (m_selectedNode)
-                                {
-                                    if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
-                                    {
-                                        light->setOuterAngle(val);
-                                        f32 scale = light->getRange() * tanf(val * math::k_degToRad);
-                                        m_selectedNode->setScale(scene::TransformMode::Local, { scale, scale, light->getRange() });
-                                        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
-                                    }
-                                }
-                            })
-                    )
-                    .addWidget(ui::WidgetText("innter"))
-                    .addWidget(ui::WidgetInputDragFloat(0.f)
-                        .setSize({ 80, 20 })
-                        .setStep(0.01)
-                        .setRange(1.0f, 80.0f)
-                        .setOnCreated([this](ui::Widget* w) -> void
-                            {
-                                m_lightProperty.m_propertyInnerAngle = static_cast<ui::WidgetInputDragFloat*>(w);
-                                m_lightProperty.m_loadedFlag |= 1 << 4;
-                            })
-                        .setOnChangedValueEvent([this](ui::Widget* w, f32 val) -> void
-                            {
-                                if (m_selectedNode)
-                                {
-                                    if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
-                                    {
-                                        light->setInnerAngle(val);
-                                    }
-                                }
-                            })
-                    )
-                )
-                .addWidget(ui::WidgetHorizontalLayout()
                     .setVisible(isPoint || isSpot)
                     .addWidget(ui::WidgetText("Attenuation"))
                     .addWidget(ui::WidgetInputDragFloat3(1.f, 0.09f, 0.063f)
@@ -795,6 +744,34 @@ void EditorPropertyScreen::buildLightProp()
                                 {
                                     scene::Light* light = m_selectedNode->getComponentByType<scene::Light>();
                                     light->setColor(color);
+                                }
+                            })
+                    )
+                )
+                .addWidget(ui::WidgetHorizontalLayout()
+                    .setVisible(isSpot)
+                    .setHAlignment(ui::WidgetLayout::HorizontalAlignment::AlignmentLeft)
+                    .addWidget(ui::WidgetText("Apex angle outer/innter  "))
+                    .addWidget(ui::WidgetInputDragFloat2(0.f, 0.f)
+                        .setSize({ 100, 20 })
+                        .setStep(0.01)
+                        .setRange(1.0f, 80.0f)
+                        .setOnCreated([this](ui::Widget* w) -> void
+                            {
+                                m_lightProperty.m_propertySpotAngle = static_cast<ui::WidgetInputDragFloat2*>(w);
+                                m_lightProperty.m_loadedFlag |= 1 << 3;
+                            })
+                        .setOnChangedValueEvent([this](ui::Widget* w, const math::float2& val) -> void
+                            {
+                                if (m_selectedNode)
+                                {
+                                    if (scene::SpotLight* light = m_selectedNode->getComponentByType<scene::SpotLight>(); light)
+                                    {
+                                        light->setApexAngle(val._x, val._y);
+                                        f32 scale = light->getRange() * tanf(val._x * math::k_degToRad);
+                                        m_selectedNode->setScale(scene::TransformMode::Local, { scale, scale, light->getRange() });
+                                        m_gameEventRecevier->sendEvent(new EditorTransformEvent(m_selectedNode, m_transformProperty.m_mode, m_selectedNode->getTransform(m_transformProperty.m_mode)));
+                                    }
                                 }
                             })
                     )

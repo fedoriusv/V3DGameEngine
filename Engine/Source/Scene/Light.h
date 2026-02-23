@@ -227,8 +227,7 @@ namespace scene
         explicit SpotLight(renderer::Device* device, const LightHeader& header) noexcept;
 
         void setRange(f32 range);
-        void setInnerAngle(f32 degree);
-        void setOuterAngle(f32 degree);
+        void setApexAngle(f32 outerAngleDegree, f32 innterAngleDegree);
 
         f32 getRange() const;
 
@@ -262,15 +261,10 @@ namespace scene
         m_attenuation._w = range;
     }
 
-    inline void SpotLight::setInnerAngle(f32 degree)
+    inline void SpotLight::setApexAngle(f32 outerAngleDegree, f32 innterAngleDegree)
     {
-        m_innerAngle = std::min(degree, m_outerAngle);
-    }
-
-    inline void SpotLight::setOuterAngle(f32 degree)
-    {
-        m_innerAngle = std::min(m_innerAngle, m_outerAngle);
-        m_outerAngle = degree;
+        m_outerAngle = outerAngleDegree;
+        m_innerAngle = std::min(innterAngleDegree, m_outerAngle);
     }
 
     inline f32 SpotLight::getRange() const

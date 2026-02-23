@@ -212,7 +212,6 @@ namespace ui
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
         math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
-
     };
 
     inline f32 WidgetInputDragFloat::getValue() const
@@ -233,6 +232,50 @@ namespace ui
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        /**
+    * @brief WidgetInputDragFloat2 class
+    */
+    class WidgetInputDragFloat2 final : public WidgetInputDragBase<WidgetInputDragFloat2, f32, 2>
+    {
+    public:
+
+        explicit WidgetInputDragFloat2(f32 value1, f32 value2) noexcept;
+        WidgetInputDragFloat2(const WidgetInputDragFloat2&) noexcept;
+        WidgetInputDragFloat2(WidgetInputDragFloat2&&) noexcept;
+        ~WidgetInputDragFloat2();
+
+        WidgetInputDragFloat2& setOnChangedValueEvent(const OnWidgetEventFloat2Param& event);
+
+        TypePtr getType() const final;
+
+        struct StateInputDragFloat2 : StateInputDragBase
+        {
+            OnWidgetEventFloat2Param _onChangedValueEvent;
+        };
+
+    private:
+
+        using WidgetType = WidgetInputDragFloat2;
+        using StateType = StateInputDragFloat2;
+
+        bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
+        math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
+        Widget* copy() const final;
+    };
+
+    inline WidgetInputDragFloat2& WidgetInputDragFloat2::setOnChangedValueEvent(const OnWidgetEventFloat2Param& event)
+    {
+        Widget::cast_data<StateType>(m_data)._onChangedValueEvent = event;
+        return *this;
+    }
+
+    inline TypePtr WidgetInputDragFloat2::getType() const
+    {
+        return typeOf<WidgetInputDragFloat2>();
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
     * @brief WidgetInputDragFloat3 class
     */
@@ -244,8 +287,6 @@ namespace ui
         WidgetInputDragFloat3(const WidgetInputDragFloat3&) noexcept;
         WidgetInputDragFloat3(WidgetInputDragFloat3&&) noexcept;
         ~WidgetInputDragFloat3();
-
-        f32 getValue() const;
 
         WidgetInputDragFloat3& setOnChangedValueEvent(const OnWidgetEventFloat3Param& event);
 
@@ -264,13 +305,7 @@ namespace ui
         bool update(WidgetHandler* handler, Widget* parent, Widget* layout, f32 dt) final;
         math::float2 calculateSize(WidgetHandler* handler, Widget* parent, Widget* layout) final;
         Widget* copy() const final;
-
     };
-
-    inline f32 WidgetInputDragFloat3::getValue() const
-    {
-        return Widget::cast_data<StateType>(m_data)._value[0];
-    }
 
     inline WidgetInputDragFloat3& WidgetInputDragFloat3::setOnChangedValueEvent(const OnWidgetEventFloat3Param& event)
     {
@@ -353,6 +388,16 @@ namespace ui
 
     template<>
     struct TypeOf<ui::WidgetInputDragFloat>
+    {
+        static TypePtr get()
+        {
+            static TypePtr ptr = nullptr;
+            return (TypePtr)&ptr;
+        }
+    };
+
+    template<>
+    struct TypeOf<ui::WidgetInputDragFloat2>
     {
         static TypePtr get()
         {
