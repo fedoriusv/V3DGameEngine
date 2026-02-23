@@ -805,13 +805,10 @@ void EditorPropertyScreen::buildMaterialProp()
     scene::Material* material = m_selectedNode->getComponentByType<scene::Material>();
     ASSERT(material, "must be valid");
 
-    ui::WidgetLayout winLayout = ui::WidgetLayout()
-        .setFontSize(ui::WidgetLayout::MediumFont)
-        .addWidget(ui::WidgetTreeNode("Material", flags)
-            .addWidget(ui::WidgetHorizontalLayout()
-                .addWidget(ui::WidgetText("MaterialType"))
-                .addWidget(ui::WidgetText(shadingModel[toEnumType(material->getShadingModel())]))
-            )
+    ui::WidgetTreeNode materialNode = ui::WidgetTreeNode("Material", flags)
+        .addWidget(ui::WidgetHorizontalLayout()
+            .addWidget(ui::WidgetText("MaterialType"))
+            .addWidget(ui::WidgetText(shadingModel[toEnumType(material->getShadingModel())]))
         );
 
     for (auto iter = material->begin(); iter != material->end(); ++iter)
@@ -820,7 +817,7 @@ void EditorPropertyScreen::buildMaterialProp()
         {
             //renderer::Texture* texture = obj->as<renderer::Texture>();
 
-            winLayout.addWidget(ui::WidgetText("Property: " + iter->first))
+            materialNode.addWidget(ui::WidgetText("Property: " + iter->first))
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetText("Name: <texture name>" ))
                     .addWidget(ui::WidgetImage(dummyTexture, { 64, 64 })
@@ -829,7 +826,7 @@ void EditorPropertyScreen::buildMaterialProp()
         }
         else if (math::float4* value = std::get_if<math::float4>(&iter->second); value)
         {
-            winLayout.addWidget(ui::WidgetText("Property: " + iter->first))
+            materialNode.addWidget(ui::WidgetText("Property: " + iter->first))
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetColorPalette()
                         .setColor(*value)
@@ -846,7 +843,7 @@ void EditorPropertyScreen::buildMaterialProp()
         }
         else if (f32* value = std::get_if<f32>(&iter->second); value)
         {
-            winLayout.addWidget(ui::WidgetText("Property: " + iter->first))
+            materialNode.addWidget(ui::WidgetText("Property: " + iter->first))
                 .addWidget(ui::WidgetHorizontalLayout()
                     .addWidget(ui::WidgetInputDragFloat(*value)
                         .setOnChangedValueEvent([this, name = iter->first](ui::Widget* w, f32 value)
@@ -862,5 +859,8 @@ void EditorPropertyScreen::buildMaterialProp()
         }
     }
  
-        window.addWidget(winLayout);
+    window.addWidget(ui::WidgetLayout()
+        .setFontSize(ui::WidgetLayout::MediumFont)
+        .addWidget(materialNode)
+    );
 }
