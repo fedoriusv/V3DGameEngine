@@ -11,11 +11,10 @@ struct Tonemapper
     float gamma;
 };
 
-[[vk::binding(1, 1)]] ConstantBuffer<Tonemapper> cb_Tonemapper : register(b1, space1);
-[[vk::binding(2, 1)]] SamplerState s_LinearMirrorSampler       : register(s0, space1);
-[[vk::binding(3, 1)]] SamplerState s_LinearClampSampler        : register(s1, space1);
-[[vk::binding(4, 1)]] Texture2D t_ColorTexture                 : register(t1, space1);
-[[vk::binding(5, 1)]] Texture3D t_LUTTexture                   : register(t2, space1);
+[[vk::binding(1, 1)]] ConstantBuffer<Tonemapper> cb_Tonemapper : register(b0, space1);
+[[vk::binding(2, 1)]] SamplerState s_SamplerState              : register(s0, space1);
+[[vk::binding(3, 1)]] Texture2D t_ColorTexture                 : register(t0, space1);
+[[vk::binding(4, 1)]] Texture3D t_LUTTexture                   : register(t1, space1);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -74,8 +73,8 @@ float3 lut_2D(Texture2D lutTexture, in float3 color, in float lutSize)
     const float lerpfact = frac(lutcoord.z);
     lutcoord.x += (lutcoord.z - lerpfact) * texelsize.y;
     
-    float3 c0 = lutTexture.Sample(s_LinearMirrorSampler, lutcoord.xy).rgb;
-    float3 c1 = lutTexture.Sample(s_LinearMirrorSampler, float2(lutcoord.x + texelsize.y, lutcoord.y)).rgb;
+    float3 c0 = lutTexture.Sample(s_SamplerState, lutcoord.xy).rgb;
+    float3 c1 = lutTexture.Sample(s_SamplerState, float2(lutcoord.x + texelsize.y, lutcoord.y)).rgb;
     float3 lutcolor = lerp(c0, c1, lerpfact);
     
     float fLUT_AmountChroma = 1.0;
@@ -91,14 +90,14 @@ float3 lut_3D(Texture3D lutTexture, in float3 color, in float lutSize)
         return color;
     }
     
-    return lutTexture.Sample(s_LinearMirrorSampler, color).rgb;
+    return lutTexture.Sample(s_SamplerState, color).rgb;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
 [[vk::location(0)]] float4 tonemapping_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
-    float3 hdrColor = t_ColorTexture.SampleLevel(s_LinearMirrorSampler, Input.UV, 0).rgb;
+    float3 hdrColor = t_ColorTexture.SampleLevel(s_SamplerState, Input.UV, 0).rgb;
     float exposure = pow(2.0, cb_Tonemapper.ev100);
     
      // Tonemap correction

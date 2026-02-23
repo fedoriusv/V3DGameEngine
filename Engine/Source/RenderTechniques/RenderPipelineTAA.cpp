@@ -144,11 +144,11 @@ void RenderPipelineTAAStage::execute(renderer::Device* device, scene::SceneData&
                 ASSERT(velocity_target_h.isValid(), "must be valid");
                 renderer::Texture2D* velocityRenderTarget = objectFromHandle<renderer::Texture2D>(velocity_target_h);
 
-                ObjectHandle linear_sampler_clamp_h = scene.m_globalResources.get("linear_sampler_clamp_border");
+                ObjectHandle linear_sampler_clamp_h = scene.m_globalResources.get("linear_sampler_clamp_edge");
                 ASSERT(linear_sampler_clamp_h.isValid(), "must be valid");
                 renderer::SamplerState* samplerStateLinear = objectFromHandle<renderer::SamplerState>(linear_sampler_clamp_h);
 
-                ObjectHandle point_sampler_clamp_h = scene.m_globalResources.get("point_sampler_clamp_border");
+                ObjectHandle point_sampler_clamp_h = scene.m_globalResources.get("point_sampler_clamp_edge");
                 ASSERT(point_sampler_clamp_h.isValid(), "must be valid");
                 renderer::SamplerState* samplerStatePoint = objectFromHandle<renderer::SamplerState>(point_sampler_clamp_h);
 

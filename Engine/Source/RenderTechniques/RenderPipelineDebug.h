@@ -44,7 +44,7 @@ namespace scene
         {
             SHADER_PARAMETER(cb_Viewport);
             SHADER_PARAMETER(cb_Visualizer);
-            SHADER_PARAMETER(s_LinearSampler);
+            SHADER_PARAMETER(s_SamplerState);
             SHADER_PARAMETER(t_RenderTargetTexture);
             SHADER_PARAMETER(t_VisualizeTexture);
         };

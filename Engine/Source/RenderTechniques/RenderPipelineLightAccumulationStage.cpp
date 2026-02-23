@@ -22,8 +22,6 @@ namespace scene
 RenderPipelineLightAccumulationStage::RenderPipelineLightAccumulationStage(RenderTechnique* technique, scene::ModelHandler* modelHandler) noexcept
     : RenderPipelineStage(technique, "LightPass")
     , m_modelHandler(modelHandler)
-
-    , m_shadowSamplerState(nullptr)
     , m_lightRenderTarget(nullptr)
 
     , m_debugPunctualLightShadows(false)
@@ -61,9 +59,6 @@ void RenderPipelineLightAccumulationStage::destroy(renderer::Device* device, sce
 
         V3D_DELETE(m_sphereVolume, memory::MemoryLabel::MemoryObject);
         V3D_DELETE(m_coneVolume, memory::MemoryLabel::MemoryObject);
-
-        V3D_DELETE(m_shadowSamplerState, memory::MemoryLabel::MemoryGame);
-        m_shadowSamplerState = nullptr;
 
         m_created = false;
     }
@@ -141,9 +136,13 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
             ASSERT(gbuffer_material_handle.isValid(), "must be valid");
             renderer::Texture2D* gbufferMaterialTexture = gbuffer_material_handle.as<renderer::Texture2D>();
 
-            ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_clamp_border");
+            ObjectHandle samplerState_handle = scene.m_globalResources.get("point_sampler_clamp_edge");
             ASSERT(samplerState_handle.isValid(), "must be valid");
             renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
+
+            ObjectHandle shadowSamplerState_handle = scene.m_globalResources.get("linear_sampler_clamp_edge");
+            ASSERT(shadowSamplerState_handle.isValid(), "must be valid");
+            renderer::SamplerState* shadowSamplerState = shadowSamplerState_handle.as<renderer::SamplerState>();
 
             ObjectHandle shadowmaps_handle = scene.m_globalResources.get("shadowmaps_array");
             ASSERT(shadowmaps_handle.isValid(), "must be valid");
@@ -286,7 +285,7 @@ void RenderPipelineLightAccumulationStage::execute(renderer::Device* device, sce
                         {
                             renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &shadowBuffer, 0, sizeof(shadowBuffer)}, m_parameters.cb_Shadow),
                             renderer::Descriptor(renderer::TextureView(shadowmapsTexture), m_parameters.t_TextureShadowmaps),
-                            renderer::Descriptor(m_shadowSamplerState, m_parameters.s_ShadowSamplerState),
+                            renderer::Descriptor(shadowSamplerState, m_parameters.s_ShadowSamplerState),
                         });
 
                     if (light.getType() == typeOf<scene::PointLight>())
@@ -405,12 +404,6 @@ void RenderPipelineLightAccumulationStage::createPipelines(renderer::Device* dev
         BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, t_TextureShadowmaps);
         BIND_SHADER_PARAMETER(m_pipeline[1], m_parameters, s_ShadowSamplerState);
     }
-
-    m_shadowSamplerState = V3D_NEW(renderer::SamplerState, memory::MemoryLabel::MemoryGame)(device, renderer::SamplerFilter::SamplerFilter_Bilinear, renderer::SamplerAnisotropic::SamplerAnisotropic_None);
-    m_shadowSamplerState->setWrap(renderer::SamplerWrap::TextureWrap_ClampToBorder);
-    m_shadowSamplerState->setEnableCompareOp(true);
-    m_shadowSamplerState->setCompareOp(renderer::CompareOperation::LessOrEqual);
-    m_shadowSamplerState->setBorderColor({ 0.0f, 0.0f, 0.0f, 0.0f });
 }
 
 void RenderPipelineLightAccumulationStage::destroyPipelines(renderer::Device* device, scene::SceneData& scene)

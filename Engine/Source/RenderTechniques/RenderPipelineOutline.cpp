@@ -134,7 +134,7 @@ void RenderPipelineOutlineStage::execute(renderer::Device* device, scene::SceneD
             ASSERT(selectedObjects_handle.isValid(), "must be valid");
             renderer::Texture2D* selected_objectsTexture = selectedObjects_handle.as<renderer::Texture2D>();
 
-            ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_clamp_border");
+            ObjectHandle samplerState_handle = scene.m_globalResources.get("point_sampler_clamp_edge");
             ASSERT(samplerState_handle.isValid(), "must be valid");
             renderer::SamplerState* sampler_state = samplerState_handle.as<renderer::SamplerState>();
 

@@ -36,7 +36,7 @@ struct ShadowBuffer
 
 [[vk::binding(8,  2)]] ConstantBuffer<ShadowBuffer> cb_Shadow       : register(b3, space2);
 [[vk::binding(9,  2)]] Texture2DArray t_TextureShadowmaps           : register(t4, space2);
-[[vk::binding(10, 2)]] SamplerComparisonState s_ShadowSamplerState  : register(s1, space2); //TODO remove
+[[vk::binding(10, 2)]] SamplerState s_ShadowSamplerState            : register(s1, space2); //TODO remove
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -93,22 +93,22 @@ float punctual_light_shadow(in float3 WorldPos, in float3 Normal)
     if (cb_Shadow.shadowPCFMode == 1)
     {
         return shadow_linear_sample_PCF_3x3(
-            t_TextureShadowmaps, s_SamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, scaleFactor, cb_Shadow.shadowBaseBias);
+            t_TextureShadowmaps, s_ShadowSamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, scaleFactor, cb_Shadow.shadowBaseBias);
 
     }
     else if (cb_Shadow.shadowPCFMode == 2)
     {
         return shadow_linear_sample_PCF_5x5(
-            t_TextureShadowmaps, s_SamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, scaleFactor, cb_Shadow.shadowBaseBias);
+            t_TextureShadowmaps, s_ShadowSamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, scaleFactor, cb_Shadow.shadowBaseBias);
     }
     else if (cb_Shadow.shadowPCFMode == 3)
     {
         return shadow_linear_sample_PCF_9x9(
-            t_TextureShadowmaps, s_SamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, scaleFactor, cb_Shadow.shadowBaseBias);
+            t_TextureShadowmaps, s_ShadowSamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, scaleFactor, cb_Shadow.shadowBaseBias);
     }
     
     return shadow_linear_sample_PCF_1x1(
-        t_TextureShadowmaps, s_SamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, cb_Shadow.shadowBaseBias * 1.0);;
+        t_TextureShadowmaps, s_ShadowSamplerState, cb_Shadow.shadowMapResolution, cb_Shadow.clipNearFar, float3(uv, cs_shadowCoord.z), cb_Shadow.shadowSliceOffset + face, cb_Shadow.shadowBaseBias * 1.0);;
 }
 
 [[vk::location(0)]] float4 light_accumulation_ps(PS_SIMPLE_INPUT Input) : SV_TARGET0

@@ -145,7 +145,7 @@ void RenderPipelineDebugStage::create(renderer::Device* device, scene::SceneData
 
         BIND_SHADER_PARAMETER(m_debugVisualizerPipeline, m_debugVisualizerParameters, cb_Viewport);
         BIND_SHADER_PARAMETER(m_debugVisualizerPipeline, m_debugVisualizerParameters, cb_Visualizer);
-        BIND_SHADER_PARAMETER(m_debugVisualizerPipeline, m_debugVisualizerParameters, s_LinearSampler);
+        BIND_SHADER_PARAMETER(m_debugVisualizerPipeline, m_debugVisualizerParameters, s_SamplerState);
         BIND_SHADER_PARAMETER(m_debugVisualizerPipeline, m_debugVisualizerParameters, t_RenderTargetTexture);
         BIND_SHADER_PARAMETER(m_debugVisualizerPipeline, m_debugVisualizerParameters, t_VisualizeTexture);
     }
@@ -253,9 +253,9 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
             ASSERT(depthStencilTexture_handle.isValid(), "must be valid");
             renderer::Texture2D* depthStencilTexture = depthStencilTexture_handle.as<renderer::Texture2D>();
 
-            ObjectHandle linearSamplerRepeat_handle = scene.m_globalResources.get("linear_sampler_repeat");
-            ASSERT(linearSamplerRepeat_handle.isValid(), "must be valid");
-            renderer::SamplerState* samplerState = linearSamplerRepeat_handle.as<renderer::SamplerState>();
+            ObjectHandle samplerState_handle = scene.m_globalResources.get("point_sampler_clamp_edge");
+            ASSERT(samplerState_handle.isValid(), "must be valid");
+            renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
 
             m_renderTarget->setColorTexture(0, renderTargetTexture,
                 {
@@ -364,7 +364,7 @@ void RenderPipelineDebugStage::execute(renderer::Device* device, scene::SceneDat
                 cmdList->bindDescriptorSet(m_debugVisualizerPipeline->getShaderProgram(), 1,
                     {
                         renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &visualizer, 0, sizeof(visualizer)}, m_debugVisualizerParameters.cb_Visualizer),
-                        renderer::Descriptor(samplerState, m_debugVisualizerParameters.s_LinearSampler),
+                        renderer::Descriptor(samplerState, m_debugVisualizerParameters.s_SamplerState),
                         renderer::Descriptor(renderer::TextureView(renderTargetTexture, 0, 0), m_debugVisualizerParameters.t_RenderTargetTexture),
                         renderer::Descriptor(renderer::TextureView(visualizeTexture, 0, 0), m_debugVisualizerParameters.t_VisualizeTexture),
                     });

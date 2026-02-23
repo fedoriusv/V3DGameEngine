@@ -34,8 +34,7 @@ namespace scene
         {
             SHADER_PARAMETER(cb_Viewport);
             SHADER_PARAMETER(cb_Tonemapper);
-            SHADER_PARAMETER(s_LinearMirrorSampler);
-            SHADER_PARAMETER(s_LinearClampSampler);
+            SHADER_PARAMETER(s_SamplerState);
             SHADER_PARAMETER(t_ColorTexture);
             SHADER_PARAMETER(t_LUTTexture);
         };

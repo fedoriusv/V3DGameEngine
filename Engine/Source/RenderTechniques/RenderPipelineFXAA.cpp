@@ -142,13 +142,13 @@ void RenderPipelineFXAAStage::execute(renderer::Device* device, scene::SceneData
             ASSERT(renderTarget_handle.isValid(), "must be valid");
             renderer::Texture2D* texture = renderTarget_handle.as<renderer::Texture2D>();
 
-            ObjectHandle samplerState_handle = scene.m_globalResources.get("linear_sampler_mirror");
+            ObjectHandle samplerState_handle = scene.m_globalResources.get("point_sampler_clamp_edge");
             ASSERT(samplerState_handle.isValid(), "must be valid");
-            renderer::SamplerState* sampler_state = samplerState_handle.as<renderer::SamplerState>();
+            renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
 
             cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                 {
-                    renderer::Descriptor(sampler_state, m_parameters.s_SamplerState),
+                    renderer::Descriptor(samplerState, m_parameters.s_SamplerState),
                     renderer::Descriptor(renderer::TextureView(texture, 0, 0), m_parameters.t_TextureColor)
                 });
 

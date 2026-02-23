@@ -342,7 +342,7 @@ void RenderPipelineShadowStage::execute(renderer::Device* device, SceneData& sce
                 ASSERT(gbuffer_normals_h.isValid(), "must be valid");
                 renderer::Texture2D* gbufferNormalsTexture = objectFromHandle<renderer::Texture2D>(gbuffer_normals_h);
 
-                ObjectHandle sampler_state_h = scene.m_globalResources.get("linear_sampler_clamp_border");
+                ObjectHandle sampler_state_h = scene.m_globalResources.get("point_sampler_clamp_edge");
                 ASSERT(sampler_state_h.isValid(), "must be valid");
                 renderer::SamplerState* sampler_state = objectFromHandle<renderer::SamplerState>(sampler_state_h);
 

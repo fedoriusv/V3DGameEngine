@@ -18,7 +18,7 @@ struct Visualizer
 [[vk::binding(0, 0)]] ConstantBuffer<Viewport> cb_Viewport      : register(b0, space0);
 
 [[vk::binding(1, 1)]] ConstantBuffer<Visualizer> cb_Visualizer  : register(b1, space1);
-[[vk::binding(2, 1)]] SamplerState s_LinearSampler              : register(s0, space1);
+[[vk::binding(2, 1)]] SamplerState s_SamplerState               : register(s0, space1);
 [[vk::binding(3, 1)]] Texture2D t_RenderTargetTexture           : register(t0, space1);
 [[vk::binding(4, 1)]] Texture2D t_VisualizeTexture              : register(t1, space1);
 
@@ -26,8 +26,8 @@ struct Visualizer
 
 [[vk::location(0)]] float4 debug_visualizer_ps(PS_OFFSCREEN_INPUT Input) : SV_TARGET0
 {
-    float3 colorTarget = t_RenderTargetTexture.SampleLevel(s_LinearSampler, Input.UV, 0).rgb;
-    float4 visualizeTexture = t_VisualizeTexture.SampleLevel(s_LinearSampler, Input.UV, 0);
+    float3 colorTarget = t_RenderTargetTexture.SampleLevel(s_SamplerState, Input.UV, 0).rgb;
+    float4 visualizeTexture = t_VisualizeTexture.SampleLevel(s_SamplerState, Input.UV, 0);
 
     switch (cb_Visualizer.mode)
     {
