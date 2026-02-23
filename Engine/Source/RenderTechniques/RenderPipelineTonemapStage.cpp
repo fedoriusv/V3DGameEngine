@@ -49,7 +49,8 @@ void RenderPipelineTonemapStage::create(renderer::Device* device, scene::SceneDa
 
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Viewport);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, cb_Tonemapper);
-    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_SamplerState);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_PointSamplerState);
+    BIND_SHADER_PARAMETER(m_pipeline, m_parameters, s_LinearSamplerState);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_ColorTexture);
     BIND_SHADER_PARAMETER(m_pipeline, m_parameters, t_LUTTexture);
 }
@@ -133,14 +134,19 @@ void RenderPipelineTonemapStage::execute(renderer::Device* device, scene::SceneD
             ASSERT(lut_handle.isValid(), "must be valid");
             renderer::Texture3D* LUT = lut_handle.as<renderer::Texture3D>();
 
-            ObjectHandle samplerState_handle = scene.m_globalResources.get("point_sampler_clamp_edge");
-            ASSERT(samplerState_handle.isValid(), "must be valid");
-            renderer::SamplerState* samplerState = samplerState_handle.as<renderer::SamplerState>();
+            ObjectHandle linear_sampler_clamp_h = scene.m_globalResources.get("linear_sampler_clamp_edge");
+            ASSERT(linear_sampler_clamp_h.isValid(), "must be valid");
+            renderer::SamplerState* samplerStateLinear = objectFromHandle<renderer::SamplerState>(linear_sampler_clamp_h);
+
+            ObjectHandle point_sampler_clamp_h = scene.m_globalResources.get("point_sampler_clamp_edge");
+            ASSERT(point_sampler_clamp_h.isValid(), "must be valid");
+            renderer::SamplerState* samplerStatePoint = objectFromHandle<renderer::SamplerState>(point_sampler_clamp_h);
 
             cmdList->bindDescriptorSet(m_pipeline->getShaderProgram(), 1,
                 {
                     renderer::Descriptor(renderer::Descriptor::ConstantBuffer{ &tonemapper, 0, sizeof(Tonemapper)}, m_parameters.cb_Tonemapper),
-                    renderer::Descriptor(samplerState, m_parameters.s_SamplerState),
+                    renderer::Descriptor(samplerStatePoint, m_parameters.s_PointSamplerState),
+                    renderer::Descriptor(samplerStateLinear, m_parameters.s_LinearSamplerState),
                     renderer::Descriptor(renderer::TextureView(inputTargetTexture, 0, 0), m_parameters.t_ColorTexture),
                     renderer::Descriptor(renderer::TextureView(LUT, 0, 0), m_parameters.t_LUTTexture),
                 });
